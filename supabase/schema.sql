@@ -28,7 +28,7 @@ drop policy if exists "admins manage admins" on public.admin_users;
 create policy "admins manage admins" on public.admin_users for all to authenticated using (public.is_admin()) with check (public.is_admin());
 
 -- !! Replace with YOUR sign-in email, then create that user in Authentication -> Users.
-insert into public.admin_users (email, name) values ('info@illuszionzmedia.com', 'Illuszionz Media') on conflict do nothing;
+insert into public.admin_users (email, name) values ('illuszionzphotos@gmail.com', 'Illuszionz Media') on conflict do nothing;
 
 -- ---------- Business settings (key/value) ----------
 create table if not exists public.settings (
