@@ -331,18 +331,41 @@ create table if not exists public.email_campaigns (
   sent_at timestamptz
 );
 
+-- Campaigns can be composed in the block builder: the blocks are stored here (empty = plain message above).
+alter table public.email_campaigns add column if not exists blocks jsonb not null default '[]'::jsonb;
+
+-- Reusable builder layouts ("Saved" tab of the builder)
+create table if not exists public.email_sections (
+  id uuid primary key default gen_random_uuid(),
+  created_at timestamptz not null default now(),
+  name text not null,
+  blocks jsonb not null default '[]'::jsonb
+);
+
 -- ---------- Row level security: admins only ----------
 do $$
 declare t text;
 begin
   foreach t in array array['companies','contacts','pipeline_stages','bookings','submissions','deals','activities','tasks','segments',
                            'payments','expense_categories','expenses','other_income','promo_codes','price_overrides',
-                           'email_templates','email_log','email_campaigns']
+                           'email_templates','email_log','email_campaigns','email_sections']
   loop
     execute format('alter table public.%I enable row level security', t);
     execute format('drop policy if exists "admin all" on public.%I', t);
     execute format('create policy "admin all" on public.%I for all to authenticated using (public.is_admin()) with check (public.is_admin())', t);
   end loop;
+end $$;
+
+-- ---------- Image uploads for the email builder (public bucket, admin-only writes) ----------
+do $$
+begin
+  if exists (select 1 from information_schema.schemata where schema_name = 'storage') then
+    insert into storage.buckets (id, name, public) values ('email-images', 'email-images', true) on conflict (id) do nothing;
+    drop policy if exists "email images public read" on storage.objects;
+    create policy "email images public read" on storage.objects for select to anon, authenticated using (bucket_id = 'email-images');
+    drop policy if exists "email images admin write" on storage.objects;
+    create policy "email images admin write" on storage.objects for all to authenticated using (bucket_id = 'email-images' and public.is_admin()) with check (bucket_id = 'email-images' and public.is_admin());
+  end if;
 end $$;
 
 -- ---------- Keep contact freshness + lead score current ----------

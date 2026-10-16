@@ -132,3 +132,9 @@ Instagram `instagram.com/illuszionzphotostudio` (+ the `?igsh=` variant in the p
 - Not verified against a real Supabase project (none available here): `schema.sql` was written carefully but not executed; everything else was
   tested against `tests/fake-supabase.mjs`. Run `schema.sql` once and check the dashboard loads; if a table errors, the dashboard shows which.
 - Gotcha: never edit files in `src/routes/` while `vite dev` is running — the route generator can overwrite a file that is momentarily empty with a stub.
+
+## Email builder + demo data
+- Campaigns have two modes: Simple message, and a DMI-style block builder (`src/admin/builder/`, model + HTML renderer in `src/server/emailBlocks.ts`,
+  shared by the live preview and the sender). `email_campaigns.blocks`, `email_sections` (saved layouts) and the `email-images` storage bucket are in `schema.sql`.
+- `supabase/demo-data.sql` / `remove-demo-data.sql`: test data (remove before launch). Verified on a real Postgres engine (PGlite): runs twice cleanly, removal leaves 0 rows.
+  Price overrides are deliberately not seeded. Addresses ending `.test` are never emailed (logged as skipped).

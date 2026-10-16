@@ -126,6 +126,7 @@
 .ad-modal { background: #fff; border-radius: 16px; width: 100%; max-width: 640px; box-shadow: 0 30px 80px -20px rgba(0,0,0,.5); animation: adpop .18s ease-out; color: var(--ink); font-family: Inter, sans-serif; font-size: 14px; line-height: 1.45; }
 .ad-modal.wide { max-width: 920px; }
 .ad-modal.drawer { max-width: 760px; }
+.ad-modal.xl { max-width: 1240px; }
 .ad-modal * { box-sizing: border-box; }
 .ad-modal header { display: flex; justify-content: space-between; align-items: center; padding: 18px 22px; border-bottom: 1px solid var(--line); gap: 12px; }
 .ad-modal header h3 { font-size: 17px; font-weight: 700; margin: 0; }

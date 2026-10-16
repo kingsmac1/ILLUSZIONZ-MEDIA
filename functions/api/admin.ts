@@ -3,7 +3,8 @@
  * The browser sends its Supabase access token; we check it and the admin_users table before doing anything.
  */
 import { db, dbReady, q, type DbEnv } from '../../src/server/db'
-import { genericEmail, mailConfig, send, type MailEnv } from '../../src/server/mail'
+import { blocksEmail, genericEmail, mailConfig, send, type MailEnv } from '../../src/server/mail'
+import { blocksToHtml, blocksToText, type EmailBlock } from '../../src/server/emailBlocks'
 import { bookingVars, contactVars, renderTemplate, type Template } from '../../src/server/automations'
 import { matchesAudience, type AudienceFilter } from '../../src/server/audience'
 
@@ -111,8 +112,12 @@ export const onRequestPost = async ({ request, env }: { request: Request; env: E
       case 'campaign_batch': {
         const [c] = await db.select(env, 'email_campaigns', `id=eq.${q(body.id)}&limit=1`)
         if (!c) return json({ ok: false, error: 'Campaign not found.' }, 404)
+        const note = 'Not interested in these emails? Just reply with “unsubscribe” and we will stop.'
         const build = (name: string) => {
           const vars = contactVars({ name })
+          const fn = (t: string) => t.replace(/\{\{\s*first_name\s*\}\}/g, vars.first_name)
+          if (Array.isArray(c.blocks) && c.blocks.length)
+            return blocksEmail({ siteUrl: cfg.siteUrl, subject: fn(c.subject), html: fn(blocksToHtml(c.blocks as EmailBlock[])), text: fn(blocksToText(c.blocks as EmailBlock[])), footerNote: note })
           return genericEmail({
             siteUrl: cfg.siteUrl,
             subject: c.subject.replace(/\{\{\s*first_name\s*\}\}/g, vars.first_name),
@@ -122,7 +127,7 @@ export const onRequestPost = async ({ request, env }: { request: Request; env: E
             buttonLabel: c.button_label,
             buttonUrl: c.button_url,
             imageUrl: c.image_url,
-            footerNote: 'Not interested in these emails? Just reply with “unsubscribe” and we will stop.',
+            footerNote: note,
           })
         }
         if (body.action === 'campaign_test') {
@@ -142,6 +147,12 @@ export const onRequestPost = async ({ request, env }: { request: Request; env: E
           const claim = await db.claim(env, 'email_log', { dedupe_key: `camp:${c.id}:${p.id}`, template_key: 'campaign', campaign_id: c.id, contact_id: p.id, to_email: p.email, subject: m.subject, status: 'pending' }, 'dedupe_key')
           if (!claim) continue
           try {
+            if (/\.test$/i.test(p.email)) {
+              // demo / placeholder address: never sent, logged as skipped
+              await db.update(env, 'email_log', `id=eq.${claim.id}`, { status: 'skipped', error: 'demo address — not sent' })
+              sent++
+              continue
+            }
             await deliver(p.email, m)
             await db.update(env, 'email_log', `id=eq.${claim.id}`, { status: 'sent', sent_at: new Date().toISOString() })
             sent++

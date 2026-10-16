@@ -34,12 +34,13 @@ const DEFAULTS = {
   activities: () => ({ id: randomUUID(), created_at: now(), auto: false, body: '', subject: '', created_by: '' }),
   tasks: () => ({ id: randomUUID(), created_at: now(), done: false, done_at: null, priority: 'normal', type: 'follow-up', auto: false, notes: '' }),
   segments: () => ({ id: randomUUID(), created_at: now() }),
+  email_sections: () => ({ id: randomUUID(), created_at: now(), blocks: [] }),
   payments: () => ({ id: randomUUID(), created_at: now(), note: '' }),
   expenses: () => ({ id: randomUUID(), created_at: now(), note: '', vendor: '' }),
   other_income: () => ({ id: randomUUID(), created_at: now(), note: '' }),
   promo_codes: () => ({ created_at: now(), used: 0, flows: [], active: true }),
   email_log: () => ({ id: randomUUID(), created_at: now(), status: 'pending', error: null, sent_at: null }),
-  email_campaigns: () => ({ id: randomUUID(), created_at: now(), status: 'draft', recipients: 0, sent_count: 0, failed_count: 0, audience: {}, sent_at: null }),
+  email_campaigns: () => ({ id: randomUUID(), created_at: now(), status: 'draft', recipients: 0, sent_count: 0, failed_count: 0, audience: {}, blocks: [], sent_at: null }),
 }
 const PK = { pipeline_stages: ['key'], settings: ['key'], promo_codes: ['code'], price_overrides: ['flow_id', 'kind', 'item_id'], expense_categories: ['name'], admin_users: ['email'], email_templates: ['key'] }
 const UNIQUE = { email_log: ['dedupe_key'], contacts: ['email'] }

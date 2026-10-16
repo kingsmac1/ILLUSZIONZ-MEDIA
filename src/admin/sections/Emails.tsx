@@ -1,9 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { AudienceFilter } from '../../server/audience'
 import { adminApi, supabase } from '../supabase'
 import { useData, useDb, type R } from '../data'
 import { Badge, Empty, Field, Modal, PageHead, Tabs, ago, fmtDate } from '../ui'
 import { LIFECYCLES, SOURCES } from '../crm/shared'
+import { EmailBuilder } from '../builder/EmailBuilder'
+import { blocksEmail } from '../../server/mail'
+import { blocksToHtml, blocksToText, defaultBlocks, type EmailBlock } from '../../server/emailBlocks'
 
 const AUTOMATIONS: { key: string; name: string; when: string; who: 'client' | 'you' }[] = [
   { key: 'booking_confirmed', name: 'Booking confirmed', when: 'Within ~10 minutes of you marking a booking “confirmed”', who: 'client' },
@@ -118,6 +121,9 @@ function Templates() {
 function CampaignEditor({ campaign, onClose }: { campaign?: R; onClose: () => void }) {
   const { d, toast } = useData()
   const [f, setF] = useState<R>({ name: '', subject: '', eyebrow: 'News from the studio', title: '', body: 'Hi {{first_name}},\n\n', button_label: '', button_url: '', image_url: '', audience: {} as AudienceFilter, ...campaign })
+  const [mode, setMode] = useState<'simple' | 'builder'>(campaign?.blocks?.length ? 'builder' : 'simple')
+  const [blocks, setBlocks] = useState<EmailBlock[]>(campaign?.blocks?.length ? campaign.blocks : defaultBlocks())
+  const [preview, setPreview] = useState(false)
   const [count, setCount] = useState<number | null>(null)
   const [busy, setBusy] = useState('')
   const [progress, setProgress] = useState('')
@@ -128,15 +134,23 @@ function CampaignEditor({ campaign, onClose }: { campaign?: R; onClose: () => vo
   const setAud = (p: Partial<AudienceFilter>) => set('audience', { ...aud, ...p })
   const locked = campaign && campaign.status !== 'draft'
   const tags = [...new Set(d.contacts.flatMap((c) => c.tags ?? []))]
+  const builder = mode === 'builder'
 
   useEffect(() => {
     const t = setTimeout(async () => { const r = await adminApi({ action: 'audience_count', filter: aud }); setCount(r.ok ? (r as any).count : null) }, 350)
     return () => clearTimeout(t)
   }, [JSON.stringify(aud)])
 
+  const previewHtml = useMemo(() => {
+    if (!preview) return ''
+    const fill = (t: string) => t.replace(/\{\{\s*first_name\s*\}\}/g, 'Ada')
+    return blocksEmail({ siteUrl: window.location.origin, subject: f.subject, html: fill(blocksToHtml(blocks)), text: '', footerNote: 'Not interested in these emails? Just reply with “unsubscribe” and we will stop.' }).html
+  }, [preview, blocks, f.subject])
+
   async function persist(): Promise<string | null> {
-    if (!f.name.trim() || !f.subject.trim() || !f.title.trim() || !f.body.trim()) { toast('Name, subject, headline and message are required', 'err'); return null }
-    const row = { name: f.name, subject: f.subject, eyebrow: f.eyebrow, title: f.title, body: f.body, button_label: f.button_label, button_url: f.button_url, image_url: f.image_url, audience: aud }
+    const hasBody = builder ? blocks.length > 0 : f.title.trim() && f.body.trim()
+    if (!f.name.trim() || !f.subject.trim() || !hasBody) { toast(builder ? 'Name, subject and at least one block are required' : 'Name, subject, headline and message are required', 'err'); return null }
+    const row = { name: f.name, subject: f.subject, eyebrow: f.eyebrow, title: builder ? f.title || f.subject : f.title, body: builder ? blocksToText(blocks) : f.body, button_label: f.button_label, button_url: f.button_url, image_url: f.image_url, audience: aud, blocks: builder ? blocks : [] }
     if (savedId) {
       const { error } = await supabase!.from('email_campaigns').update(row).eq('id', savedId)
       if (error) { toast(error.message, 'err'); return null }
@@ -166,36 +180,56 @@ function CampaignEditor({ campaign, onClose }: { campaign?: R; onClose: () => vo
       setProgress(`Sent ${sent} of ${(r as any).total}…`)
       if (!(r as any).remaining) { toast(`Campaign sent to ${sent} people`); break }
     }
-    setBusy(""); setProgress(""); onClose()
+    setBusy(''); setProgress(''); onClose()
   }
-  return (
-    <Modal wide title={campaign ? campaign.name : 'New campaign'} onClose={onClose}>
-      <div className="ad-grid c2">
-        <div className="ad-form" style={{ gridTemplateColumns: '1fr' }}>
-          <Field label="Campaign name (internal)"><input type="text" value={f.name} onChange={(e) => set('name', e.target.value)} disabled={locked} /></Field>
-          <Field label="Subject line"><input type="text" value={f.subject} onChange={(e) => set('subject', e.target.value)} disabled={locked} /></Field>
-          <Field label="Small label"><input type="text" value={f.eyebrow} onChange={(e) => set('eyebrow', e.target.value)} disabled={locked} /></Field>
-          <Field label="Headline"><input type="text" value={f.title} onChange={(e) => set('title', e.target.value)} disabled={locked} /></Field>
-          <Field label="Message" hint="Use {{first_name}} to personalise."><textarea style={{ minHeight: 160 }} value={f.body} onChange={(e) => set('body', e.target.value)} disabled={locked} /></Field>
-          <Field label="Image URL (optional)"><input type="text" value={f.image_url} onChange={(e) => set('image_url', e.target.value)} placeholder="https://illuszionzmedia.com/images/…" disabled={locked} /></Field>
-          <div className="ad-form"><Field label="Button text"><input type="text" value={f.button_label} onChange={(e) => set('button_label', e.target.value)} disabled={locked} /></Field><Field label="Button link"><input type="text" value={f.button_url} onChange={(e) => set('button_url', e.target.value)} disabled={locked} /></Field></div>
-        </div>
-        <div>
-          <div className="ad-card" style={{ marginBottom: 14 }}>
-            <h3>Audience <small>only people who allow marketing</small></h3>
-            <div className="ad-form" style={{ gridTemplateColumns: '1fr' }}>
-              <Field label="Saved segment"><select disabled={locked} value="" onChange={(e) => { const s = d.segments.find((x) => x.id === e.target.value); if (s) set('audience', s.filter) }}><option value="">Load a segment…</option>{d.segments.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></Field>
-              <Field label="Lifecycle"><div className="ad-seg" style={{ marginBottom: 0 }}>{LIFECYCLES.map((l) => <button type="button" key={l} disabled={locked} className={aud.lifecycle?.includes(l) ? 'on' : ''} onClick={() => setAud({ lifecycle: aud.lifecycle?.includes(l) ? aud.lifecycle.filter((x) => x !== l) : [...(aud.lifecycle ?? []), l] })}>{l}</button>)}</div></Field>
-              <Field label="Source"><select disabled={locked} value={aud.source?.[0] ?? ''} onChange={(e) => setAud({ source: e.target.value ? [e.target.value] : undefined })}><option value="">Any</option>{SOURCES.map((s) => <option key={s}>{s}</option>)}</select></Field>
-              <Field label="Tag"><select disabled={locked} value={aud.tag ?? ''} onChange={(e) => setAud({ tag: e.target.value || undefined })}><option value="">Any</option>{tags.map((s) => <option key={s}>{s}</option>)}</select></Field>
-              <Field label="Booked?"><select disabled={locked} value={aud.booked ?? ''} onChange={(e) => setAud({ booked: (e.target.value || '') as any })}><option value="">Either</option><option value="yes">Has booked</option><option value="no">Never booked</option></select></Field>
-              <Field label="Quiet for"><select disabled={locked} value={aud.inactiveDays ?? ''} onChange={(e) => setAud({ inactiveDays: Number(e.target.value) || undefined })}><option value="">Any</option><option value="30">30+ days</option><option value="90">90+ days</option><option value="180">180+ days</option></select></Field>
-            </div>
-            <p style={{ marginTop: 12 }}><b style={{ fontSize: 22 }}>{count ?? '…'}</b> <span className="ad-muted">recipient{count === 1 ? '' : 's'}</span></p>
-          </div>
-          {campaign && <p className="ad-muted" style={{ marginBottom: 10 }}>Status: <Badge>{campaign.status}</Badge> · {campaign.sent_count} sent · {campaign.failed_count} failed</p>}
-        </div>
+
+  const audience = (
+    <div className="ad-card" style={{ marginBottom: 14 }}>
+      <h3>Audience <small>only people who allow marketing</small></h3>
+      <div className="ad-form" style={{ gridTemplateColumns: builder ? 'repeat(3, minmax(0,1fr))' : '1fr' }}>
+        <Field label="Saved segment"><select disabled={locked} value="" onChange={(e) => { const sg = d.segments.find((x) => x.id === e.target.value); if (sg) set('audience', sg.filter) }}><option value="">Load a segment…</option>{d.segments.map((sg) => <option key={sg.id} value={sg.id}>{sg.name}</option>)}</select></Field>
+        <Field label="Source"><select disabled={locked} value={aud.source?.[0] ?? ''} onChange={(e) => setAud({ source: e.target.value ? [e.target.value] : undefined })}><option value="">Any</option>{SOURCES.map((x) => <option key={x}>{x}</option>)}</select></Field>
+        <Field label="Tag"><select disabled={locked} value={aud.tag ?? ''} onChange={(e) => setAud({ tag: e.target.value || undefined })}><option value="">Any</option>{tags.map((x) => <option key={x}>{x}</option>)}</select></Field>
+        <Field label="Lifecycle" full={builder}><div className="ad-seg" style={{ marginBottom: 0 }}>{LIFECYCLES.map((l) => <button type="button" key={l} disabled={locked} className={aud.lifecycle?.includes(l) ? 'on' : ''} onClick={() => setAud({ lifecycle: aud.lifecycle?.includes(l) ? aud.lifecycle.filter((x) => x !== l) : [...(aud.lifecycle ?? []), l] })}>{l}</button>)}</div></Field>
+        <Field label="Booked?"><select disabled={locked} value={aud.booked ?? ''} onChange={(e) => setAud({ booked: (e.target.value || '') as any })}><option value="">Either</option><option value="yes">Has booked</option><option value="no">Never booked</option></select></Field>
+        <Field label="Quiet for"><select disabled={locked} value={aud.inactiveDays ?? ''} onChange={(e) => setAud({ inactiveDays: Number(e.target.value) || undefined })}><option value="">Any</option><option value="30">30+ days</option><option value="90">90+ days</option><option value="180">180+ days</option></select></Field>
       </div>
+      <p style={{ marginTop: 12 }}><b style={{ fontSize: 22 }}>{count ?? '…'}</b> <span className="ad-muted">recipient{count === 1 ? '' : 's'}</span></p>
+    </div>
+  )
+
+  return (
+    <Modal xl={builder} wide={!builder} title={campaign ? campaign.name : 'New campaign'} onClose={onClose}>
+      <div className="ad-form" style={{ marginBottom: 14 }}>
+        <Field label="Campaign name (internal)"><input type="text" value={f.name} onChange={(e) => set('name', e.target.value)} disabled={locked} /></Field>
+        <Field label="Subject line"><input type="text" value={f.subject} onChange={(e) => set('subject', e.target.value)} disabled={locked} /></Field>
+      </div>
+      <div className="ab-modes">
+        <div className="ad-seg" style={{ marginBottom: 0 }}>
+          <button type="button" className={!builder ? 'on' : ''} disabled={locked} onClick={() => setMode('simple')}>Simple message</button>
+          <button type="button" className={builder ? 'on' : ''} disabled={locked} onClick={() => setMode('builder')}>✦ Email builder</button>
+        </div>
+        {builder && <button type="button" className="ad-btn sm" onClick={() => setPreview(!preview)}>{preview ? '← Back to editing' : '👁 Preview email'}</button>}
+      </div>
+
+      {builder ? (
+        <>
+          {preview ? <iframe className="ab-preview" title="Email preview" srcDoc={previewHtml} /> : <EmailBuilder blocks={blocks} onChange={setBlocks} />}
+          <div style={{ marginTop: 16 }}>{audience}</div>
+        </>
+      ) : (
+        <div className="ad-grid c2">
+          <div className="ad-form" style={{ gridTemplateColumns: '1fr' }}>
+            <Field label="Small label"><input type="text" value={f.eyebrow} onChange={(e) => set('eyebrow', e.target.value)} disabled={locked} /></Field>
+            <Field label="Headline"><input type="text" value={f.title} onChange={(e) => set('title', e.target.value)} disabled={locked} /></Field>
+            <Field label="Message" hint="Use {{first_name}} to personalise."><textarea style={{ minHeight: 160 }} value={f.body} onChange={(e) => set('body', e.target.value)} disabled={locked} /></Field>
+            <Field label="Image URL (optional)"><input type="text" value={f.image_url} onChange={(e) => set('image_url', e.target.value)} placeholder="https://illuszionzmedia.com/images/…" disabled={locked} /></Field>
+            <div className="ad-form"><Field label="Button text"><input type="text" value={f.button_label} onChange={(e) => set('button_label', e.target.value)} disabled={locked} /></Field><Field label="Button link"><input type="text" value={f.button_url} onChange={(e) => set('button_url', e.target.value)} disabled={locked} /></Field></div>
+          </div>
+          <div>{audience}</div>
+        </div>
+      )}
+      {campaign && <p className="ad-muted" style={{ marginBottom: 10 }}>Status: <Badge>{campaign.status}</Badge> · {campaign.sent_count} sent · {campaign.failed_count} failed</p>}
       <div className="ad-actions" style={{ justifyContent: 'space-between', marginTop: 18 }}>
         <div className="ad-actions"><input type="email" placeholder="Test to… (default: you)" value={to} onChange={(e) => setTo(e.target.value)} style={{ width: 220 }} /><button className="ad-btn" disabled={!!busy} onClick={test}>{busy === 'test' ? 'Sending…' : 'Send test'}</button></div>
         <div className="ad-actions">{progress && <span className="ad-muted">{progress}</span>}{!locked && <button className="ad-btn" disabled={!!busy} onClick={draft}>Save draft</button>}

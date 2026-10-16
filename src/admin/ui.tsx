@@ -82,7 +82,7 @@ const TONES: Record<string, string> = {
 }
 export const Badge = ({ children, tone }: { children: ReactNode; tone?: string }) => <span className={'ad-badge ' + (tone ?? TONES[String(children)] ?? 'grey')}>{children}</span>
 
-export function Modal({ title, onClose, children, wide, drawer }: { title: ReactNode; onClose: () => void; children: ReactNode; wide?: boolean; drawer?: boolean }) {
+export function Modal({ title, onClose, children, wide, drawer, xl }: { title: ReactNode; onClose: () => void; children: ReactNode; wide?: boolean; drawer?: boolean; xl?: boolean }) {
   useEffect(() => {
     const k = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
     window.addEventListener('keydown', k)
@@ -94,7 +94,7 @@ export function Modal({ title, onClose, children, wide, drawer }: { title: React
   }, [onClose])
   return (
     <div className="ad-overlay" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className={'ad-modal' + (wide ? ' wide' : '') + (drawer ? ' drawer' : '')} role="dialog" aria-modal="true">
+      <div className={'ad-modal' + (wide ? ' wide' : '') + (xl ? ' xl' : '') + (drawer ? ' drawer' : '')} role="dialog" aria-modal="true">
         <header>
           <h3>{title}</h3>
           <button className="ad-x" onClick={onClose} aria-label="Close">×</button>

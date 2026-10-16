@@ -72,6 +72,14 @@ backed by **Supabase** (Postgres + Auth + row level security) — the same stack
 - Free Cloudflare plans allow ~50 sub-requests per call, so each run sends at most 14 emails (the rest go out on the next run).
 - `src/server/audience.ts` evaluates segments identically in the browser and on the server.
 
+**Email builder:** *Emails → Campaigns → New campaign → ✦ Email builder* is a block editor ported from the DMI dashboard (heading, rich paragraph,
+image upload, button, divider, spacer, social links, 2–3 columns; drag to reorder, desktop/mobile width, real-email preview, saved layouts).
+Image uploads go to a public Supabase Storage bucket `email-images` (created by `schema.sql`); you can also paste an image link.
+
+**Demo data (testing only):** run `supabase/demo-data.sql` after `schema.sql` to fill every section (17 contacts, 22 bookings, payments, deals,
+timeline, tasks, inbox, finance, promo codes, segments, campaigns, email history). All demo emails use `@demo.illuszionz.test`, which the
+automations and campaigns never send to. **Before going live run `supabase/remove-demo-data.sql`** — it deletes only demo rows.
+
 **Test without Supabase:** `node tests/fake-supabase.mjs` is an in-memory stand-in; `tests/admin-e2e.mjs` drives the dashboard, the APIs and the
 automations against it (see the header of that file).
 

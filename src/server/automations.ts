@@ -136,6 +136,12 @@ export class Runner {
       this.skipped++
       return false
     }
+    if (/\.test$/i.test(o.to)) {
+      // demo / placeholder address: claim + log but never send
+      await db.update(this.env, 'email_log', `id=eq.${claim.id}`, { status: 'skipped', error: 'demo address — not sent' })
+      this.skipped++
+      return false
+    }
     try {
       await send(this.env, { to: o.to, replyTo: t.audience === 'customer' ? mailConfig(this.env).owner : undefined, message })
       await db.update(this.env, 'email_log', `id=eq.${claim.id}`, { status: 'sent', sent_at: new Date().toISOString() })

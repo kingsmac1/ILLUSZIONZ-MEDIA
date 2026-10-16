@@ -100,21 +100,21 @@ function steps(list: string[]) {
     .join('')}</table>`
 }
 
-function layout(o: { siteUrl: string; preheader: string; eyebrow: string; title: string; body: string }) {
+function layout(o: { siteUrl: string; preheader: string; eyebrow?: string; title?: string; body: string }) {
   const logo = `${o.siteUrl}/images/illuszionz-logo-white.png`
   return `<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light only"><title>${esc(o.title)}</title></head>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light only"><title>${esc(o.title ?? site.name)}</title></head>
 <body style="margin:0;padding:0;background:${PAPER};">
 <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">${esc(o.preheader)}</div>
 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:${PAPER};"><tr><td align="center" style="padding:34px 12px;">
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:620px;background:#ffffff;border-radius:18px;overflow:hidden;border:1px solid ${LINE};">
-    <tr><td style="background:${INK};padding:34px 38px 30px;">
+    <tr><td style="background:${INK};padding:34px 38px ${o.title ? '30px' : '34px'};">
       <a href="${esc(o.siteUrl)}" style="text-decoration:none;"><img src="${esc(logo)}" width="170" alt="${esc(site.name)}" style="display:block;border:0;height:auto;color:#fff;font-family:${SERIF};font-size:20px;letter-spacing:.16em;"></a>
     </td></tr>
-    <tr><td style="background:${INK};padding:0 38px 40px;">
-      ${label(o.eyebrow, 'rgba(255,255,255,.55)')}
+    ${o.title ? `<tr><td style="background:${INK};padding:0 38px 40px;">
+      ${label(o.eyebrow ?? '', 'rgba(255,255,255,.55)')}
       <h1 style="margin:14px 0 0;font-family:${SERIF};font-weight:700;font-size:36px;line-height:1.12;color:#ffffff;">${esc(o.title)}</h1>
-    </td></tr>
+    </td></tr>` : ''}
     <tr><td style="padding:40px 38px 46px;">${o.body}</td></tr>
     <tr><td style="background:${PAPER};border-top:1px solid ${LINE};padding:28px 38px;">
       <div style="font-family:${SERIF};font-size:15px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${INK};">${esc(site.name)}</div>
@@ -225,6 +225,16 @@ export function genericEmail(o: {
     subject: o.subject,
     html: layout({ siteUrl: o.siteUrl, preheader: o.body.slice(0, 110).replace(/\s+/g, ' '), eyebrow: o.eyebrow, title: o.title, body }),
     text: `${o.title}\n\n${o.body}${o.buttonLabel && o.buttonUrl ? `\n\n${o.buttonLabel}: ${o.buttonUrl}` : ''}\n\n— ${site.name} · ${site.email}`,
+  }
+}
+
+/** A campaign composed in the block builder: branded header + the blocks + the standard footer. */
+export function blocksEmail(o: { siteUrl: string; subject: string; preheader?: string; html: string; text: string; footerNote?: string }): RenderedEmail {
+  const body = `${o.html}${o.footerNote ? `<p style="margin:26px 0 0;font-family:${SANS};font-size:12px;line-height:1.7;color:${MUTED};">${esc(o.footerNote)}</p>` : ''}`
+  return {
+    subject: o.subject,
+    html: layout({ siteUrl: o.siteUrl, preheader: o.preheader ?? o.text.slice(0, 110).replace(/\s+/g, ' '), body }),
+    text: `${o.text}\n\n— ${site.name} · ${site.email}`,
   }
 }
 
