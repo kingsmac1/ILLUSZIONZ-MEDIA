@@ -23,7 +23,7 @@ const AUTOMATIONS: { key: string; name: string; when: string; who: 'client' | 'y
 ]
 const PLACEHOLDERS = ['{{first_name}}', '{{name}}', '{{service}}', '{{date}}', '{{time}}', '{{time_suffix}}', '{{total}}', '{{balance}}', '{{amount}}', '{{ref}}', '{{site}}', '{{whatsapp}}', '{{review_link}}', '{{list}}']
 
-function Automations({ mail }: { mail: { mail: boolean; dryRun?: boolean } | null }) {
+function Automations({ mail, onEdit }: { mail: { mail: boolean; dryRun?: boolean } | null; onEdit: (key: string) => void }) {
   const { d, setting } = useData()
   const db = useDb()
   const auto = setting<R>('automations', {})
@@ -45,7 +45,7 @@ function Automations({ mail }: { mail: { mail: boolean; dryRun?: boolean } | nul
               <div className="ad-auto" key={a.key}>
                 <label className="ad-switch"><input type="checkbox" checked={auto[a.key] !== false} onChange={() => toggle(a.key)} aria-label={a.name} /><i /></label>
                 <div><b>{a.name} <Badge tone={a.who === 'you' ? 'violet' : 'blue'}>{a.who === 'you' ? 'to you' : 'to client'}</Badge></b><small>{a.when}</small></div>
-                <a className="ad-btn sm" href="#/emails?tab=templates" onClick={() => sessionStorage.setItem('ad:tpl', a.key)}>{t ? 'Edit' : 'Missing'}</a>
+                <button className="ad-btn sm" disabled={!t} onClick={() => onEdit(a.key)}>{t ? 'Edit email' : 'Missing'}</button>
               </div>
             )
           })}
@@ -75,15 +75,15 @@ function useLogCount() {
   return n
 }
 
-function Templates() {
+function Templates({ initialKey }: { initialKey?: string }) {
   const { d, toast } = useData()
   const db = useDb()
-  const [key, setKey] = useState<string>(() => sessionStorage.getItem('ad:tpl') || d.email_templates[0]?.key || '')
+  const [key, setKey] = useState<string>(initialKey || d.email_templates[0]?.key || '')
   const t = d.email_templates.find((x) => x.key === key)
   const [f, setF] = useState<R>(t ?? {})
   const [to, setTo] = useState('')
   const [busy, setBusy] = useState(false)
-  useEffect(() => { setF(d.email_templates.find((x) => x.key === key) ?? {}); sessionStorage.removeItem('ad:tpl') }, [key, d.email_templates])
+  useEffect(() => { setF(d.email_templates.find((x) => x.key === key) ?? {}) }, [key, d.email_templates])
   if (!t) return <Empty title="No templates" hint="Run supabase/schema.sql to create the default templates." />
   const set = (k: string, v: string) => setF((c) => ({ ...c, [k]: v }))
   const dirty = ['subject', 'eyebrow', 'title', 'body', 'button_label', 'button_url'].some((k) => f[k] !== t[k])
@@ -275,13 +275,14 @@ function Log() {
 }
 
 export function Emails({ mail }: { mail: { mail: boolean; dryRun?: boolean } | null }) {
-  const [tab, setTab] = useState<'auto' | 'templates' | 'campaigns' | 'log'>(() => (window.location.hash.includes('tab=templates') ? 'templates' : 'auto'))
+  const [tab, setTab] = useState<'auto' | 'templates' | 'campaigns' | 'log'>('auto')
+  const [tplKey, setTplKey] = useState<string | undefined>()
   return (
     <>
       <PageHead title="Emails" sub="Automations, editable templates, campaigns and a full send log" />
       <Tabs value={tab} onChange={setTab} tabs={[{ id: 'auto', label: 'Automations' }, { id: 'templates', label: 'Templates' }, { id: 'campaigns', label: 'Campaigns' }, { id: 'log', label: 'Send log' }]} />
-      {tab === 'auto' && <Automations mail={mail} />}
-      {tab === 'templates' && <Templates />}
+      {tab === 'auto' && <Automations mail={mail} onEdit={(k) => { setTplKey(k); setTab('templates') }} />}
+      {tab === 'templates' && <Templates key={tplKey ?? 'default'} initialKey={tplKey} />}
       {tab === 'campaigns' && <Campaigns />}
       {tab === 'log' && <Log />}
     </>

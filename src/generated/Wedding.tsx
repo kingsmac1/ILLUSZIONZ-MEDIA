@@ -1,144 +1,14 @@
 import { Gallery } from '../components/Gallery'
 import { BookableGrid, BookNow } from '../components/BookableGrid'
+import { useContent, toGallery } from '../cms/content'
+import { weddingGallery } from '../cms/builtin'
 import './wedding.css'
 
-const gallery1 = [
-  {
-    "href": "/images/3p.webp",
-    "thumb": "/images/3p.webp",
-    "w": 1160,
-    "h": 750,
-    "alt": "3p"
-  },
-  {
-    "href": "/images/ILU6151.webp",
-    "thumb": "/images/ILU6151.webp",
-    "w": 1600,
-    "h": 2000,
-    "alt": "ILU6151"
-  },
-  {
-    "href": "/images/ILU7003-copy.webp",
-    "thumb": "/images/ILU7003-copy.webp",
-    "w": 1600,
-    "h": 2000,
-    "alt": "ILU7003-copy"
-  },
-  {
-    "href": "/images/ILU6304-copy.webp",
-    "thumb": "/images/ILU6304-copy.webp",
-    "w": 2000,
-    "h": 1600,
-    "alt": "ILU6304-copy"
-  },
-  {
-    "href": "/images/imgi_12_470321509_18474609037047139_4098264062916022054_n.jpg",
-    "thumb": "/images/imgi_12_470321509_18474609037047139_4098264062916022054_n.jpg",
-    "w": 1440,
-    "h": 1800,
-    "alt": "imgi_12_470321509_18474609037047139_4098264062916022054_n"
-  },
-  {
-    "href": "/images/ILU6217.webp",
-    "thumb": "/images/ILU6217.webp",
-    "w": 1600,
-    "h": 2000,
-    "alt": "ILU6217"
-  },
-  {
-    "href": "/images/ILU4972.webp",
-    "thumb": "/images/ILU4972.webp",
-    "w": 1600,
-    "h": 2000,
-    "alt": "ILU4972"
-  },
-  {
-    "href": "/images/imgi_9_554776140_18527974897047139_9185512888899328688_n.jpg",
-    "thumb": "/images/imgi_9_554776140_18527974897047139_9185512888899328688_n.jpg",
-    "w": 1440,
-    "h": 1801,
-    "alt": "imgi_9_554776140_18527974897047139_9185512888899328688_n"
-  },
-  {
-    "href": "/images/ILU3195-1.webp",
-    "thumb": "/images/ILU3195-1.webp",
-    "w": 1600,
-    "h": 2000,
-    "alt": "ILU3195"
-  },
-  {
-    "href": "/images/ILU6448.webp",
-    "thumb": "/images/ILU6448.webp",
-    "w": 1600,
-    "h": 2000,
-    "alt": "ILU6448"
-  },
-  {
-    "href": "/images/imgi_15_324887072_2260667274137454_2336365898502893716_n.jpg",
-    "thumb": "/images/imgi_15_324887072_2260667274137454_2336365898502893716_n.jpg",
-    "w": 1440,
-    "h": 1800,
-    "alt": "imgi_15_324887072_2260667274137454_2336365898502893716_n"
-  },
-  {
-    "href": "/images/imgi_14_324896813_901339354228169_4975213281786586034_n.jpg",
-    "thumb": "/images/imgi_14_324896813_901339354228169_4975213281786586034_n.jpg",
-    "w": 1440,
-    "h": 1152,
-    "alt": "imgi_14_324896813_901339354228169_4975213281786586034_n"
-  },
-  {
-    "href": "/images/ILU0061.webp",
-    "thumb": "/images/ILU0061.webp",
-    "w": 1600,
-    "h": 2000,
-    "alt": "ILU0061"
-  },
-  {
-    "href": "/images/ILU3655.webp",
-    "thumb": "/images/ILU3655.webp",
-    "w": 1600,
-    "h": 2000,
-    "alt": "ILU3655"
-  },
-  {
-    "href": "/images/ILU6433.webp",
-    "thumb": "/images/ILU6433.webp",
-    "w": 2000,
-    "h": 1600,
-    "alt": "ILU6433"
-  },
-  {
-    "href": "/images/imgi_13_325350223_167249076020601_2069285591843222161_n.jpg",
-    "thumb": "/images/imgi_13_325350223_167249076020601_2069285591843222161_n.jpg",
-    "w": 1440,
-    "h": 1800,
-    "alt": "imgi_13_325350223_167249076020601_2069285591843222161_n"
-  },
-  {
-    "href": "/images/ILU5272-1.webp",
-    "thumb": "/images/ILU5272-1.webp",
-    "w": 1600,
-    "h": 2000,
-    "alt": "ILU5272"
-  },
-  {
-    "href": "/images/7.webp",
-    "thumb": "/images/7.webp",
-    "w": 1160,
-    "h": 750,
-    "alt": "7"
-  },
-  {
-    "href": "/images/imgi_12_610854142_18548081581047139_6899681201398244943_n.jpg",
-    "thumb": "/images/imgi_12_610854142_18548081581047139_6899681201398244943_n.jpg",
-    "w": 720,
-    "h": 1280,
-    "alt": "imgi_12_610854142_18548081581047139_6899681201398244943_n"
-  }
-]
 
 export default function Wedding() {
+  const cms = useContent()
+  const galManaged = !!cms?.images['wedding-gallery']?.length
+  const galleryImgs = galManaged ? toGallery(cms!.images['wedding-gallery']) : weddingGallery
   return (
     <div className="wed-1">
       <div className="wed-2">
@@ -259,7 +129,7 @@ export default function Wedding() {
             </div>
           </div>
           <div className="wed-35">
-            <Gallery images={gallery1} columns={[4, 2, 1]} gap={10} placement={[[0,1,2,3,0,3,2,1,0,3,2,1,0,1,3,2,3,0,1],[0,1,0,1,0,1,0,1,0,1,0,1,1,0,1,0,1,0,1],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]} className="wed-16" />
+            <Gallery images={galleryImgs} columns={[4, 2, 1]} gap={10} placement={galManaged ? undefined : [[0,1,2,3,0,3,2,1,0,3,2,1,0,1,3,2,3,0,1],[0,1,0,1,0,1,0,1,0,1,0,1,1,0,1,0,1,0,1],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]} className="wed-16" />
           </div>
         </div>
       </div>

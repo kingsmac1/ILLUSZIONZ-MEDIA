@@ -4,7 +4,8 @@ import type { AnchorHTMLAttributes, MouseEvent } from 'react'
 /** Internal links navigate client-side; everything else is a normal anchor. */
 export function A({ href = '', onClick, ...rest }: AnchorHTMLAttributes<HTMLAnchorElement>) {
   const router = useRouter()
-  const internal = href.startsWith('/') && !href.startsWith('//')
+  // /blog pages are rendered at the edge, so they must be real page loads, not client-side navigations
+  const internal = href.startsWith('/') && !href.startsWith('//') && !href.startsWith('/blog')
   function handle(e: MouseEvent<HTMLAnchorElement>) {
     onClick?.(e)
     if (e.defaultPrevented || !internal) return

@@ -76,6 +76,17 @@ backed by **Supabase** (Postgres + Auth + row level security) — the same stack
 image upload, button, divider, spacer, social links, 2–3 columns; drag to reorder, desktop/mobile width, real-email preview, saved layouts).
 Image uploads go to a public Supabase Storage bucket `email-images` (created by `schema.sql`); you can also paste an image link.
 
+**Website CMS (Dashboard → Website):** run `supabase/cms.sql` once after `schema.sql`.
+- **Blog** — write posts with a rich editor (headings, images, links), SEO title/description/share image, noindex, scheduling and an SEO checklist
+  with Google preview. Posts are served at `/blog/` and `/blog/<slug>/` by Pages Functions that render full HTML at the edge inside the site's own
+  header/footer (title, meta description, canonical, Open Graph/Twitter, `BlogPosting` + breadcrumb JSON-LD), plus `/blog/rss.xml` and a dynamic
+  `/sitemap.xml` (static pages + published posts). Four starter articles are included in `cms.sql`.
+- **Store, Testimonials, Images** (home hero, home gallery, wedding gallery) — click *Start managing* to import the current content, then edit/add/reorder.
+  Until a part is managed the site keeps its built-in content; you can switch back any time. Uploads go to the public `site-media` storage bucket.
+- **Site banner** — an announcement strip on every page. **Page SEO** — per-page title/description/share image/noindex, applied at the edge
+  (`functions/_middleware.ts`, cached ~30 s) with no rebuild.
+- The blog shells are prerendered by the build and moved by `scripts/postbuild.mjs` (runs automatically after `npm run build`).
+
 **Demo data (testing only):** run `supabase/demo-data.sql` after `schema.sql` to fill every section (17 contacts, 22 bookings, payments, deals,
 timeline, tasks, inbox, finance, promo codes, segments, campaigns, email history). All demo emails use `@demo.illuszionz.test`, which the
 automations and campaigns never send to. **Before going live run `supabase/remove-demo-data.sql`** — it deletes only demo rows.

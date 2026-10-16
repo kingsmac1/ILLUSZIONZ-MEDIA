@@ -9,7 +9,9 @@
     "typecheck": "tsc --noEmit",
     "test:e2e": "node tests/e2e.mjs",
     "test:admin": "node tests/admin-e2e.mjs",
-    "fake-supabase": "node tests/fake-supabase.mjs"
+    "fake-supabase": "node tests/fake-supabase.mjs",
+    "test:cms": "node tests/cms-e2e.mjs",
+    "postbuild": "node scripts/postbuild.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.118.0",

@@ -2,228 +2,18 @@ import { A } from '../components/A'
 import { BackgroundSlideshow } from '../components/BackgroundSlideshow'
 import { Gallery } from '../components/Gallery'
 import { TestimonialSlider } from '../components/TestimonialSlider'
+import { useContent, toGallery } from '../cms/content'
+import { homeGallery, homeHero, homeTestimonials } from '../cms/builtin'
 import './home.css'
 
-const slides1 = [
-  "/images/imgi_53_424825993_1097328021713574_7675595592694170060_n.jpg",
-  "/images/imgi_53_313356280_454124723371477_7334762427271836684_n.jpg",
-  "/images/imgi_18_591140939_18544250149022665_4243811256061463776_n.jpg"
-]
 
-const gallery2 = [
-  {
-    "href": "/images/imgi_52_397236468_18392399362047139_1105409761570940814_n.jpg",
-    "thumb": "/images/imgi_52_397236468_18392399362047139_1105409761570940814_n.jpg",
-    "w": 1440,
-    "h": 1799,
-    "alt": "imgi_52_397236468_18392399362047139_1105409761570940814_n"
-  },
-  {
-    "href": "/images/imgi_52_424956968_771057607816933_7245120688958705476_n.jpg",
-    "thumb": "/images/imgi_52_424956968_771057607816933_7245120688958705476_n.jpg",
-    "w": 1440,
-    "h": 1800,
-    "alt": "imgi_52_424956968_771057607816933_7245120688958705476_n"
-  },
-  {
-    "href": "/images/imgi_21_419038153_1316242519086739_1522909502532405102_n.jpg",
-    "thumb": "/images/imgi_21_419038153_1316242519086739_1522909502532405102_n.jpg",
-    "w": 1440,
-    "h": 1798,
-    "alt": "imgi_21_419038153_1316242519086739_1522909502532405102_n"
-  },
-  {
-    "href": "/images/imgi_21_321711408_867694417872323_121696577859879505_n.jpg",
-    "thumb": "/images/imgi_21_321711408_867694417872323_121696577859879505_n.jpg",
-    "w": 1440,
-    "h": 1152,
-    "alt": "imgi_21_321711408_867694417872323_121696577859879505_n"
-  },
-  {
-    "href": "/images/imgi_20_589912320_18542919613047139_2743243774595466023_n.jpg",
-    "thumb": "/images/imgi_20_589912320_18542919613047139_2743243774595466023_n.jpg",
-    "w": 1440,
-    "h": 1800,
-    "alt": "imgi_20_589912320_18542919613047139_2743243774595466023_n"
-  },
-  {
-    "href": "/images/imgi_19_419535905_1050178712906946_6381751784486071102_n.jpg",
-    "thumb": "/images/imgi_19_419535905_1050178712906946_6381751784486071102_n.jpg",
-    "w": 1440,
-    "h": 1800,
-    "alt": "imgi_19_419535905_1050178712906946_6381751784486071102_n"
-  },
-  {
-    "href": "/images/imgi_21_468168674_1253837855892409_3478822495873611862_n.jpg",
-    "thumb": "/images/imgi_21_468168674_1253837855892409_3478822495873611862_n.jpg",
-    "w": 1440,
-    "h": 1799,
-    "alt": "imgi_21_468168674_1253837855892409_3478822495873611862_n"
-  },
-  {
-    "href": "/images/imgi_51_537569176_18520804174047139_4683430715497314565_n.jpg",
-    "thumb": "/images/imgi_51_537569176_18520804174047139_4683430715497314565_n.jpg",
-    "w": 1440,
-    "h": 1801,
-    "alt": "imgi_51_537569176_18520804174047139_4683430715497314565_n"
-  },
-  {
-    "href": "/images/imgi_21_446468227_1194906268165586_3622239586575587069_n.jpg",
-    "thumb": "/images/imgi_21_446468227_1194906268165586_3622239586575587069_n.jpg",
-    "w": 1440,
-    "h": 1798,
-    "alt": "imgi_21_446468227_1194906268165586_3622239586575587069_n"
-  },
-  {
-    "href": "/images/imgi_19_322038235_5662515397171017_9117568997515772711_n.jpg",
-    "thumb": "/images/imgi_19_322038235_5662515397171017_9117568997515772711_n.jpg",
-    "w": 1440,
-    "h": 1800,
-    "alt": "imgi_19_322038235_5662515397171017_9117568997515772711_n"
-  },
-  {
-    "href": "/images/imgi_18_537513669_18521446651047139_6888371662880045136_n.jpg",
-    "thumb": "/images/imgi_18_537513669_18521446651047139_6888371662880045136_n.jpg",
-    "w": 720,
-    "h": 900,
-    "alt": "imgi_18_537513669_18521446651047139_6888371662880045136_n"
-  },
-  {
-    "href": "/images/imgi_18_497498972_18502170784047139_8612345485109524783_n.jpg",
-    "thumb": "/images/imgi_18_497498972_18502170784047139_8612345485109524783_n.jpg",
-    "w": 1440,
-    "h": 1800,
-    "alt": "imgi_18_497498972_18502170784047139_8612345485109524783_n"
-  },
-  {
-    "href": "/images/imgi_15_602082017_18545733223047139_3549661681768099136_n.jpg",
-    "thumb": "/images/imgi_15_602082017_18545733223047139_3549661681768099136_n.jpg",
-    "w": 1080,
-    "h": 1919,
-    "alt": "imgi_15_602082017_18545733223047139_3549661681768099136_n"
-  },
-  {
-    "href": "/images/imgi_16_325326593_571355114509230_2876859624814620691_n.jpg",
-    "thumb": "/images/imgi_16_325326593_571355114509230_2876859624814620691_n.jpg",
-    "w": 1440,
-    "h": 1800,
-    "alt": "imgi_16_325326593_571355114509230_2876859624814620691_n"
-  },
-  {
-    "href": "/images/imgi_15_543609427_18372338908196167_7778069835879256214_n.jpg",
-    "thumb": "/images/imgi_15_543609427_18372338908196167_7778069835879256214_n.jpg",
-    "w": 1080,
-    "h": 1918,
-    "alt": "imgi_15_543609427_18372338908196167_7778069835879256214_n"
-  },
-  {
-    "href": "/images/imgi_15_498287525_18503495515047139_1192590656857233140_n.jpg",
-    "thumb": "/images/imgi_15_498287525_18503495515047139_1192590656857233140_n.jpg",
-    "w": 1440,
-    "h": 1800,
-    "alt": "imgi_15_498287525_18503495515047139_1192590656857233140_n"
-  },
-  {
-    "href": "/images/imgi_15_469744569_897030412577154_8053758741653651813_n.jpg",
-    "thumb": "/images/imgi_15_469744569_897030412577154_8053758741653651813_n.jpg",
-    "w": 1440,
-    "h": 1795,
-    "alt": "imgi_15_469744569_897030412577154_8053758741653651813_n"
-  },
-  {
-    "href": "/images/imgi_14_541961588_18523264588047139_5984977085867363253_n.jpg",
-    "thumb": "/images/imgi_14_541961588_18523264588047139_5984977085867363253_n.jpg",
-    "w": 1440,
-    "h": 1800,
-    "alt": "imgi_14_541961588_18523264588047139_5984977085867363253_n"
-  },
-  {
-    "href": "/images/imgi_14_606900975_1276945137540133_6366651221263989663_n.jpg",
-    "thumb": "/images/imgi_14_606900975_1276945137540133_6366651221263989663_n.jpg",
-    "w": 640,
-    "h": 1136,
-    "alt": "imgi_14_606900975_1276945137540133_6366651221263989663_n"
-  },
-  {
-    "href": "/images/imgi_15_324887072_2260667274137454_2336365898502893716_n.jpg",
-    "thumb": "/images/imgi_15_324887072_2260667274137454_2336365898502893716_n.jpg",
-    "w": 1440,
-    "h": 1800,
-    "alt": "imgi_15_324887072_2260667274137454_2336365898502893716_n"
-  },
-  {
-    "href": "/images/imgi_14_469742899_18340725937150433_1640970402657843471_n.jpg",
-    "thumb": "/images/imgi_14_469742899_18340725937150433_1640970402657843471_n.jpg",
-    "w": 1290,
-    "h": 2294,
-    "alt": "imgi_14_469742899_18340725937150433_1640970402657843471_n"
-  },
-  {
-    "href": "/images/imgi_14_447239942_1018556412997565_6108702623319095603_n.jpg",
-    "thumb": "/images/imgi_14_447239942_1018556412997565_6108702623319095603_n.jpg",
-    "w": 1440,
-    "h": 1153,
-    "alt": "imgi_14_447239942_1018556412997565_6108702623319095603_n"
-  },
-  {
-    "href": "/images/imgi_14_324896813_901339354228169_4975213281786586034_n.jpg",
-    "thumb": "/images/imgi_14_324896813_901339354228169_4975213281786586034_n.jpg",
-    "w": 1440,
-    "h": 1152,
-    "alt": "imgi_14_324896813_901339354228169_4975213281786586034_n"
-  },
-  {
-    "href": "/images/imgi_13_544900180_18524813731047139_1639393584652833686_n.jpg",
-    "thumb": "/images/imgi_13_544900180_18524813731047139_1639393584652833686_n.jpg",
-    "w": 1440,
-    "h": 1801,
-    "alt": "imgi_13_544900180_18524813731047139_1639393584652833686_n"
-  },
-  {
-    "href": "/images/imgi_13_607008043_18546928540047139_1925582425367633226_n.jpg",
-    "thumb": "/images/imgi_13_607008043_18546928540047139_1925582425367633226_n.jpg",
-    "w": 1440,
-    "h": 1801,
-    "alt": "imgi_13_607008043_18546928540047139_1925582425367633226_n"
-  },
-  {
-    "href": "/images/imgi_13_325350223_167249076020601_2069285591843222161_n.jpg",
-    "thumb": "/images/imgi_13_325350223_167249076020601_2069285591843222161_n.jpg",
-    "w": 1440,
-    "h": 1800,
-    "alt": "imgi_13_325350223_167249076020601_2069285591843222161_n"
-  },
-  {
-    "href": "/images/imgi_12_610854142_18548081581047139_6899681201398244943_n.jpg",
-    "thumb": "/images/imgi_12_610854142_18548081581047139_6899681201398244943_n.jpg",
-    "w": 720,
-    "h": 1280,
-    "alt": "imgi_12_610854142_18548081581047139_6899681201398244943_n"
-  },
-  {
-    "href": "/images/imgi_12_548496706_18525525994047139_2267965120793380762_n.jpg",
-    "thumb": "/images/imgi_12_548496706_18525525994047139_2267965120793380762_n.jpg",
-    "w": 1440,
-    "h": 1800,
-    "alt": "imgi_12_548496706_18525525994047139_2267965120793380762_n"
-  },
-  {
-    "href": "/images/imgi_12_501008351_18505270069047139_49678711161182941_n.jpg",
-    "thumb": "/images/imgi_12_501008351_18505270069047139_49678711161182941_n.jpg",
-    "w": 1440,
-    "h": 1798,
-    "alt": "imgi_12_501008351_18505270069047139_49678711161182941_n"
-  },
-  {
-    "href": "/images/imgi_12_447885851_1633217987465278_272159187766773316_n.jpg",
-    "thumb": "/images/imgi_12_447885851_1633217987465278_272159187766773316_n.jpg",
-    "w": 1440,
-    "h": 1800,
-    "alt": "imgi_12_447885851_1633217987465278_272159187766773316_n"
-  }
-]
 
 export default function Home() {
+  const cms = useContent()
+  const heroImgs = cms?.images['home-hero']?.length ? cms.images['home-hero'].map((i) => i.url) : homeHero
+  const galManaged = !!cms?.images['home-gallery']?.length
+  const galleryImgs = galManaged ? toGallery(cms!.images['home-gallery']) : homeGallery
+  const testimonials = cms?.testimonials?.length ? cms.testimonials.map((t) => ({ quote: t.quote, author: t.author, role: t.role })) : homeTestimonials
   return (
     <div className="hom-1">
       <div className="hom-2">
@@ -265,7 +55,7 @@ export default function Home() {
             </div>
           </div>
           <div className="hom-21">
-            <BackgroundSlideshow images={slides1} duration={5000} transition={500} />
+            <BackgroundSlideshow images={heroImgs} duration={5000} transition={500} />
           </div>
         </div>
       </div>
@@ -455,7 +245,7 @@ export default function Home() {
               </A>
             </div>
           </div>
-          <Gallery images={gallery2} columns={[3, 2, 2]} gap={10} placement={[[0,1,2,0,1,2,0,1,2,0,1,2,0,1,2,1,0,2,1,0,2,0,1,0,2,1,0,2,1,2],[0,1,0,1,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0,0,1,1,1,0,1,0,1,0,1],[0,1,0,1,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0,0,1,1,1,0,1,0,1,0,1]]} className="hom-7" />
+          <Gallery images={galleryImgs} columns={[3, 2, 2]} gap={10} placement={galManaged ? undefined : [[0,1,2,0,1,2,0,1,2,0,1,2,0,1,2,1,0,2,1,0,2,0,1,0,2,1,0,2,1,2],[0,1,0,1,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0,0,1,1,1,0,1,0,1,0,1],[0,1,0,1,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0,0,1,1,1,0,1,0,1,0,1]]} className="hom-7" />
         </div>
       </div>
       <div className="hom-59">
@@ -470,7 +260,7 @@ export default function Home() {
             </div>
           </div>
           <div className="hom-71">
-            <TestimonialSlider items={[{"quote":"IlluszionzMedia captured our story perfectly. Professional, creative, and reliable. The results exceeded our highest expectations.","author":"James Richardson","role":"CEO, Lux Brand"},{"quote":"Their creative vision transformed our brand presence. Every detail felt intentional and premium.","author":"Sophia Martinez","role":"Marketing Director, Nova Collective"},{"quote":"From concept to delivery, the process was seamless. The final result surpassed what we imagined.","author":"Daniel Wu","role":"Founder, Apex Studio"},{"quote":"A rare combination of artistic excellence and professional execution. Highly recommended.","author":"Olivia Bennett","role":"Brand Strategist, Elevate Co."},{"quote":"They didn’t just deliver a video — they told our story in a powerful and authentic way.","author":"Michael Turner","role":"Creative Director, Horizon Media"}]} cls={{"section":"hom-9","container":"hom-64","content":"hom-65","quote":"hom-66","author":"hom-67","role":"hom-68","controls":"hom-69","prev":"hom-70","next":"hom-70"}} />
+            <TestimonialSlider items={testimonials} cls={{"section":"hom-9","container":"hom-64","content":"hom-65","quote":"hom-66","author":"hom-67","role":"hom-68","controls":"hom-69","prev":"hom-70","next":"hom-70"}} />
           </div>
         </div>
       </div>

@@ -23,7 +23,7 @@ for (const m of tplBlock.matchAll(/\('([a-z0-9_]+)','([^']*)','(customer|owner)'
   const un = (s) => s.replace(/''/g, "'").replace(/\\n/g, '\n')
   T('email_templates').push({ key: m[1], name: m[2], audience: m[3], enabled: true, subject: un(m[4]), eyebrow: un(m[5]), title: un(m[6]), body: un(m[7]), button_label: un(m[8]), button_url: un(m[9]) })
 }
-T('settings').push({ key: 'automations', value: {} }, { key: 'email', value: { owner_emails: ['info@illuszionzmedia.com'], reengagement_days: 90, review_request_days: 14, thank_you_hours: 24, lead_followup_days: 3, digest_hour: 0 } })
+T('settings').push({ key: 'cms_managed', value: {} }, { key: 'notice', value: { enabled: false, text: '', link: '', label: '', tone: 'dark' } }, { key: 'automations', value: {} }, { key: 'email', value: { owner_emails: ['info@illuszionzmedia.com'], reengagement_days: 90, review_request_days: 14, thank_you_hours: 24, lead_followup_days: 3, digest_hour: 0 } })
 
 const DEFAULTS = {
   contacts: () => ({ id: randomUUID(), created_at: now(), updated_at: now(), phone: '', lifecycle: 'lead', source: 'website', tags: [], city: '', instagram: '', job_title: '', marketing_opt_in: true, do_not_contact: false, lead_score: 0, last_activity_at: now(), notes: '', company_id: null, birthday: null, last_contacted_at: null }),
@@ -34,6 +34,11 @@ const DEFAULTS = {
   activities: () => ({ id: randomUUID(), created_at: now(), auto: false, body: '', subject: '', created_by: '' }),
   tasks: () => ({ id: randomUUID(), created_at: now(), done: false, done_at: null, priority: 'normal', type: 'follow-up', auto: false, notes: '' }),
   segments: () => ({ id: randomUUID(), created_at: now() }),
+  blog_posts: () => ({ id: randomUUID(), created_at: now(), updated_at: now(), excerpt: '', content: '', cover_url: '', cover_alt: '', category: '', tags: [], author: 'Illuszionz Media', published: false, published_at: null, seo_title: '', seo_description: '', og_image: '', noindex: false, read_minutes: 1 }),
+  store_products: () => ({ id: randomUUID(), created_at: now(), description: '', bullets: [], image_url: '', price: '', price_note: '', cta: 'Buy now', flow_id: '', option_id: '', buy_url: '', sort_order: 0, active: true }),
+  testimonials: () => ({ id: randomUUID(), created_at: now(), role: '', sort_order: 0, active: true }),
+  site_images: () => ({ id: randomUUID(), created_at: now(), thumb_url: '', alt: '', width: 0, height: 0, sort_order: 0 }),
+  page_seo: () => ({ title: '', description: '', og_image: '', noindex: false, updated_at: now() }),
   email_sections: () => ({ id: randomUUID(), created_at: now(), blocks: [] }),
   payments: () => ({ id: randomUUID(), created_at: now(), note: '' }),
   expenses: () => ({ id: randomUUID(), created_at: now(), note: '', vendor: '' }),
@@ -42,8 +47,8 @@ const DEFAULTS = {
   email_log: () => ({ id: randomUUID(), created_at: now(), status: 'pending', error: null, sent_at: null }),
   email_campaigns: () => ({ id: randomUUID(), created_at: now(), status: 'draft', recipients: 0, sent_count: 0, failed_count: 0, audience: {}, blocks: [], sent_at: null }),
 }
-const PK = { pipeline_stages: ['key'], settings: ['key'], promo_codes: ['code'], price_overrides: ['flow_id', 'kind', 'item_id'], expense_categories: ['name'], admin_users: ['email'], email_templates: ['key'] }
-const UNIQUE = { email_log: ['dedupe_key'], contacts: ['email'] }
+const PK = { page_seo: ['path'], pipeline_stages: ['key'], settings: ['key'], promo_codes: ['code'], price_overrides: ['flow_id', 'kind', 'item_id'], expense_categories: ['name'], admin_users: ['email'], email_templates: ['key'] }
+const UNIQUE = { email_log: ['dedupe_key'], contacts: ['email'], blog_posts: ['slug'] }
 
 function cmp(a, b) { return a == null ? (b == null ? 0 : -1) : b == null ? 1 : a < b ? -1 : a > b ? 1 : 0 }
 function matcher(col, expr) {
@@ -91,7 +96,7 @@ http.createServer(async (req, res) => {
   const body = raw ? JSON.parse(raw) : undefined
   const path = url.pathname
 
-  if (path === '/__reset') { for (const k of Object.keys(db)) if (['contacts', 'companies', 'bookings', 'submissions', 'deals', 'activities', 'tasks', 'segments', 'payments', 'expenses', 'other_income', 'promo_codes', 'price_overrides', 'email_log', 'email_campaigns'].includes(k)) db[k] = []; return send(res, 200, { ok: true }) }
+  if (path === '/__reset') { for (const k of Object.keys(db)) if (['contacts', 'companies', 'bookings', 'submissions', 'deals', 'activities', 'tasks', 'segments', 'payments', 'expenses', 'other_income', 'promo_codes', 'price_overrides', 'email_log', 'email_campaigns', 'blog_posts', 'store_products', 'testimonials', 'site_images', 'page_seo'].includes(k)) db[k] = []; const cm = T('settings').find((x) => x.key === 'cms_managed'); if (cm) cm.value = {}; const nt = T('settings').find((x) => x.key === 'notice'); if (nt) nt.value = { enabled: false, text: '', link: '', label: '', tone: 'dark' }; return send(res, 200, { ok: true }) }
   if (path === '/__dump') return send(res, 200, db)
   if (path.startsWith('/auth/v1/token')) return body?.password === 'test1234' && body?.email === user.email ? send(res, 200, session()) : send(res, 400, { error: 'invalid_grant', error_description: 'Invalid login credentials', msg: 'Invalid login credentials' })
   if (path === '/auth/v1/user') return (req.headers.authorization ?? '').includes('fake-token') || (req.headers.authorization ?? '').includes('service') ? send(res, 200, user) : send(res, 401, { msg: 'bad token' })

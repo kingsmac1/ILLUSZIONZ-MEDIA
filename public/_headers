@@ -12,3 +12,5 @@
   Cache-Control: no-store
 /api/*
   X-Robots-Tag: noindex
+/_shell/*
+  X-Robots-Tag: noindex, nofollow

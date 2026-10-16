@@ -7,7 +7,7 @@ import tailwindcss from '@tailwindcss/vite'
 const pages = [
   '/', '/about-us/', '/photography-services/', '/wedding/', '/videography-services/',
   '/360-photo-booth/', '/academy/', '/agency/', '/careers/', '/store/', '/contact/', '/form/',
-  '/media/', '/review/', '/dashboard/',
+  '/media/', '/review/', '/dashboard/', '/blog/', '/blog/__post__/',
 ].map((path) => ({ path }))
 
 /** Serves functions/api/*.ts (Cloudflare Pages Functions) during `vite dev`, so forms work locally. */

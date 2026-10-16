@@ -1,10 +1,26 @@
 
 import { BookableGrid, BookNow } from '../components/BookableGrid'
+import { useContent } from '../cms/content'
+import { builtinStore } from '../cms/builtin'
 import './store.css'
 
 
 
 export default function Store() {
+  const cms = useContent()
+  const products = cms?.store?.length ? cms.store : builtinStore
+  const cards = products.map((p) => ({
+    flowId: p.flow_id,
+    optionId: p.option_id || undefined,
+    title: p.title,
+    image: p.image_url || undefined,
+    price: p.price || undefined,
+    priceNote: p.price_note || undefined,
+    description: p.description || undefined,
+    bullets: p.bullets?.length ? p.bullets : undefined,
+    cta: p.cta || 'Buy now',
+    href: p.flow_id ? undefined : p.buy_url || undefined,
+  }))
   return (
     <div className="sto-1">
       <div className="sto-2">
@@ -29,29 +45,7 @@ export default function Store() {
       </div>
       <div className="sc-section">
         <div className="sc-section-inner">
-          <BookableGrid id="store" columns={2} cards={[
-  {
-    "flowId": "store",
-    "optionId": "store-session",
-    "title": "To talk about clarity and scaling in Photography Business",
-    "image": "/images/b_basic-79.webp",
-    "price": "£25",
-    "priceNote": "45 minute session",
-    "description": "Here’s what you’ll get in our session:",
-    "bullets": [
-      "Honest analysis of your content and mistakes you’re making",
-      "The new world era of video content and how to ride it",
-      "Crafting scripts and hooks that make people stop scrolling",
-      "Using AI as your creative partner, not your enemy",
-      "Building real camera confidence (say goodbye to stage fright)",
-      "Growing a loyal community that engages",
-      "The best times to post for maximum reach",
-      "Identifying and connecting with your true target audience",
-      "Monetisation strategies that actually work"
-    ],
-    "cta": "Book this session"
-  }
-]}></BookableGrid>
+          <BookableGrid id="store" columns={2} cards={cards}></BookableGrid>
         </div>
       </div>
     </div>

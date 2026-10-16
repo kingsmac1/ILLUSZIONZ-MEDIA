@@ -3,7 +3,7 @@ import { site, whatsappLink } from '../site'
 import './footer.css'
 
 const explore = [
-  ['Home', '/'], ['About', '/about-us/'], ['Academy', '/academy/'], ['Agency', '/agency/'], ['Careers', '/careers/'], ['Store', '/store/'], ['Contact', '/contact/'],
+  ['Home', '/'], ['About', '/about-us/'], ['Academy', '/academy/'], ['Agency', '/agency/'], ['Careers', '/careers/'], ['Store', '/store/'], ['Blog', '/blog/'], ['Contact', '/contact/'],
 ] as const
 const services = [
   ['Portrait Photography', '/photography-services/'], ['Wedding Photography', '/wedding/'], ['Videography', '/videography-services/'], ['360 Photo Booth', '/360-photo-booth/'], ['Client Reviews', '/review/'], ['Service Enquiry', '/form/'],

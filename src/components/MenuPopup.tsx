@@ -24,6 +24,7 @@ const MENU: Item[] = [
   { label: 'Agency', href: '/agency/' },
   { label: 'Careers', href: '/careers/' },
   { label: 'Store', href: '/store/' },
+  { label: 'Blog', href: '/blog/' },
   { label: 'Contact', href: '/contact/' },
 ]
 

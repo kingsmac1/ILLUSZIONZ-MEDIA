@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 
 /** Small WYSIWYG (contentEditable + execCommand) with a raw-HTML toggle — no extra dependency. */
-export function RichText({ value, onChange, minHeight = 96 }: { value: string; onChange: (html: string) => void; minHeight?: number }) {
+export function RichText({ value, onChange, minHeight = 96, extended, onPickImage }: { value: string; onChange: (html: string) => void; minHeight?: number; extended?: boolean; onPickImage?: () => Promise<string | null> }) {
   const ref = useRef<HTMLDivElement>(null)
   const [source, setSource] = useState(false)
 
@@ -25,6 +25,17 @@ export function RichText({ value, onChange, minHeight = 96 }: { value: string; o
     ['🔗', 'Link', () => { const u = window.prompt('Link URL (include https://):'); if (u) exec('createLink', u) }],
     ['⌫', 'Clear formatting', () => exec('removeFormat')],
   ]
+  if (extended)
+    tools.unshift(
+      ['H2', 'Heading', () => exec('formatBlock', 'h2'), 'font-weight:800'],
+      ['H3', 'Sub-heading', () => exec('formatBlock', 'h3'), 'font-weight:800'],
+      ['¶', 'Paragraph', () => exec('formatBlock', 'p')],
+      ['❝', 'Quote', () => exec('formatBlock', 'blockquote')],
+      ['🖼', 'Insert image', async () => {
+        const url = onPickImage ? await onPickImage() : window.prompt('Image URL:')
+        if (url) exec('insertImage', url)
+      }],
+    )
   return (
     <div className="ab-rich">
       <div className="ab-rich-bar" onMouseDown={(e) => e.preventDefault()}>

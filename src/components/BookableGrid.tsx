@@ -23,6 +23,8 @@ export type CardDef = {
   bullets?: string[]
   rows?: CardRow[]
   cta: string
+  /** CMS products without a booking form: the CTA is an external link (e.g. Selar) */
+  href?: string
 }
 
 type Open = { flowId: string; optionId?: string; key: number } | null
@@ -77,9 +79,15 @@ export function BookableGrid({ cards, columns = 3, id, children }: { cards: Card
           return (
             <article key={c.title} className={'sc-card' + (active ? ' is-active' : '')}>
               {c.image && (
-                <button type="button" className="sc-img" onClick={() => choose(c.flowId, c.optionId)} aria-label={`${c.cta}: ${c.title}`} tabIndex={-1}>
-                  <img src={c.image} alt={c.title} loading="lazy" />
-                </button>
+                c.href ? (
+                  <a className="sc-img" href={c.href} target="_blank" rel="noreferrer" aria-label={`${c.cta}: ${c.title}`} tabIndex={-1}>
+                    <img src={c.image} alt={c.title} loading="lazy" />
+                  </a>
+                ) : (
+                  <button type="button" className="sc-img" onClick={() => choose(c.flowId, c.optionId)} aria-label={`${c.cta}: ${c.title}`} tabIndex={-1}>
+                    <img src={c.image} alt={c.title} loading="lazy" />
+                  </button>
+                )
               )}
               <div className="sc-body">
                 <h3>{c.title}</h3>
@@ -119,9 +127,15 @@ export function BookableGrid({ cards, columns = 3, id, children }: { cards: Card
                     ))}
                   </ul>
                 )}
-                <button type="button" className="sc-cta" onClick={() => choose(c.flowId, c.optionId)} aria-expanded={active}>
-                  {c.cta} <span aria-hidden="true">→</span>
-                </button>
+                {c.href ? (
+                  <a className="sc-cta" href={c.href} target="_blank" rel="noreferrer">
+                    {c.cta} <span aria-hidden="true">→</span>
+                  </a>
+                ) : (
+                  <button type="button" className="sc-cta" onClick={() => choose(c.flowId, c.optionId)} aria-expanded={active}>
+                    {c.cta} <span aria-hidden="true">→</span>
+                  </button>
+                )}
               </div>
             </article>
           )

@@ -2,15 +2,15 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import { supabase } from './supabase'
 
 export type R = Record<string, any>
-const TABLES = ['contacts', 'companies', 'deals', 'tasks', 'bookings', 'submissions', 'pipeline_stages', 'payments', 'expenses', 'expense_categories', 'other_income', 'promo_codes', 'price_overrides', 'segments', 'email_templates', 'settings'] as const
+const TABLES = ['contacts', 'companies', 'deals', 'tasks', 'bookings', 'submissions', 'pipeline_stages', 'payments', 'expenses', 'expense_categories', 'other_income', 'promo_codes', 'price_overrides', 'segments', 'email_templates', 'settings', 'blog_posts', 'store_products', 'testimonials', 'site_images', 'page_seo'] as const
 export type Table = (typeof TABLES)[number]
 
 const ORDER: Partial<Record<Table, string>> = {
   contacts: 'created_at', companies: 'name', deals: 'created_at', tasks: 'due_at', bookings: 'created_at', submissions: 'created_at',
   pipeline_stages: 'sort_order', payments: 'paid_at', expenses: 'spent_on', expense_categories: 'sort_order', other_income: 'received_on',
-  promo_codes: 'created_at', segments: 'created_at', email_templates: 'key',
+  promo_codes: 'created_at', segments: 'created_at', email_templates: 'key', blog_posts: 'created_at', store_products: 'sort_order', testimonials: 'sort_order', site_images: 'sort_order', page_seo: 'path',
 }
-const ASC = new Set<Table>(['companies', 'pipeline_stages', 'expense_categories', 'email_templates', 'tasks'])
+const ASC = new Set<Table>(['companies', 'pipeline_stages', 'expense_categories', 'email_templates', 'tasks', 'store_products', 'testimonials', 'site_images', 'page_seo'])
 
 type Ctx = {
   d: Record<Table, R[]>

@@ -16,6 +16,12 @@ import { Pipeline } from './crm/Pipeline'
 import { Tasks } from './crm/Tasks'
 import { Companies } from './crm/Companies'
 import { CrmReports } from './crm/Reports'
+import { Blog } from './cms/Blog'
+import { StoreCms } from './cms/Store'
+import { TestimonialsCms } from './cms/Testimonials'
+import { ImagesCms } from './cms/Images'
+import { BannerCms } from './cms/Banner'
+import { SeoCms } from './cms/Seo'
 import './admin.css'
 
 const I: Record<string, string> = {
@@ -32,6 +38,12 @@ const I: Record<string, string> = {
   prices: 'M3 12l9-9h9v9l-9 9zM16 8h.01',
   promos: 'M4 8h16v3a2 2 0 000 4v3H4v-3a2 2 0 000-4zM10 8v10',
   emails: 'M3 6h18v12H3zM3 7l9 7 9-7M17 3l4 3',
+  blog: 'M4 4h16v16H4zM8 9h8M8 13h8M8 17h5',
+  store: 'M3 9l1-5h16l1 5M4 9v11h16V9M9 20v-6h6v6',
+  quote: 'M7 7h4v4H7zM13 7h4v4h-4zM7 11c0 3-1 5-3 6M13 11c0 3-1 5-3 6',
+  images: 'M3 5h18v14H3zM3 16l5-5 4 4 3-3 6 6M9 9h.01',
+  banner: 'M3 6h18v8H3zM8 18h8',
+  seo: 'M11 4a7 7 0 100 14 7 7 0 000-14M21 21l-5-5',
   settings: 'M12 15a3 3 0 100-6 3 3 0 000 6M19 12a7 7 0 00-.1-1.2l2-1.5-2-3.4-2.3.9a7 7 0 00-2-1.2L14.2 3h-4l-.4 2.6a7 7 0 00-2 1.2l-2.3-.9-2 3.4 2 1.5a7 7 0 000 2.4l-2 1.5 2 3.4 2.3-.9a7 7 0 002 1.2l.4 2.6h4l.4-2.6a7 7 0 002-1.2l2.3.9 2-3.4-2-1.5c.1-.4.1-.8.1-1.2',
 }
 const Icon = ({ n }: { n: string }) => (
@@ -104,6 +116,14 @@ function Shell({ session }: { session: Session }) {
       { id: 'crm/companies', label: 'Companies', icon: 'companies' },
       { id: 'crm/reports', label: 'CRM reports', icon: 'reports' },
     ] },
+    { title: 'Website', items: [
+      { id: 'cms/blog', label: 'Blog', icon: 'blog' },
+      { id: 'cms/store', label: 'Store', icon: 'store' },
+      { id: 'cms/testimonials', label: 'Testimonials', icon: 'quote' },
+      { id: 'cms/images', label: 'Images', icon: 'images' },
+      { id: 'cms/banner', label: 'Site banner', icon: 'banner' },
+      { id: 'cms/seo', label: 'Page SEO', icon: 'seo' },
+    ] },
     { title: 'Business', items: [
       { id: 'finance', label: 'Finance', icon: 'finance' },
       { id: 'prices', label: 'Prices', icon: 'prices' },
@@ -114,7 +134,7 @@ function Shell({ session }: { session: Session }) {
   ]
   const all = groups.flatMap((g) => g.items)
   const [base, ...rest] = route.split('?')[0].split('/')
-  const key = base === 'crm' ? `crm/${rest[0] ?? 'contacts'}` : base
+  const key = base === 'crm' ? `crm/${rest[0] ?? 'contacts'}` : base === 'cms' ? `cms/${rest[0] ?? 'blog'}` : base
   const current = all.find((i) => i.id === key) ?? all[0]
 
   let page: ReactNode
@@ -127,6 +147,12 @@ function Shell({ session }: { session: Session }) {
     case 'crm/tasks': page = <Tasks />; break
     case 'crm/companies': page = <Companies />; break
     case 'crm/reports': page = <CrmReports />; break
+    case 'cms/blog': page = <Blog />; break
+    case 'cms/store': page = <StoreCms />; break
+    case 'cms/testimonials': page = <TestimonialsCms />; break
+    case 'cms/images': page = <ImagesCms />; break
+    case 'cms/banner': page = <BannerCms />; break
+    case 'cms/seo': page = <SeoCms />; break
     case 'finance': page = <Finance />; break
     case 'prices': page = <Prices />; break
     case 'promos': page = <Promos />; break

@@ -138,3 +138,11 @@ Instagram `instagram.com/illuszionzphotostudio` (+ the `?igsh=` variant in the p
   shared by the live preview and the sender). `email_campaigns.blocks`, `email_sections` (saved layouts) and the `email-images` storage bucket are in `schema.sql`.
 - `supabase/demo-data.sql` / `remove-demo-data.sql`: test data (remove before launch). Verified on a real Postgres engine (PGlite): runs twice cleanly, removal leaves 0 rows.
   Price overrides are deliberately not seeded. Addresses ending `.test` are never emailed (logged as skipped).
+
+## Website CMS + blog
+- New: `supabase/cms.sql` (blog_posts, store_products, testimonials, site_images, page_seo, `site-media` bucket, 4 starter posts) and Dashboard → Website.
+- Blog is edge-rendered (functions/blog/*) into prerendered shells (`_shell/index`, `_shell/post`, created by `scripts/postbuild.mjs`) so crawlers get full HTML and the
+  client router hydrates cleanly (shell prerendered at `/blog/__post__/`, slug swapped at request time; `BlogSlot` hands React the DOM's own innerHTML).
+  Blog links use plain anchors (`A` skips `/blog`). `public/sitemap.xml` was replaced by the `functions/sitemap.xml.ts` endpoint.
+- Content that used to be constants inside the generated pages now lives in `src/cms/builtin.ts` (hero slides, galleries, testimonials, store product).
+- Dev note: `vite dev` does not run the blog functions — use `npm run preview` (wrangler) to see `/blog/`.
