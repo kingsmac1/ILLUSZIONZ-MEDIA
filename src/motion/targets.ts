@@ -12,6 +12,6 @@ export const motionPreCss = [
   `html.motion-pre ${inScope(`:is(${EXCLUDE})`)} *{opacity:1}`,
 ].join('\n')
 
-/** Runs before first paint: only enables the pre-hide when motion is allowed, and always lifts it after 4 s. */
+/** Runs before first paint: only enables the pre-hide when motion is allowed, and always lifts it after 2.6 s. */
 export const motionPreScript =
-  "try{if(!matchMedia('(prefers-reduced-motion: reduce)').matches){var d=document.documentElement;d.classList.add('motion-pre');setTimeout(function(){d.classList.remove('motion-pre')},4000)}}catch(e){}"
+  "try{if(!matchMedia('(prefers-reduced-motion: reduce)').matches){var d=document.documentElement;d.classList.add('motion-pre');setTimeout(function(){d.classList.remove('motion-pre')},2600)}}catch(e){}"

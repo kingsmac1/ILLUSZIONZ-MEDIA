@@ -83,6 +83,9 @@ export function indexHtml(posts: Post[]) {
   <div class="bl-wrap">${posts.length ? `<div class="bl-grid">${posts.map(card).join('')}</div>` : '<div class="bl-empty"><p>New articles are on their way — check back soon.</p></div>'}</div></div>`
 }
 
+/** Shown (with a 503) when the database cannot be reached, so a connection problem is never mistaken for "no articles". */
+export const unavailableHtml = () => `<style>${BLOG_CSS}</style><div class="bl"><section class="bl-hero"><p class="bl-eyebrow">The Journal</p><h1>Back in a moment</h1><p class="lead">We could not load the articles just now. Please refresh in a minute.</p></section></div>`
+
 export function postHtml(p: Post, related: Post[]) {
   const url = `${site.url}/blog/${p.slug}/`
   const body = cleanParagraphHtml(p.content).replace(/<img /g, '<img loading="lazy" ')

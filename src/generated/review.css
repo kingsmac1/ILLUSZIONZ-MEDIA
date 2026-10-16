@@ -176,3 +176,8 @@
 .rev-82{width:min(264px, 100%)}
 .rev-84{width:266px}
 }
+
+/* black stepped form */
+.rev-53{width:48%;padding:0}
+.rev-56{margin-top:0;margin-bottom:0}
+@media (max-width:1024px){.rev-53{width:100%}}

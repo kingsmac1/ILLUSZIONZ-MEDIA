@@ -99,3 +99,12 @@
 .con-52{width:290px}
 }
 .con-43{margin-bottom:-24px}
+
+/* black stepped form: no white card behind it, no fixed height */
+.con-41{background-color:transparent;box-shadow:none;border-radius:0;padding:0}
+.con-43{height:auto}
+.con-44{margin-top:0;margin-bottom:0}
+/* more breathing room above and below the Get In Touch section */
+.con-15{padding-top:130px;padding-bottom:120px}
+@media (max-width:1024px){.con-15{padding-top:100px;padding-bottom:100px}}
+@media (max-width:767px){.con-15{padding-top:96px;padding-bottom:96px;row-gap:44px}.con-41{width:100%}}

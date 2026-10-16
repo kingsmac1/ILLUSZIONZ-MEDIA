@@ -1,4 +1,5 @@
-import { FormShell } from '../components/forms'
+import { StepForm } from '../components/StepForm'
+import { contactForm } from '../components/formDefs'
 import './contact.css'
 
 
@@ -132,35 +133,7 @@ export default function Contact() {
             <div className="con-42">
               <div className="con-43">
                 <div className="con-44">
-                  <FormShell formId="231" formName="Form 231" conditions={{}} formClassName="con-53">
-                    <div className="con-45">
-                      <div className="con-46" data-field="wpforms-231-field_1-container" data-label="Name">
-                        <label className="con-47" htmlFor="wpforms-231-field_1">
-                          {"Name "}
-                          <span className="con-48" aria-hidden="true">*</span>
-                        </label>
-                        <input className="con-49" type="text" id="wpforms-231-field_1" name="wpforms[fields][1]" required />
-                      </div>
-                      <div className="con-46" data-field="wpforms-231-field_2-container" data-label="Email">
-                        <label className="con-47" htmlFor="wpforms-231-field_2">
-                          {"Email "}
-                          <span className="con-48" aria-hidden="true">*</span>
-                        </label>
-                        <input className="con-49" type="email" id="wpforms-231-field_2" name="wpforms[fields][2]" required />
-                      </div>
-                      <div className="con-46" data-field="wpforms-231-field_6-container" data-label="Subject">
-                        <label className="con-47" htmlFor="wpforms-231-field_6">Subject</label>
-                        <input className="con-49" type="text" id="wpforms-231-field_6" name="wpforms[fields][6]" />
-                      </div>
-                      <div className="con-46" data-field="wpforms-231-field_3-container" data-label="Comment or Message">
-                        <label className="con-47" htmlFor="wpforms-231-field_3">Comment or Message</label>
-                        <textarea className="con-50" id="wpforms-231-field_3" name="wpforms[fields][3]" />
-                      </div>
-                    </div>
-                    <div className="con-51">
-                      <button className="con-52" type="submit" name="wpforms[submit]" value="wpforms-submit">Submit</button>
-                    </div>
-                  </FormShell>
+                  <StepForm def={contactForm} />
                 </div>
               </div>
             </div>

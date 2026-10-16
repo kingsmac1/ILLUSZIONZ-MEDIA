@@ -152,33 +152,50 @@ ok('API rejects an incomplete booking', r.status() === 422)
 r = await post({ flowId: 'nope', optionIds: [], fields: {} })
 ok('API rejects an unknown service', r.status() === 400)
 
-/* 8 ─ generic forms (contact, service enquiry with conditional field, review) */
+/* 8 ─ site forms: black stepped panels (contact, service enquiry with conditional fields, review) */
+async function fillFormStep(fp) {
+  const panel = fp.locator('.bk-panel.is-form')
+  for (const el of await panel.locator('.bk-field input[type=text], .bk-field input[type=email], .bk-field input[type=tel]').all()) {
+    const type = await el.getAttribute('type')
+    await el.fill(type === 'email' ? 'test@example.com' : type === 'tel' ? '+447000000000' : 'Test')
+  }
+  for (const el of await panel.locator('.bk-field textarea').all()) await el.fill('Test message')
+  for (const el of await panel.locator('.bk-field select').all()) {
+    const v = await el.evaluate((s) => [...s.options].find((o) => o.value)?.value)
+    if (v) await el.selectOption({ value: v })
+  }
+  for (const grp of await panel.locator('.bk-chips').all()) await grp.locator('button').first().click()
+  for (const grp of await panel.locator('.sf-stars').all()) await grp.locator('button').nth(4).click()
+}
 for (const path of ['/contact/', '/form/', '/review/']) {
   const fp = await ctx.newPage()
   await fp.goto(BASE + path, { waitUntil: 'networkidle' })
-  for (let pass = 0; pass < 2; pass++) {
-    for (const el of await fp.$$('form input[required]')) {
-      const type = await el.getAttribute('type')
-      if (type === 'checkbox' || type === 'radio') { await el.check({ force: true }); continue }
-      if (type === 'file') continue
-      await el.fill(type === 'email' ? 'test@example.com' : type === 'tel' ? '+447000000000' : 'Test')
-    }
-    for (const el of await fp.$$('form select[required]')) {
-      const v = await el.evaluate((s) => [...s.options].find((o) => o.value)?.value)
-      if (v) await el.selectOption({ value: v })
-    }
-    for (const el of await fp.$$('form textarea[required]')) await el.fill('Test message')
-    await fp.waitForTimeout(250)
+  await fp.evaluate(() => localStorage.removeItem('illuszionz:contact')) // remembered details would pre-fill the first step
+  await fp.reload({ waitUntil: 'networkidle' })
+  await fp.waitForSelector('.bk-panel.is-form')
+  ok(`form ${path} is the black stepped panel`, (await fp.locator('.bk-panel.is-form').evaluate((e) => getComputedStyle(e).backgroundColor)) === 'rgb(10, 10, 10)' && (await fp.locator('.bk-steps li').count()) >= 3)
+  await fp.locator('.bk-foot .bk-btn.is-light').click()
+  ok(`form ${path} validates required fields before continuing`, (await fp.locator('.bk-err').count()) > 0 && (await fp.locator('.bk-steps li.is-current b').innerText()) === '01')
+  for (let n = 0; n < 8; n++) {
+    await fillFormStep(fp)
+    const submit = fp.locator('.bk-foot button[type=submit]')
+    if (await submit.count()) { await submit.click(); break }
+    await fp.locator('.bk-foot .bk-btn.is-light').click()
+    await fp.waitForTimeout(350)
   }
-  await fp.locator('form button[type="submit"]').first().click()
-  ok(`form ${path} submits and shows confirmation`, await fp.locator('.form-confirmation').waitFor({ timeout: 6000 }).then(() => true, () => false))
+  ok(`form ${path} submits and shows confirmation`, await fp.locator('.bk-done').waitFor({ timeout: 8000 }).then(() => true, () => false))
   await fp.close()
 }
 await page.goto(BASE + '/form/', { waitUntil: 'networkidle' })
-ok('conditional field hidden initially', (await page.locator('[data-field="wpforms-751-field_13-container"]').count()) === 0)
-await page.locator('.choices-root').first().click()
-await page.locator('.choices-dropdown').getByText('Videography', { exact: true }).click()
-ok('conditional field shown after choosing Videography', (await page.locator('[data-field="wpforms-751-field_13-container"]').count()) === 1)
+await page.evaluate(() => localStorage.removeItem('illuszionz:contact'))
+await page.reload({ waitUntil: 'networkidle' })
+await page.fill('#sf-enquiry-name', 'Ada'); await page.fill('#sf-enquiry-email', 'ada@example.com'); await page.fill('#sf-enquiry-phone', '+447000000000')
+await page.locator('.bk-foot .bk-btn.is-light').click(); await page.waitForTimeout(400)
+ok('conditional field hidden initially', (await page.locator('#sf-enquiry-video').count()) === 0)
+await page.locator('.bk-chips button', { hasText: 'Videography' }).click()
+ok('conditional field shown after choosing Videography', (await page.locator('#sf-enquiry-video').count()) === 1)
+await page.locator('.bk-chips button', { hasText: 'Careers' }).click()
+ok('conditional fields switch with the choice', (await page.locator('#sf-enquiry-video').count()) === 0 && (await page.locator('.bk-chips button', { hasText: 'Photographers' }).count()) === 1)
 
 ok('no uncaught page errors', errors.length === 0, errors.join(' | ').slice(0, 200))
 await browser.close()

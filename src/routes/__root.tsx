@@ -11,7 +11,11 @@ export const Route = createRootRoute({
     meta: [{ charSet: 'utf-8' }, { name: 'viewport', content: 'width=device-width, initial-scale=1' }],
     links: [
       { rel: 'stylesheet', href: appCss },
+      { rel: 'preload', as: 'font', type: 'font/woff2', href: '/fonts/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7W0Q5nw.woff2', crossOrigin: 'anonymous' },
+      { rel: 'preload', as: 'font', type: 'font/woff2', href: '/fonts/nuFiD-vYSZviVYUb_rj3ij__anPXDTzYgEM86xQ.woff2', crossOrigin: 'anonymous' },
       { rel: 'icon', href: '/favicon.svg', type: 'image/svg+xml' },
+      { rel: 'icon', href: '/favicon-32.png', type: 'image/png', sizes: '32x32' },
+      { rel: 'apple-touch-icon', href: '/apple-touch-icon.png', sizes: '180x180' },
     ],
     styles: [{ children: motionPreCss }],
     scripts: [{ children: motionPreScript }, { type: 'application/ld+json', children: JSON.stringify(jsonLd) }],

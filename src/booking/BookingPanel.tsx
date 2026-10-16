@@ -517,11 +517,11 @@ export function BookingPanel({ flow: baseFlow, initialOptionId, onClose }: { flo
         </button>
         <div className="bk-foot-total" aria-hidden="true">{optionIds.length ? quote.totalText : ''}</div>
         {last ? (
-          <button type="submit" className="bk-btn is-light" disabled={sending}>
+          <button key="submit" type="submit" className="bk-btn is-light" disabled={sending}>
             {sending ? 'Sending…' : flow.submitLabel ?? 'Submit booking'}
           </button>
         ) : (
-          <button type="button" className="bk-btn is-light" onClick={next}>
+          <button key="next" type="button" className="bk-btn is-light" onClick={next}>
             Continue
           </button>
         )}

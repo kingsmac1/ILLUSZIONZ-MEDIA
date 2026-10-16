@@ -41,6 +41,36 @@ ok('header hides on scroll down, glass when scrolled', (await page.evaluate(() =
 await page.mouse.wheel(0, -400); await page.waitForTimeout(900)
 ok('header returns on scroll up', !(await page.evaluate(() => document.querySelector('.site-header').className)).includes('is-hidden'))
 
+
+/* 1b ─ the entrance is orderly: what is higher on the page never appears after what is lower */
+{
+  const octx = await browser.newContext({ viewport: { width: 1440, height: 900 } })
+  const op = await octx.newPage(); track(op, 'order')
+  await op.addInitScript(() => {
+    window.__rev = []
+    const seen = new Map()
+    const iv = setInterval(() => {
+      const els = [...document.querySelectorAll('main :is(h1,h2,h3,p,li,img), main .sc-card')].filter((e) => !e.closest('.bk-panel,.lightbox,.sc-card') || e.matches('.sc-card'))
+      for (const e of els) {
+        const r = e.getBoundingClientRect()
+        if (r.width < 5 || r.top > innerHeight) continue
+        const lines = e.querySelector?.('.split-line')
+        const vis = Number(getComputedStyle(lines || e).opacity) > 0.15 && (!lines || true)
+        if (vis && !seen.has(e)) { seen.set(e, performance.now()); window.__rev.push({ top: Math.round(r.top), t: Math.round(performance.now()), tag: e.tagName }) }
+      }
+    }, 16)
+    setTimeout(() => clearInterval(iv), 6000)
+  })
+  await op.goto(BASE + '/', { waitUntil: 'networkidle' })
+  await op.waitForTimeout(4500)
+  const rev = await op.evaluate(() => window.__rev)
+  const sorted = [...rev].sort((a, b) => a.top - b.top)
+  let worst = 0
+  for (let i = 1; i < sorted.length; i++) for (let j = 0; j < i; j++) worst = Math.max(worst, sorted[j].t - sorted[i].t) // a higher element appearing AFTER a lower one
+  ok('first-screen entrance runs top → bottom (no lower element appears first)', rev.length >= 3 && worst <= 260, `${rev.length} elements, worst inversion ${worst}ms`)
+  await octx.close()
+}
+
 /* 2 ─ no page leaves content hidden */
 for (const p of PAGES) {
   await page.goto(BASE + p, { waitUntil: 'networkidle' })

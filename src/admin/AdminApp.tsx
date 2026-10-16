@@ -78,8 +78,8 @@ function Login() {
   return (
     <div className="ad ad-login">
       <form onSubmit={go}>
-        <div>
-          <h1>Illuszionz Media</h1>
+        <div className="ad-login-head">
+          <img src="/images/illuszionz-logo-white.png" alt="Illuszionz Media" />
           <p>Studio dashboard — sign in to continue.</p>
         </div>
         <label className="ad-field"><span>Email</span><input type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="username" required /></label>
@@ -166,7 +166,7 @@ function Shell({ session }: { session: Session }) {
       <div className="ad-top"><button onClick={() => setOpen(true)} aria-label="Open menu">☰</button>{current.label}</div>
       {open && <div className="ad-scrim" onClick={() => setOpen(false)} />}
       <aside className={'ad-side' + (open ? ' open' : '')}>
-        <div className="ad-brand"><i>I</i>Illuszionz</div>
+        <a className="ad-brand" href="#/overview" aria-label="Illuszionz Media dashboard"><img src="/images/illuszionz-logo-white.png" alt="Illuszionz Media" /></a>
         <nav className="ad-nav">
           {groups.map((g) => (
             <div key={g.title} style={{ display: 'contents' }}>

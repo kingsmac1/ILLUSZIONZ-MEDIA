@@ -114,3 +114,8 @@
 .for-52{width:min(328px, 100%)}
 .for-55{width:330px}
 }
+
+/* black stepped form: wider column */
+.for-15{width:min(760px,100%)}
+.for-17{margin-top:0;margin-bottom:0}
+@media (max-width:767px){.for-15{width:100%}}

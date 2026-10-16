@@ -5,16 +5,42 @@ import './motion.css'
 
 const FINE = '(hover: hover) and (pointer: fine)'
 
+/** Start fetching the animation libraries as soon as this module loads (in parallel with React hydration), not after it. */
+const libs = typeof window === 'undefined' || matchMedia('(prefers-reduced-motion: reduce)').matches
+  ? null
+  : Promise.all([import('gsap'), import('gsap/ScrollTrigger'), import('gsap/SplitText'), import('lenis')])
+
 /** DOM changes (split headings, counters) must never race React's hydration, so wait until the router reports it is done. */
 async function hydrated() {
   const w = window as unknown as { $_TSR?: unknown }
   const t0 = performance.now()
-  while (w.$_TSR && performance.now() - t0 < 4000) await new Promise((r) => setTimeout(r, 40))
-  if (document.readyState !== 'complete') await new Promise((r) => window.addEventListener('load', () => r(null), { once: true }))
-  await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => r(null))))
-  await new Promise((r) => setTimeout(r, 120))
+  while (w.$_TSR && performance.now() - t0 < 2500) await new Promise((r) => setTimeout(r, 25))
+  // the router flag flips before React has walked the DOM, so also wait until every element React owns has been claimed
+  while (!reactClaimedDom() && performance.now() - t0 < 5000) await new Promise((r) => setTimeout(r, 40))
+  await new Promise((r) => requestAnimationFrame(() => r(null)))
+}
+
+/** True once React has attached itself to every element it renders (hydration finished, including lazily hydrated boundaries). */
+function reactClaimedDom() {
+  const els = document.querySelectorAll('main *, .ftr *, .site-header *')
+  for (const el of els) {
+    if ((el as HTMLElement).closest('#blog-slot')) continue
+    if (!Object.keys(el).some((k) => k.startsWith('__reactFiber'))) return false
+  }
+  return els.length > 0
 }
 const NUMBER = /^(\d[\d,]*(?:\.\d+)?)\s*([+%kKmM]?)$/
+const wait = (ms: number) => new Promise<void>((r) => setTimeout(r, ms))
+
+/** Decode the pictures in the first screen (and the hero slideshow's first slide), but never wait more than 1.2 s. */
+async function aboveFoldReady() {
+  const imgs = [...document.querySelectorAll<HTMLImageElement>('main img')].filter((i) => i.getBoundingClientRect().top < window.innerHeight && !i.closest('.bk-panel'))
+  const slide = document.querySelector<HTMLElement>('.bg-slideshow__slide.is-active')
+  const url = slide ? /url\(["']?(.*?)["']?\)/.exec(getComputedStyle(slide).backgroundImage)?.[1] : null
+  const jobs: Promise<unknown>[] = imgs.map((i) => (i.complete ? Promise.resolve() : i.decode?.().catch(() => undefined) ?? Promise.resolve()))
+  if (url) jobs.push(new Promise((r) => { const im = new Image(); im.onload = im.onerror = () => r(null); im.src = url }))
+  await Promise.race([Promise.all(jobs), wait(1200)])
+}
 
 /**
  * The site's motion layer: Lenis smooth scrolling, GSAP ScrollTrigger reveals (SplitText headings, staggered text/cards, image reveals,
@@ -29,7 +55,7 @@ export function Motion() {
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) return
     const d = document.documentElement
     d.classList.add('motion-pre')
-    const t = setTimeout(() => d.classList.remove('motion-pre'), 4000)
+    const t = setTimeout(() => d.classList.remove('motion-pre'), 2600)
     return () => clearTimeout(t)
   }, [path])
 
@@ -42,7 +68,8 @@ export function Motion() {
     let dispose = () => {}
     let dead = false
     ;(async () => {
-      const [{ default: gsap }, { ScrollTrigger }, { default: Lenis }] = await Promise.all([import('gsap'), import('gsap/ScrollTrigger'), import('lenis')])
+      const [{ default: gsap }, { ScrollTrigger }, , { default: Lenis }] = await libs!
+      await hydrated() // never add elements to <body> while React is still hydrating it
       if (dead) return
       gsap.registerPlugin(ScrollTrigger)
       const root = document.documentElement
@@ -147,7 +174,7 @@ export function Motion() {
     }
   }, [])
 
-  /* ───────── per page: reveals, parallax, counters ───────── */
+  /* ───────── per page: ordered reveals, parallax, counters ───────── */
   useEffect(() => {
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) return
     let ctx: { revert: () => void } | undefined
@@ -155,63 +182,85 @@ export function Motion() {
     const release = () => document.documentElement.classList.remove('motion-pre')
     ;(async () => {
       try {
-        const [{ default: gsap }, { ScrollTrigger }, { SplitText }] = await Promise.all([import('gsap'), import('gsap/ScrollTrigger'), import('gsap/SplitText')])
+        const [{ default: gsap }, { ScrollTrigger }, { SplitText }] = await libs!
         gsap.registerPlugin(ScrollTrigger, SplitText)
-        await Promise.all([document.fonts?.ready, hydrated()])
+        await Promise.all([Promise.race([document.fonts?.ready, wait(700)]), hydrated()])
         if (dead) return
         const lenis = (window as unknown as { __lenis?: { scrollTo: (n: number, o: object) => void } }).__lenis
         if (!window.location.hash) lenis?.scrollTo(0, { immediate: true, force: true })
 
+        // everything visible on first screen must have its pictures ready, so nothing pops in half-way through the entrance
+        await aboveFoldReady()
+        if (dead) return
+
         ctx = gsap.context(() => {
           const all = (sel: string) => [...document.querySelectorAll<HTMLElement>(`:is(main, .ftr) :is(${sel})`)].filter((el) => !el.closest(EXCLUDE))
-          const cards = all(CARD)
           const insideCard = (el: HTMLElement) => !!el.parentElement?.closest(CARD)
 
+          /* one scheduler for every kind of element: whatever enters the viewport together plays top → bottom, left → right */
+          type Item = { el: HTMLElement; play: (delay: number) => void }
+          const pending: Item[] = []
+          const done = new WeakSet<HTMLElement>()
+          let scheduled = false
+          const flush = () => {
+            scheduled = false
+            const batch = pending.splice(0).sort((a, b) => {
+              const ra = a.el.getBoundingClientRect()
+              const rb = b.el.getBoundingClientRect()
+              return Math.abs(ra.top - rb.top) > 24 ? ra.top - rb.top : ra.left - rb.left
+            })
+            batch.forEach((it, i) => it.play(Math.min(i, 9) * 0.085))
+          }
+          const enter = (it: Item) => {
+            if (done.has(it.el)) return
+            done.add(it.el)
+            pending.push(it)
+            if (!scheduled) { scheduled = true; requestAnimationFrame(flush) }
+          }
+          const watch = (el: HTMLElement, play: Item['play'], start = 'top 94%') =>
+            ScrollTrigger.create({ trigger: el, start, once: true, onEnter: () => enter({ el, play }) })
+
           /* nested items of a card appear with the card */
-          const nested = [...all(`${HEADINGS}, ${TEXT}, ${IMAGES}`)].filter(insideCard)
-          gsap.set(nested, { opacity: 1 })
+          gsap.set(all(`${HEADINGS}, ${TEXT}, ${IMAGES}`).filter(insideCard), { opacity: 1 })
 
           /* headings: masked line-by-line reveal */
           for (const h of all(HEADINGS).filter((el) => !insideCard(el))) {
             if (!h.textContent?.trim()) { gsap.set(h, { opacity: 1 }); continue }
+            const lines: { current: HTMLElement[] } = { current: [] }
             SplitText.create(h, {
               type: 'lines',
               mask: 'lines',
               autoSplit: true,
               linesClass: 'split-line',
               onSplit(self) {
+                lines.current = self.lines as HTMLElement[]
+                if (!done.has(h)) gsap.set(self.lines, { yPercent: 115 })
                 gsap.set(h, { opacity: 1 })
-                return gsap.from(self.lines, { yPercent: 115, duration: 1.15, ease: 'expo.out', stagger: 0.09, scrollTrigger: { trigger: h, start: 'top 90%', once: true } })
               },
             })
+            watch(h, (delay) => gsap.to(lines.current, { yPercent: 0, duration: 1, ease: 'expo.out', stagger: 0.08, delay }))
           }
 
           /* paragraphs + list items */
           const texts = all(TEXT).filter((el) => !insideCard(el) && !el.closest('.split-line'))
-          gsap.set(texts, { opacity: 0, y: 26 })
-          ScrollTrigger.batch(texts, {
-            start: 'top 93%',
-            once: true,
-            onEnter: (els) => gsap.to(els, { opacity: 1, y: 0, duration: 0.95, ease: 'power3.out', stagger: 0.07, overwrite: true }),
-          })
+          gsap.set(texts, { opacity: 0, y: 24 })
+          for (const t of texts) watch(t, (delay) => gsap.to(t, { opacity: 1, y: 0, duration: 0.85, ease: 'power3.out', delay, clearProps: 'transform' }))
 
           /* cards */
-          gsap.set(cards, { opacity: 0, y: 56, scale: 0.97 })
-          ScrollTrigger.batch(cards, {
-            start: 'top 92%',
-            once: true,
-            onEnter: (els) => gsap.to(els, { opacity: 1, y: 0, scale: 1, duration: 1.05, ease: 'expo.out', stagger: 0.12, overwrite: true, clearProps: 'transform' }),
-          })
+          const cards = all(CARD)
+          gsap.set(cards, { opacity: 0, y: 48, scale: 0.97 })
+          for (const c of cards) watch(c, (delay) => gsap.to(c, { opacity: 1, y: 0, scale: 1, duration: 1, ease: 'expo.out', delay, clearProps: 'transform' }))
 
-          /* images: clip-path + scale reveal (small icons just appear) */
-          for (const img of all(IMAGES).filter((el) => !insideCard(el) && !el.closest('.bg-slideshow'))) {
+          /* images: wait until decoded, then clip-path + scale reveal (small icons just appear) */
+          for (const img of all(IMAGES).filter((el) => !insideCard(el) && !el.closest('.bg-slideshow')) as HTMLImageElement[]) {
             const big = (img.getAttribute('width') ? Number(img.getAttribute('width')) : img.getBoundingClientRect().width) > 120
             if (!big) { gsap.set(img, { opacity: 1 }); continue }
-            gsap.fromTo(
-              img,
-              { opacity: 0, clipPath: 'inset(9% 9% 9% 9%)', scale: 1.14 },
-              { opacity: 1, clipPath: 'inset(0% 0% 0% 0%)', scale: 1, duration: 1.4, ease: 'expo.out', clearProps: 'clipPath,transform', scrollTrigger: { trigger: img, start: 'top 92%', once: true } },
-            )
+            gsap.set(img, { opacity: 0, clipPath: 'inset(9% 9% 9% 9%)', scale: 1.12 })
+            watch(img, (delay) => {
+              const go = () => gsap.to(img, { opacity: 1, clipPath: 'inset(0% 0% 0% 0%)', scale: 1, duration: 1.2, ease: 'expo.out', delay, clearProps: 'clipPath,transform' })
+              if (img.complete && img.naturalWidth) go()
+              else Promise.race([img.decode?.().catch(() => undefined), wait(900)]).then(go)
+            })
           }
 
           /* hero slideshow parallax */
@@ -232,12 +281,7 @@ export function Motion() {
             const o = { v: 0 }
             const fmt = () => { const n = o.v.toFixed(dec); el.textContent = (comma ? Number(n).toLocaleString('en-GB', { minimumFractionDigits: dec, maximumFractionDigits: dec }) : n) + m[2] }
             fmt()
-            gsap.to(o, {
-              v: target, duration: 2.2, ease: 'power3.out',
-              onUpdate: fmt,
-              onComplete: () => { el.textContent = final },
-              scrollTrigger: { trigger: el, start: 'top 90%', once: true },
-            })
+            gsap.to(o, { v: target, duration: 2.2, ease: 'power3.out', onUpdate: fmt, onComplete: () => { el.textContent = final }, scrollTrigger: { trigger: el, start: 'top 90%', once: true } })
           }
 
           /* gallery columns drift at different speeds on desktop */
@@ -253,8 +297,8 @@ export function Motion() {
 
         release()
         const refresh = () => ScrollTrigger.refresh()
-        const t1 = setTimeout(refresh, 700)
-        const t2 = setTimeout(refresh, 2200)
+        const t1 = setTimeout(refresh, 900)
+        const t2 = setTimeout(refresh, 2600)
         window.addEventListener('load', refresh)
         const prev = ctx
         ctx = { revert: () => { clearTimeout(t1); clearTimeout(t2); window.removeEventListener('load', refresh); prev?.revert() } }

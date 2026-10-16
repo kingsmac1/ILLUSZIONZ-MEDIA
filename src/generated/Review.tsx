@@ -1,4 +1,5 @@
-import { FormShell } from '../components/forms'
+import { StepForm } from '../components/StepForm'
+import { reviewForm } from '../components/formDefs'
 import './review.css'
 
 
@@ -661,88 +662,7 @@ export default function Review() {
             <div className="rev-54">
               <div className="rev-55">
                 <div className="rev-56">
-                  <FormShell formId="1053" formName="Form 1053" conditions={{}} formClassName="rev-85">
-                    <div className="rev-57">
-                      <div className="rev-58" data-field="wpforms-1053-field_3-container" data-label="Overall Rating">
-                        <label className="rev-59" htmlFor="wpforms-1053-field_3">
-                          {"Overall Rating "}
-                          <span className="rev-60" aria-hidden="true">*</span>
-                        </label>
-                        <div className="rev-61">
-                          <label className="rev-62" htmlFor="wpforms-1053-field_3_1">
-                            <span className="rev-63">Rate 1 out of 5</span>
-                            <input className="rev-64" type="radio" id="wpforms-1053-field_3_1" name="wpforms[fields][3]" value="1" required />
-                            <svg className="rev-65" width="24" height="24" fill="currentColor" viewBox="0 0 1792 1792">
-                              <path d="M1728 647q0 22-26 48l-363 354 86 500q1 7 1 20 0 21-10.5 35.5t-30.5 14.5q-19 0-40-12l-449-236-449 236q-22 12-40 12-21 0-31.5-14.5t-10.5-35.5q0-6 2-20l86-500-364-354q-25-27-25-48 0-37 56-46l502-73 225-455q19-41 49-41t49 41l225 455 502 73q56 9 56 46z" />
-                            </svg>
-                          </label>
-                          <label className="rev-62" htmlFor="wpforms-1053-field_3_2">
-                            <span className="rev-66">Rate 2 out of 5</span>
-                            <input className="rev-67" type="radio" id="wpforms-1053-field_3_2" name="wpforms[fields][3]" value="2" required />
-                            <svg className="rev-65" width="24" height="24" fill="currentColor" viewBox="0 0 1792 1792">
-                              <path d="M1728 647q0 22-26 48l-363 354 86 500q1 7 1 20 0 21-10.5 35.5t-30.5 14.5q-19 0-40-12l-449-236-449 236q-22 12-40 12-21 0-31.5-14.5t-10.5-35.5q0-6 2-20l86-500-364-354q-25-27-25-48 0-37 56-46l502-73 225-455q19-41 49-41t49 41l225 455 502 73q56 9 56 46z" />
-                            </svg>
-                          </label>
-                          <label className="rev-62" htmlFor="wpforms-1053-field_3_3">
-                            <span className="rev-68">Rate 3 out of 5</span>
-                            <input className="rev-69" type="radio" id="wpforms-1053-field_3_3" name="wpforms[fields][3]" value="3" required />
-                            <svg className="rev-65" width="24" height="24" fill="currentColor" viewBox="0 0 1792 1792">
-                              <path d="M1728 647q0 22-26 48l-363 354 86 500q1 7 1 20 0 21-10.5 35.5t-30.5 14.5q-19 0-40-12l-449-236-449 236q-22 12-40 12-21 0-31.5-14.5t-10.5-35.5q0-6 2-20l86-500-364-354q-25-27-25-48 0-37 56-46l502-73 225-455q19-41 49-41t49 41l225 455 502 73q56 9 56 46z" />
-                            </svg>
-                          </label>
-                          <label className="rev-62" htmlFor="wpforms-1053-field_3_4">
-                            <span className="rev-70">Rate 4 out of 5</span>
-                            <input className="rev-71" type="radio" id="wpforms-1053-field_3_4" name="wpforms[fields][3]" value="4" required />
-                            <svg className="rev-65" width="24" height="24" fill="currentColor" viewBox="0 0 1792 1792">
-                              <path d="M1728 647q0 22-26 48l-363 354 86 500q1 7 1 20 0 21-10.5 35.5t-30.5 14.5q-19 0-40-12l-449-236-449 236q-22 12-40 12-21 0-31.5-14.5t-10.5-35.5q0-6 2-20l86-500-364-354q-25-27-25-48 0-37 56-46l502-73 225-455q19-41 49-41t49 41l225 455 502 73q56 9 56 46z" />
-                            </svg>
-                          </label>
-                          <label className="rev-62" htmlFor="wpforms-1053-field_3_5">
-                            <span className="rev-72">Rate 5 out of 5</span>
-                            <input className="rev-73" type="radio" id="wpforms-1053-field_3_5" name="wpforms[fields][3]" value="5" required />
-                            <svg className="rev-65" width="24" height="24" fill="currentColor" viewBox="0 0 1792 1792">
-                              <path d="M1728 647q0 22-26 48l-363 354 86 500q1 7 1 20 0 21-10.5 35.5t-30.5 14.5q-19 0-40-12l-449-236-449 236q-22 12-40 12-21 0-31.5-14.5t-10.5-35.5q0-6 2-20l86-500-364-354q-25-27-25-48 0-37 56-46l502-73 225-455q19-41 49-41t49 41l225 455 502 73q56 9 56 46z" />
-                            </svg>
-                          </label>
-                        </div>
-                      </div>
-                      <div className="rev-74" data-field="wpforms-1053-field_4-container" data-label="Layout">
-                        <label className="rev-75" htmlFor="wpforms-1053-field_4" aria-hidden="false">Layout</label>
-                        <div className="rev-76">
-                          <div className="rev-77">
-                            <div className="rev-58" data-field="wpforms-1053-field_0-container" data-label="Full Name">
-                              <label className="rev-59" htmlFor="wpforms-1053-field_0">
-                                {"Full Name "}
-                                <span className="rev-60" aria-hidden="true">*</span>
-                              </label>
-                              <input className="rev-78" type="text" id="wpforms-1053-field_0" name="wpforms[fields][0]" required />
-                            </div>
-                          </div>
-                          <div className="rev-77">
-                            <div className="rev-58" data-field="wpforms-1053-field_6-container" data-label="Session Type">
-                              <label className="rev-59" htmlFor="wpforms-1053-field_6">Session Type</label>
-                              <select className="rev-79" id="wpforms-1053-field_6" name="wpforms[fields][6]">
-                                <option className="rev-80" value="Wedding">Wedding</option>
-                                <option className="rev-81" value="Portrait Photography">Portrait Photography</option>
-                                <option className="rev-81" value="Videography">Videography</option>
-                                <option className="rev-81" value="Careers">Careers</option>
-                                <option className="rev-81" value="Agency">Agency</option>
-                                <option className="rev-81" value="Academy">Academy</option>
-                                <option className="rev-81" value="Store">Store</option>
-                              </select>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="rev-58" data-field="wpforms-1053-field_2-container" data-label="Your Story">
-                        <label className="rev-59" htmlFor="wpforms-1053-field_2">Your Story</label>
-                        <textarea className="rev-82" id="wpforms-1053-field_2" name="wpforms[fields][2]" />
-                      </div>
-                    </div>
-                    <div className="rev-83">
-                      <button className="rev-84" type="submit" name="wpforms[submit]" value="wpforms-submit">Submit</button>
-                    </div>
-                  </FormShell>
+                  <StepForm def={reviewForm} />
                 </div>
               </div>
             </div>

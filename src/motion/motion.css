@@ -4,6 +4,12 @@
 ::selection { background: #000; color: #fff; }
 html { scroll-behavior: auto; }
 :focus-visible { outline: 2px solid #000; outline-offset: 3px; }
+/* no blue ring after a mouse/touch click (keyboard focus keeps a visible ring) */
+a:focus:not(:focus-visible), button:focus:not(:focus-visible), [role=button]:focus:not(:focus-visible) { outline: none; }
+a, button { -webkit-tap-highlight-color: transparent; }
+/* the generated header/menu styles carry a blue focus ring: keep keyboard focus visible but black, and none after a click */
+.site-header a:focus, .site-header button:focus, .ftr a:focus, .fm a:focus, .fm button:focus { outline-color: #000; }
+.site-header a:focus:not(:focus-visible), .site-header button:focus:not(:focus-visible), .ftr a:focus:not(:focus-visible), .fm a:focus:not(:focus-visible), .fm button:focus:not(:focus-visible) { outline: none !important; box-shadow: none; }
 img { image-rendering: auto; }
 
 /* header: glass + smart hide */

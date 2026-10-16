@@ -1,0 +1,25 @@
+/* Site forms use the booking panel look (booking.css); these are the small differences for a single-column form. */
+.bk-panel.is-form { max-width: none; width: 100%; margin: 0; }
+.bk-panel.is-form .bk-head { padding: 30px 32px 18px; }
+.bk-panel.is-form .bk-head h3 { font-size: clamp(26px, 3.4vw, 36px); }
+.bk-panel.is-form .bk-steps, .bk-panel.is-form .bk-bar { margin-left: 0; margin-right: 0; padding-left: 32px; padding-right: 32px; }
+.bk-panel.is-form .bk-bar { margin: 0 32px; padding: 0; }
+.bk-panel.is-form .bk-grid { grid-template-columns: minmax(0, 1fr); padding: 30px 32px 6px; gap: 0; }
+.bk-panel.is-form .bk-foot { padding: 22px 32px 32px; }
+.bk-panel.is-form .bk-done { padding: 12px 32px 40px; }
+.bk-panel.is-form .bk-field select { appearance: none; background-image: linear-gradient(45deg, transparent 50%, #fff 50%), linear-gradient(135deg, #fff 50%, transparent 50%); background-position: calc(100% - 20px) 50%, calc(100% - 14px) 50%; background-size: 6px 6px; background-repeat: no-repeat; padding-right: 40px; }
+.bk-panel.is-form .bk-field select option { background: #141414; color: #fff; }
+.sf-stars { display: flex; align-items: center; gap: 4px; }
+.sf-stars button { background: none; border: 0; padding: 2px 4px; font-size: 34px; line-height: 1; color: rgba(255, 255, 255, 0.28); cursor: pointer; transition: color 0.15s, transform 0.15s; }
+.sf-stars button:hover { transform: scale(1.12); }
+.sf-stars button.is-on { color: #fff; }
+.sf-stars span { margin-left: 12px; font-size: 13px; color: rgba(255, 255, 255, 0.62); }
+.sf-hint { display: block; margin-top: 6px; font-size: 12px; color: rgba(255, 255, 255, 0.5); }
+@media (max-width: 900px) {
+  .bk-panel.is-form .bk-head { padding: 24px 22px 16px; }
+  .bk-panel.is-form .bk-steps { padding-left: 22px; padding-right: 22px; }
+  .bk-panel.is-form .bk-bar { margin: 0 22px; }
+  .bk-panel.is-form .bk-grid { padding: 24px 22px 6px; }
+  .bk-panel.is-form .bk-foot { padding: 20px 22px 26px; }
+  .bk-panel.is-form .bk-done { padding: 12px 22px 32px; }
+}
