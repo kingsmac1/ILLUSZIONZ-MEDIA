@@ -7,6 +7,8 @@ export function getRouter() {
     scrollRestoration: true,
     trailingSlash: 'always',
     defaultPreload: 'intent',
+    // crossfade between pages only; hash-only changes (dashboard sections, #book- links) navigate without a transition
+    defaultViewTransition: { types: ({ fromLocation, toLocation }) => (fromLocation && fromLocation.pathname !== toLocation.pathname ? ['page'] : false) },
   })
 }
 

@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'motion/react'
 import { computeQuote, formatGBP, validateField, type Field, type Flow, type Selection } from './catalog'
 import { applyOverrides, type PriceOverride } from './overrides'
 import { site, whatsappLink } from '../site'
+import { smoothScrollTo } from '../motion/scroll'
 import './booking.css'
 
 const STORE_KEY = 'illuszionz:contact'
@@ -180,7 +181,7 @@ export function BookingPanel({ flow: baseFlow, initialOptionId, onClose }: { flo
   const last = i === steps.length - 1
 
   useEffect(() => {
-    bodyRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    smoothScrollTo(bodyRef.current, -120)
   }, [i])
 
   const unitFor = (id: string) => {

@@ -1,6 +1,7 @@
 import { A } from '../components/A'
 import { BackgroundSlideshow } from '../components/BackgroundSlideshow'
 import { Gallery } from '../components/Gallery'
+import { Marquee } from '../components/Marquee'
 import { TestimonialSlider } from '../components/TestimonialSlider'
 import { useContent, toGallery } from '../cms/content'
 import { homeGallery, homeHero, homeTestimonials } from '../cms/builtin'
@@ -59,6 +60,7 @@ export default function Home() {
           </div>
         </div>
       </div>
+      <Marquee />
       <div className="hom-22">
         <div className="hom-23">
           <div className="hom-24">

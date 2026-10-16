@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { flows } from '../booking/catalog'
 import { BookingPanel } from '../booking/BookingPanel'
+import { smoothScrollTo } from '../motion/scroll'
 import './service-cards.css'
 
 export type CardRow = { label: string; note?: string; price?: string; optionId?: string }
@@ -65,7 +66,7 @@ export function BookableGrid({ cards, columns = 3, id, children }: { cards: Card
 
   useEffect(() => {
     if (!open) return
-    const t = setTimeout(() => slotRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 140)
+    const t = setTimeout(() => smoothScrollTo(slotRef.current), 140)
     return () => clearTimeout(t)
   }, [open?.key]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -170,7 +171,7 @@ export function BookNow({ flowId, optionId, label, className }: { flowId: string
   const ref = useRef<HTMLDivElement>(null)
   useEffect(() => {
     if (!open) return
-    const t = setTimeout(() => ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 140)
+    const t = setTimeout(() => smoothScrollTo(ref.current), 140)
     return () => clearTimeout(t)
   }, [open])
   useEffect(() => {

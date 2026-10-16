@@ -1,4 +1,5 @@
 import { A } from './A'
+import { scrollToTop } from '../motion/scroll'
 import { site, whatsappLink } from '../site'
 import './footer.css'
 
@@ -58,7 +59,7 @@ export function Footer() {
       </div>
       <div className="ftr-bottom">
         <span>© {new Date().getFullYear()} {site.shortName}. All rights reserved.</span>
-        <a href="#top" onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }) }}>Back to top ↑</a>
+        <a href="#top" onClick={(e) => { e.preventDefault(); scrollToTop() }}>Back to top ↑</a>
       </div>
     </footer>
   )

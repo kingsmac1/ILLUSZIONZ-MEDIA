@@ -4,6 +4,7 @@ import { adminApi, supabase } from '../supabase'
 import { useData, useDb, type R } from '../data'
 import { Badge, Empty, Field, Modal, PageHead, Tabs, ago, fmtDate } from '../ui'
 import { LIFECYCLES, SOURCES } from '../crm/shared'
+import { flows } from '../../booking/catalog'
 import { EmailBuilder } from '../builder/EmailBuilder'
 import { blocksEmail } from '../../server/mail'
 import { blocksToHtml, blocksToText, defaultBlocks, type EmailBlock } from '../../server/emailBlocks'
@@ -129,9 +130,11 @@ function CampaignEditor({ campaign, onClose }: { campaign?: R; onClose: () => vo
   const [progress, setProgress] = useState('')
   const [to, setTo] = useState('')
   const [savedId, setSavedId] = useState<string | null>(campaign?.id ?? null)
+  const [segId, setSegId] = useState('')
   const set = (k: string, v: unknown) => setF((c) => ({ ...c, [k]: v }))
   const aud: AudienceFilter = f.audience
-  const setAud = (p: Partial<AudienceFilter>) => set('audience', { ...aud, ...p })
+  const setAud = (p: Partial<AudienceFilter>) => { setSegId(''); set('audience', { ...aud, ...p }) }
+  const loadSegment = (id: string) => { setSegId(id); const sg = d.segments.find((x) => x.id === id); set('audience', sg ? { ...(sg.filter as AudienceFilter) } : {}) }
   const locked = campaign && campaign.status !== 'draft'
   const tags = [...new Set(d.contacts.flatMap((c) => c.tags ?? []))]
   const builder = mode === 'builder'
@@ -187,10 +190,11 @@ function CampaignEditor({ campaign, onClose }: { campaign?: R; onClose: () => vo
     <div className="ad-card" style={{ marginBottom: 14 }}>
       <h3>Audience <small>only people who allow marketing</small></h3>
       <div className="ad-form" style={{ gridTemplateColumns: builder ? 'repeat(3, minmax(0,1fr))' : '1fr' }}>
-        <Field label="Saved segment"><select disabled={locked} value="" onChange={(e) => { const sg = d.segments.find((x) => x.id === e.target.value); if (sg) set('audience', sg.filter) }}><option value="">Load a segment…</option>{d.segments.map((sg) => <option key={sg.id} value={sg.id}>{sg.name}</option>)}</select></Field>
+        <Field label="Saved segment" hint={segId ? 'Loaded — the filters below show what it selects. Change any of them to customise.' : 'Pick one to fill the filters below.'}><select disabled={locked} value={segId} onChange={(e) => loadSegment(e.target.value)}><option value="">— none (set filters manually) —</option>{d.segments.map((sg) => <option key={sg.id} value={sg.id}>{sg.name}</option>)}</select></Field>
         <Field label="Source"><select disabled={locked} value={aud.source?.[0] ?? ''} onChange={(e) => setAud({ source: e.target.value ? [e.target.value] : undefined })}><option value="">Any</option>{SOURCES.map((x) => <option key={x}>{x}</option>)}</select></Field>
         <Field label="Tag"><select disabled={locked} value={aud.tag ?? ''} onChange={(e) => setAud({ tag: e.target.value || undefined })}><option value="">Any</option>{tags.map((x) => <option key={x}>{x}</option>)}</select></Field>
         <Field label="Lifecycle" full={builder}><div className="ad-seg" style={{ marginBottom: 0 }}>{LIFECYCLES.map((l) => <button type="button" key={l} disabled={locked} className={aud.lifecycle?.includes(l) ? 'on' : ''} onClick={() => setAud({ lifecycle: aud.lifecycle?.includes(l) ? aud.lifecycle.filter((x) => x !== l) : [...(aud.lifecycle ?? []), l] })}>{l}</button>)}</div></Field>
+        <Field label="Booked service"><select disabled={locked} value={aud.service ?? ''} onChange={(e) => setAud({ service: e.target.value || undefined })}><option value="">Any</option>{Object.values(flows).map((x) => <option key={x.id} value={x.id}>{x.title}</option>)}</select></Field>
         <Field label="Booked?"><select disabled={locked} value={aud.booked ?? ''} onChange={(e) => setAud({ booked: (e.target.value || '') as any })}><option value="">Either</option><option value="yes">Has booked</option><option value="no">Never booked</option></select></Field>
         <Field label="Quiet for"><select disabled={locked} value={aud.inactiveDays ?? ''} onChange={(e) => setAud({ inactiveDays: Number(e.target.value) || undefined })}><option value="">Any</option><option value="30">30+ days</option><option value="90">90+ days</option><option value="180">180+ days</option></select></Field>
       </div>
@@ -233,7 +237,7 @@ function CampaignEditor({ campaign, onClose }: { campaign?: R; onClose: () => vo
       <div className="ad-actions" style={{ justifyContent: 'space-between', marginTop: 18 }}>
         <div className="ad-actions"><input type="email" placeholder="Test to… (default: you)" value={to} onChange={(e) => setTo(e.target.value)} style={{ width: 220 }} /><button className="ad-btn" disabled={!!busy} onClick={test}>{busy === 'test' ? 'Sending…' : 'Send test'}</button></div>
         <div className="ad-actions">{progress && <span className="ad-muted">{progress}</span>}{!locked && <button className="ad-btn" disabled={!!busy} onClick={draft}>Save draft</button>}
-          <button className="ad-btn primary" disabled={!!busy || campaign?.status === 'sent'} onClick={sendNow}>{busy === 'send' ? 'Sending…' : campaign?.status === 'sending' ? 'Resume sending' : `Send to ${count ?? '…'}`}</button></div>
+          <button className="ad-btn primary" disabled={!!busy || campaign?.status === 'sent' || count === null} onClick={sendNow}>{busy === 'send' ? 'Sending…' : campaign?.status === 'sending' ? 'Resume sending' : `Send to ${count ?? '…'}`}</button></div>
       </div>
     </Modal>
   )

@@ -276,6 +276,16 @@ ok('send log lists campaign emails', (await page.locator('tbody tr').count()) >=
 
 // ── email builder campaign ──
 await page.click('.ad-tabs button:has-text("Campaigns")')
+// saved segments must load into the campaign audience
+await fetch(SB + '/rest/v1/segments', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: 'Quiet clients', filter: { lifecycle: ['client'], inactiveDays: 90 } }) })
+await page.reload({ waitUntil: 'networkidle' })
+await page.waitForSelector('.ad-side')
+await go('#/emails', 'Emails')
+await page.click('.ad-tabs button:has-text("Campaigns")')
+await page.click('button:has-text("+ New campaign")')
+await page.locator('.ad-modal label:has-text("Saved segment") select').selectOption({ label: 'Quiet clients' })
+ok('loading a saved segment keeps it selected and fills the filters', (await page.locator('.ad-modal label:has-text("Saved segment") select option:checked').textContent()) === 'Quiet clients' && (await page.locator('.ad-modal .ad-seg button.on', { hasText: 'client' }).count()) === 1 && (await page.locator('.ad-modal label:has-text("Quiet for") select').inputValue()) === '90')
+await page.keyboard.press('Escape')
 await page.click('button:has-text("+ New campaign")')
 await page.locator('.ad-modal label:has-text("Campaign name") input').fill('Builder newsletter')
 await page.locator('.ad-modal label:has-text("Subject line") input').fill('Built with the builder')
@@ -319,6 +329,7 @@ ok('campaign stored with its blocks', bc && Array.isArray(bc.blocks) && bc.block
 await page.locator('tbody tr', { hasText: 'Builder newsletter' }).click()
 await page.waitForSelector('.ab')
 ok('reopening a builder campaign restores the builder', (await page.locator('.ab-block').count()) === 7)
+await page.waitForSelector('.ad-modal button:has-text("Send to"):not([disabled])')
 await page.click('.ad-modal button:has-text("Send to")')
 await page.waitForSelector('.ad-toast:has-text("Campaign sent")', { timeout: 20000 })
 db = await dump()

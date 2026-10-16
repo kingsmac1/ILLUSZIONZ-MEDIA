@@ -3,6 +3,7 @@ import { MenuProvider } from './MenuContext'
 import { MenuPopup } from './MenuPopup'
 import { Footer } from './Footer'
 import { NoticeBar } from './NoticeBar'
+import { Motion } from '../motion/Motion'
 import HeaderBar from '../generated/HeaderBar'
 
 export function SiteLayout({ children }: { children: ReactNode }) {
@@ -17,6 +18,7 @@ export function SiteLayout({ children }: { children: ReactNode }) {
         <Footer />
       </div>
       <MenuPopup />
+      <Motion />
     </MenuProvider>
   )
 }

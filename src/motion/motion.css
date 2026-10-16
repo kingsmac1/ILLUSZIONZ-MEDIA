@@ -1,0 +1,59 @@
+@import 'lenis/dist/lenis.css';
+
+/* ───────── polish that is always on ───────── */
+::selection { background: #000; color: #fff; }
+html { scroll-behavior: auto; }
+:focus-visible { outline: 2px solid #000; outline-offset: 3px; }
+img { image-rendering: auto; }
+
+/* header: glass + smart hide */
+.site-header { transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.4s ease; view-transition-name: site-header; }
+.site-header .hd-1 { transition: background-color 0.4s ease, backdrop-filter 0.4s ease; }
+.site-header.is-scrolled .hd-1 { background-color: rgba(255, 255, 255, 0.82); -webkit-backdrop-filter: blur(16px) saturate(1.5); backdrop-filter: blur(16px) saturate(1.5); }
+.site-header.is-scrolled { box-shadow: 0 1px 0 rgba(0, 0, 0, 0.06), 0 12px 30px -18px rgba(0, 0, 0, 0.3); }
+.site-header.is-hidden { transform: translateY(-110%); }
+
+/* scroll progress + cursor lens */
+.scroll-progress { position: fixed; left: 0; top: 0; z-index: 10000; height: 3px; width: 100%; background: #000; transform-origin: 0 50%; transform: scaleX(0); pointer-events: none; mix-blend-mode: difference; background: #fff; }
+.cursor-lens { position: fixed; left: 0; top: 0; z-index: 10001; width: 38px; height: 38px; margin: -19px 0 0 -19px; border: 1.5px solid #fff; border-radius: 50%; pointer-events: none; mix-blend-mode: difference; opacity: 0; transform: translate3d(-100px, -100px, 0); transition: opacity 0.3s ease, width 0.35s cubic-bezier(0.22, 1, 0.36, 1), height 0.35s cubic-bezier(0.22, 1, 0.36, 1), margin 0.35s cubic-bezier(0.22, 1, 0.36, 1), background-color 0.3s ease; }
+.cursor-lens.is-on { opacity: 1; }
+.cursor-lens.is-hot { width: 64px; height: 64px; margin: -32px 0 0 -32px; background: #fff; border-color: #fff; }
+.cursor-lens.is-view { width: 92px; height: 92px; margin: -46px 0 0 -46px; }
+
+/* hero slideshow is oversized so its parallax never exposes an edge */
+html.motion-on .bg-slideshow { inset: -16% 0 -16% 0; height: auto; }
+
+/* masked heading lines */
+.split-line { display: block; }
+
+/* hover polish */
+.sc-card { transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.6s ease; }
+html.motion-on .sc-card:hover { box-shadow: 0 40px 70px -40px rgba(0, 0, 0, 0.45); }
+.sc-img img, .gallery__item img { transition: transform 0.9s cubic-bezier(0.22, 1, 0.36, 1); }
+.sc-card:hover .sc-img img { transform: scale(1.06); }
+.gallery__item:hover img { transform: scale(1.05); }
+
+/* marquee ticker */
+.mq { overflow: hidden; background: #000; color: #fff; padding: 26px 0; border-block: 1px solid rgba(255, 255, 255, 0.12); user-select: none; }
+.mq-track { display: flex; width: max-content; animation: mq 38s linear infinite; }
+.mq:hover .mq-track { animation-play-state: paused; }
+.mq-group { display: flex; align-items: center; flex: none; }
+.mq-item { font-family: 'Playfair Display', serif; font-size: clamp(30px, 5vw, 64px); line-height: 1; font-weight: 500; white-space: nowrap; padding: 0 clamp(18px, 3vw, 40px); letter-spacing: -0.01em; }
+.mq-item:nth-child(even) { color: transparent; -webkit-text-stroke: 1.2px rgba(255, 255, 255, 0.85); font-style: italic; }
+.mq-dot { width: 10px; height: 10px; border-radius: 50%; background: #fff; flex: none; opacity: 0.8; }
+@keyframes mq { to { transform: translateX(-50%); } }
+
+/* page transitions (View Transitions API) */
+::view-transition-old(root) { animation: vt-out 0.38s cubic-bezier(0.4, 0, 0.2, 1) both; }
+::view-transition-new(root) { animation: vt-in 0.7s cubic-bezier(0.16, 1, 0.3, 1) both; }
+::view-transition-group(site-header) { animation-duration: 0s; }
+@keyframes vt-out { to { opacity: 0; transform: translateY(-14px) scale(0.995); } }
+@keyframes vt-in { from { opacity: 0; transform: translateY(28px); } }
+
+@media (hover: none), (pointer: coarse) { .cursor-lens { display: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .mq-track { animation: none; }
+  ::view-transition-old(root), ::view-transition-new(root) { animation: none; }
+  html { scroll-behavior: smooth; }
+}
+html.motion-on .hom-21 { overflow: hidden; }

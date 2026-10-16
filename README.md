@@ -110,3 +110,9 @@ public/images, fonts   every image and font used by the site
 My Site Reference/     snapshot of the original site (HTML, CSS, images, screenshots, WordPress API data)
 MIGRATION-NOTES.md     progress log, open decisions, content typos
 ```
+
+## Motion layer (public site)
+`src/motion/` — Lenis smooth scrolling, GSAP ScrollTrigger + SplitText reveals (masked heading lines, staggered text/cards, image reveals, hero + gallery
+parallax, count-up numbers), magnetic buttons, a cursor lens, a smart glass header, a scroll-progress bar, a service marquee on the home page, and
+View Transitions between pages (`router.tsx`). Content is pre-hidden by CSS only while JS will reveal it (4 s failsafe), nothing is hidden for visitors who prefer
+reduced motion or have JavaScript off, and setup waits for React hydration. Tests: `node tests/motion-e2e.mjs` against the preview.

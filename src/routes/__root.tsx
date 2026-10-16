@@ -4,6 +4,7 @@ import type { ReactNode } from 'react'
 import appCss from '../styles.css?url'
 import { SiteLayout } from '../components/SiteLayout'
 import { jsonLd } from '../seo'
+import { motionPreCss, motionPreScript } from '../motion/targets'
 
 export const Route = createRootRoute({
   head: () => ({
@@ -12,7 +13,8 @@ export const Route = createRootRoute({
       { rel: 'stylesheet', href: appCss },
       { rel: 'icon', href: '/favicon.svg', type: 'image/svg+xml' },
     ],
-    scripts: [{ type: 'application/ld+json', children: JSON.stringify(jsonLd) }],
+    styles: [{ children: motionPreCss }],
+    scripts: [{ children: motionPreScript }, { type: 'application/ld+json', children: JSON.stringify(jsonLd) }],
   }),
   component: RootComponent,
   notFoundComponent: NotFound,
