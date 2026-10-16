@@ -1,0 +1,148 @@
+.elementor-276 .elementor-element.elementor-element-b5bcf87{--display:flex;--flex-direction:column;--container-widget-width:100%;--container-widget-height:initial;--container-widget-flex-grow:0;--container-widget-align-self:initial;--flex-wrap-mobile:wrap;}.elementor-276 .elementor-element.elementor-element-367349e{--display:flex;--min-height:400px;--flex-direction:column;--container-widget-width:calc( ( 1 - var( --container-widget-flex-grow ) ) * 100% );--container-widget-height:initial;--container-widget-flex-grow:0;--container-widget-align-self:initial;--flex-wrap-mobile:wrap;--justify-content:center;--align-items:center;}.elementor-widget-heading .elementor-heading-title{font-family:var( --e-global-typography-primary-font-family ), Sans-serif;font-weight:var( --e-global-typography-primary-font-weight );color:var( --e-global-color-primary );}.elementor-276 .elementor-element.elementor-element-823d4a0{text-align:center;}.elementor-276 .elementor-element.elementor-element-823d4a0 .elementor-heading-title{font-family:"Inter", Sans-serif;font-size:12px;font-weight:700;text-transform:uppercase;line-height:1rem;letter-spacing:0.5em;color:var( --e-global-color-3d1deef );}.elementor-276 .elementor-element.elementor-element-0e01af7{text-align:center;}.elementor-276 .elementor-element.elementor-element-0e01af7 .elementor-heading-title{font-family:"Playfair Display", Sans-serif;font-size:70px;font-weight:500;color:var( --e-global-color-e631ba2 );}.elementor-widget-divider{--divider-color:var( --e-global-color-secondary );}.elementor-widget-divider .elementor-divider__text{color:var( --e-global-color-secondary );font-family:var( --e-global-typography-secondary-font-family ), Sans-serif;font-weight:var( --e-global-typography-secondary-font-weight );}.elementor-widget-divider.elementor-view-stacked .elementor-icon{background-color:var( --e-global-color-secondary );}.elementor-widget-divider.elementor-view-framed .elementor-icon, .elementor-widget-divider.elementor-view-default .elementor-icon{color:var( --e-global-color-secondary );border-color:var( --e-global-color-secondary );}.elementor-widget-divider.elementor-view-framed .elementor-icon, .elementor-widget-divider.elementor-view-default .elementor-icon svg{fill:var( --e-global-color-secondary );}.elementor-276 .elementor-element.elementor-element-ec37c0c{--divider-border-style:solid;--divider-color:#000;--divider-border-width:1px;}.elementor-276 .elementor-element.elementor-element-ec37c0c .elementor-divider-separator{width:9%;margin:0 auto;margin-center:0;}.elementor-276 .elementor-element.elementor-element-ec37c0c .elementor-divider{text-align:center;padding-block-start:10px;padding-block-end:10px;}.elementor-widget-text-editor{font-family:var( --e-global-typography-text-font-family ), Sans-serif;font-weight:var( --e-global-typography-text-font-weight );color:var( --e-global-color-text );}.elementor-widget-text-editor.elementor-drop-cap-view-stacked .elementor-drop-cap{background-color:var( --e-global-color-primary );}.elementor-widget-text-editor.elementor-drop-cap-view-framed .elementor-drop-cap, .elementor-widget-text-editor.elementor-drop-cap-view-default .elementor-drop-cap{color:var( --e-global-color-primary );border-color:var( --e-global-color-primary );}.elementor-276 .elementor-element.elementor-element-adead69{width:var( --container-widget-width, 69% );max-width:69%;--container-widget-width:69%;--container-widget-flex-grow:0;text-align:center;font-family:var( --e-global-typography-795dafb-font-family ), Sans-serif;font-size:var( --e-global-typography-795dafb-font-size );font-weight:var( --e-global-typography-795dafb-font-weight );color:var( --e-global-color-94e04a8 );}.elementor-276 .elementor-element.elementor-element-a90620f{--display:flex;--padding-top:0px;--padding-bottom:70px;--padding-left:30px;--padding-right:30px;}:root{--page-title-display:none;}@media(max-width:1024px){.elementor-276 .elementor-element.elementor-element-adead69{font-size:var( --e-global-typography-795dafb-font-size );}}@media(max-width:767px){.elementor-276 .elementor-element.elementor-element-0e01af7{width:var( --container-widget-width, 253px );max-width:253px;--container-widget-width:253px;--container-widget-flex-grow:0;}.elementor-276 .elementor-element.elementor-element-0e01af7 .elementor-heading-title{font-size:40px;}.elementor-276 .elementor-element.elementor-element-adead69{--container-widget-width:420px;--container-widget-flex-grow:0;width:var( --container-widget-width, 420px );max-width:420px;font-size:var( --e-global-typography-795dafb-font-size );}.elementor-276 .elementor-element.elementor-element-a90620f{--padding-top:50px;--padding-bottom:50px;--padding-left:30px;--padding-right:30px;}}/* Start custom CSS for html, class: .elementor-element-882e3c0 */* {
+  box-sizing: border-box;
+  font-family: "Georgia", serif;
+}
+
+/* GRID */
+.course-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+}
+
+/* CARD */
+.course-card {
+  border: 1px solid #e5e5e5;
+  background: #fff;
+  transition: box-shadow 0.35s ease;
+}
+
+/* Box shadow on hover */
+.course-card:hover {
+  box-shadow: 0 12px 30px rgba(0,0,0,0.08);
+}
+
+/* IMAGE */
+.course-image {
+  position: relative;
+  overflow: hidden;
+}
+
+.course-image img {
+  width: 100%;
+  display: block;
+  filter: grayscale(100%);
+  transform: scale(1);
+  transition: all 0.4s ease;
+}
+
+/* ICON */
+.course-icon {
+  background: transparent;
+  border: none;
+}
+
+/* CONTENT */
+.course-content {
+  padding: 22px;
+}
+
+.course-title {
+  font-size: 18px;
+  margin: 0;
+  padding: 0px 0px 10px;
+  font-weight: 500;
+  transition: font-style 0.3s ease;
+}
+
+.title {
+  font-size: 22px;
+  margin: 0
+  transition: font-style 0.3s ease;
+}
+
+}
+
+/* Divider line */
+.divider {
+  width: 100%;
+  height: 1px;
+  background: #e5e5e5;
+  margin: 14px 0;
+}
+
+.session-list {
+    font-size: 16px; !important
+}
+
+.session-list{
+    padding: 0px 20px 10px 30px;
+}
+
+.session-list {
+    font-weight: 400; !important
+}
+
+.course-description {
+  font-size: 14px;
+  color: #fff;
+  margin-bottom: 18px;
+}
+
+/* META */
+.course-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 20px;
+  color: #000;
+  margin-bottom: 8px;
+}
+
+/* HOVER EFFECTS (LIMITED AS REQUESTED) */
+.course-card:hover img {
+  filter: grayscale(0%);
+  transform: scale(1.06);
+}
+
+.course-card:hover .course-icon {
+  background: #000;
+  color: #fff;
+  border-color: #000;
+}
+
+.course-card:hover .course-title {
+  font-style: italic;
+}
+
+/* RESPONSIVE */
+@media (max-width: 1100px) {
+  .course-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .course-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Make entire card clickable without link styling */
+.card-link {
+  display: block;
+  text-decoration: none !important;
+  color: inherit !important;
+}
+
+/* Force all text inside card to stay black */
+.card-link * {
+  color: #555 !important;
+}
+
+.card-link * .course-title {
+  color: #000 !important;
+}
+
+.card-link * .course-meta {
+  color: #000 !important;
+}/* End custom CSS */

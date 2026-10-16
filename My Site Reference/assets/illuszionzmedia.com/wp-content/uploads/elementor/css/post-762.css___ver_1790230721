@@ -1,0 +1,45 @@
+.elementor-762 .elementor-element.elementor-element-d6e021f{--display:flex;--flex-direction:column;--container-widget-width:100%;--container-widget-height:initial;--container-widget-flex-grow:0;--container-widget-align-self:initial;--flex-wrap-mobile:wrap;border-style:solid;--border-style:solid;border-width:0px 0px 01px 0px;--border-top-width:0px;--border-right-width:0px;--border-bottom-width:01px;--border-left-width:0px;border-color:#E5E5E5;--border-color:#E5E5E5;--padding-top:0px;--padding-bottom:0px;--padding-left:0px;--padding-right:0px;}.elementor-762 .elementor-element.elementor-element-134d4c8{--display:flex;--min-height:400px;--flex-direction:column;--container-widget-width:calc( ( 1 - var( --container-widget-flex-grow ) ) * 100% );--container-widget-height:initial;--container-widget-flex-grow:0;--container-widget-align-self:initial;--flex-wrap-mobile:wrap;--justify-content:center;--align-items:center;--padding-top:0px;--padding-bottom:0px;--padding-left:0px;--padding-right:0px;}.elementor-widget-heading .elementor-heading-title{font-family:var( --e-global-typography-primary-font-family ), Sans-serif;font-weight:var( --e-global-typography-primary-font-weight );color:var( --e-global-color-primary );}.elementor-762 .elementor-element.elementor-element-b8ea5af{text-align:center;}.elementor-762 .elementor-element.elementor-element-b8ea5af .elementor-heading-title{font-family:"Inter", Sans-serif;font-size:12px;font-weight:700;text-transform:uppercase;line-height:1rem;letter-spacing:0.5em;color:var( --e-global-color-3d1deef );}.elementor-762 .elementor-element.elementor-element-ad6bde0{text-align:center;}.elementor-762 .elementor-element.elementor-element-ad6bde0 .elementor-heading-title{font-family:"Playfair Display", Sans-serif;font-size:70px;font-weight:500;color:var( --e-global-color-e631ba2 );}.elementor-widget-divider{--divider-color:var( --e-global-color-secondary );}.elementor-widget-divider .elementor-divider__text{color:var( --e-global-color-secondary );font-family:var( --e-global-typography-secondary-font-family ), Sans-serif;font-weight:var( --e-global-typography-secondary-font-weight );}.elementor-widget-divider.elementor-view-stacked .elementor-icon{background-color:var( --e-global-color-secondary );}.elementor-widget-divider.elementor-view-framed .elementor-icon, .elementor-widget-divider.elementor-view-default .elementor-icon{color:var( --e-global-color-secondary );border-color:var( --e-global-color-secondary );}.elementor-widget-divider.elementor-view-framed .elementor-icon, .elementor-widget-divider.elementor-view-default .elementor-icon svg{fill:var( --e-global-color-secondary );}.elementor-762 .elementor-element.elementor-element-06257a2{--divider-border-style:solid;--divider-color:#000;--divider-border-width:1px;}.elementor-762 .elementor-element.elementor-element-06257a2 .elementor-divider-separator{width:9%;margin:0 auto;margin-center:0;}.elementor-762 .elementor-element.elementor-element-06257a2 .elementor-divider{text-align:center;padding-block-start:10px;padding-block-end:10px;}.elementor-widget-text-editor{font-family:var( --e-global-typography-text-font-family ), Sans-serif;font-weight:var( --e-global-typography-text-font-weight );color:var( --e-global-color-text );}.elementor-widget-text-editor.elementor-drop-cap-view-stacked .elementor-drop-cap{background-color:var( --e-global-color-primary );}.elementor-widget-text-editor.elementor-drop-cap-view-framed .elementor-drop-cap, .elementor-widget-text-editor.elementor-drop-cap-view-default .elementor-drop-cap{color:var( --e-global-color-primary );border-color:var( --e-global-color-primary );}.elementor-762 .elementor-element.elementor-element-9343d47{width:var( --container-widget-width, 48% );max-width:48%;--container-widget-width:48%;--container-widget-flex-grow:0;text-align:center;font-family:var( --e-global-typography-795dafb-font-family ), Sans-serif;font-size:var( --e-global-typography-795dafb-font-size );font-weight:var( --e-global-typography-795dafb-font-weight );color:var( --e-global-color-94e04a8 );}.elementor-762 .elementor-element.elementor-element-9343d47 p{margin-block-end:0px;}.elementor-762 .elementor-element.elementor-element-37e4225{--display:flex;--flex-direction:column;--container-widget-width:calc( ( 1 - var( --container-widget-flex-grow ) ) * 100% );--container-widget-height:initial;--container-widget-flex-grow:0;--container-widget-align-self:initial;--flex-wrap-mobile:wrap;--justify-content:center;--align-items:center;--padding-top:0px;--padding-bottom:70px;--padding-left:0px;--padding-right:0px;}.elementor-762 .elementor-element.elementor-element-85b00c7{width:var( --container-widget-width, 43% );max-width:43%;--container-widget-width:43%;--container-widget-flex-grow:0;}:root{--page-title-display:none;}@media(max-width:1024px){.elementor-762 .elementor-element.elementor-element-9343d47{font-size:var( --e-global-typography-795dafb-font-size );}.elementor-762 .elementor-element.elementor-element-85b00c7{--container-widget-width:526px;--container-widget-flex-grow:0;width:var( --container-widget-width, 526px );max-width:526px;}}@media(max-width:767px){.elementor-762 .elementor-element.elementor-element-ad6bde0 .elementor-heading-title{font-size:40px;}.elementor-762 .elementor-element.elementor-element-9343d47{--container-widget-width:278px;--container-widget-flex-grow:0;width:var( --container-widget-width, 278px );max-width:278px;font-size:var( --e-global-typography-795dafb-font-size );}}/* Start custom CSS for wpforms, class: .elementor-element-85b00c7 *//* CHECKBOX & RADIO SECTION HEADERS */
+.wpforms-container .wpforms-field-label {
+  font-weight: 600 !important; /* lighter header */
+  font-size: 14px !important;
+  color: #000 !important;
+}
+
+/* FORM BACKGROUND */
+.wpforms-container form {
+  background: #fafafa !important;
+  padding: 30px !important;
+  border-radius: 8px !important;
+}
+
+/* INPUT & TEXTAREA BACKGROUND */
+.wpforms-container input[type="text"],
+.wpforms-container input[type="email"],
+.wpforms-container input[type="tel"],
+.wpforms-container input[type="number"],
+.wpforms-container textarea {
+  background: #fff !important;
+  color: #000 !important;
+  font-size: 14px !important;
+  border: 1px solid #a3a3a !important;
+  padding: 12px !important;
+}
+
+/* FULL WIDTH BUTTON */
+.wpforms-container .wpforms-submit {
+  width: 100% !important;
+  background: #000 !important;
+  color: #fff !important;
+  font-size: 14px !important;
+  padding: 14px !important;
+  border-radius: 4px !important;
+  border: none !important;
+  cursor: pointer !important;
+}
+
+/* LABEL TEXT */
+.wpforms-container label {
+  color: #000 !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+}/* End custom CSS */

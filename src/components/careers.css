@@ -1,0 +1,18 @@
+/* Open Roles accordion (styles carried over from the original page's custom block) */
+.careers * { box-sizing: border-box; margin: 0; padding: 0; }
+.careers { max-width: 1000px; margin: auto; font-family: "Georgia", serif; color: #000; }
+.career-item { border-bottom: 1px solid #e5e5e5; padding: 32px 0; }
+.career-header { display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+.career-title { font-size: 20px; font-weight: 500; transition: font-style 0.3s ease; }
+.career-header:hover .career-title { font-style: italic; }
+.career-meta { font-size: 10px; letter-spacing: 1px; color: #888; margin-left: 16px; }
+.career-left { display: flex; align-items: center; gap: 16px; }
+.toggle-btn { width: 34px; height: 34px; border: 1px solid #000; background: #fff; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease; flex-shrink: 0; }
+.toggle-btn svg { width: 14px; height: 14px; stroke: #000; stroke-width: 2; }
+.career-header:hover .toggle-btn { background: #000; }
+.career-header:hover .toggle-btn svg { stroke: #fff; }
+.career-item.active .toggle-btn { background: #000; }
+.career-item.active .toggle-btn svg { stroke: #fff; }
+.career-content { max-width: 720px; margin-top: 20px; overflow: hidden; max-height: 0; opacity: 0; transition: max-height 0.45s ease, opacity 0.3s ease; }
+.career-item.active .career-content { opacity: 1; }
+.career-content p { line-height: 1.7; color: #444; margin-bottom: 24px; }

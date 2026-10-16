@@ -1,0 +1,17 @@
+# Copy to .dev.vars for local work (wrangler pages dev + vite dev read it). In production set these in
+# Cloudflare Pages → Settings → Environment variables (Production) as secrets.
+RESEND_API_KEY=re_xxxxxxxxxxxxxxxx
+EMAIL_FROM=Illuszionz Media <bookings@illuszionzmedia.com>
+OWNER_EMAIL=info@illuszionzmedia.com
+SITE_URL=https://illuszionzmedia.com
+# MAIL_DRY_RUN=1 skips sending and returns the rendered emails in the API response (testing only)
+
+# --- Dashboard + CRM (Supabase) -------------------------------------------------------------
+# Server-side (Cloudflare Pages secrets). The service-role key must NEVER be exposed to the browser.
+SUPABASE_URL=https://YOUR-PROJECT.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=eyJ...
+# Shared secret that pg_cron sends in the x-cron-secret header (see supabase/schema.sql)
+CRON_SECRET=change-me-to-a-long-random-string
+# Browser-side (Vite build-time variables — set them in Cloudflare Pages → Build variables too). The anon key is public by design.
+VITE_SUPABASE_URL=https://YOUR-PROJECT.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJ...

@@ -1,0 +1,76 @@
+.age-1{box-sizing:border-box;color:rgb(51, 51, 51);font-family:-apple-system, "system-ui", "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"}
+.age-2{display:flex;position:relative;flex-direction:column;box-sizing:border-box;max-width:100%;transition-property:background, border, box-shadow, transform;transition-duration:0.3s, 0.3s, 0.3s, 0.4s;transition-timing-function:ease, ease, ease, ease;transition-delay:0s, 0s, 0s, 0s}
+.age-3{display:flex;flex-direction:column;flex-grow:1;row-gap:20px;column-gap:20px;margin-right:auto;margin-left:auto;box-sizing:border-box;max-width:min(100%, 1140px);width:min(1140px, 100%)}
+.age-4{display:flex;position:relative;flex-direction:column;justify-content:center;align-items:center;row-gap:20px;column-gap:20px;box-sizing:border-box;min-height:400px;transition-property:background, border, box-shadow, transform;transition-duration:0.3s, 0.3s, 0.3s, 0.4s;transition-timing-function:ease, ease, ease, ease;transition-delay:0s, 0s, 0s, 0s}
+.age-5{position:relative;row-gap:20px;column-gap:20px;box-sizing:border-box;max-width:100%;text-align:center;transition-property:background, border, border-radius, box-shadow, transform;transition-duration:0.3s, 0.3s, 0.3s, 0.3s, 0.4s;transition-timing-function:ease, ease, ease, ease, ease;transition-delay:0s, 0s, 0s, 0s, 0s}
+.age-6{margin-top:0px;margin-bottom:0px;box-sizing:border-box;color:rgb(163, 163, 163);font-family:Inter, sans-serif;font-size:12px;line-height:16px;letter-spacing:6px;text-transform:uppercase}
+.age-7{margin-top:0px;margin-bottom:0px;box-sizing:border-box;color:rgb(0, 0, 0);font-family:"Playfair Display", sans-serif;font-size:70px;font-weight:500;line-height:70px}
+.age-8{box-sizing:border-box}
+.age-9{position:relative;row-gap:20px;column-gap:20px;box-sizing:border-box;max-width:100%;transition-property:background, border, border-radius, box-shadow, transform;transition-duration:0.3s, 0.3s, 0.3s, 0.3s, 0.4s;transition-timing-function:ease, ease, ease, ease, ease;transition-delay:0s, 0s, 0s, 0s, 0s;width:min(1140px, 100%)}
+.age-10{display:flex;padding-top:10px;padding-bottom:10px;box-sizing:border-box;text-align:center}
+.age-11{display:flex;margin-right:518.703px;margin-left:518.703px;border-top-width:1px;border-top-style:solid;border-top-color:rgb(0, 0, 0);box-sizing:border-box;width:9%}
+.age-12{position:relative;row-gap:20px;column-gap:20px;box-sizing:border-box;max-width:100%;color:rgb(82, 82, 82);font-family:Inter, sans-serif;text-align:center;transition-property:background, border, border-radius, box-shadow, transform;transition-duration:0.3s, 0.3s, 0.3s, 0.3s, 0.4s;transition-timing-function:ease, ease, ease, ease, ease;transition-delay:0s, 0s, 0s, 0s, 0s;width:min(786.59px, 100%)}
+.age-13{margin-top:0px;margin-bottom:14.4px;box-sizing:border-box}
+.age-14{display:flex;position:relative;flex-direction:column;padding-right:10px;padding-left:10px;box-sizing:border-box;max-width:100%;transition-property:background, border, box-shadow, transform;transition-duration:0.3s, 0.3s, 0.3s, 0.4s;transition-timing-function:ease, ease, ease, ease;transition-delay:0s, 0s, 0s, 0s}
+.age-15{display:flex;flex-direction:column;flex-grow:1;row-gap:20px;column-gap:20px;margin-right:auto;margin-left:auto;padding-top:10px;padding-bottom:10px;box-sizing:border-box;max-width:min(100%, 1140px);width:100%}
+.age-16{position:relative;row-gap:20px;column-gap:20px;box-sizing:border-box;max-width:100%;transition-property:background, border, border-radius, box-shadow, transform;transition-duration:0.3s, 0.3s, 0.3s, 0.3s, 0.4s;transition-timing-function:ease, ease, ease, ease, ease;transition-delay:0s, 0s, 0s, 0s, 0s}
+.age-17{display:grid;row-gap:30px;column-gap:30px;grid-template-columns:minmax(0, 262.5fr) minmax(0, 262.5fr) minmax(0, 262.5fr) minmax(0, 262.5fr);grid-template-rows:minmax(228px, auto) minmax(228px, auto);box-sizing:border-box}
+.age-18{border-top-width:1px;border-top-style:solid;border-top-color:rgb(238, 238, 238);border-right-width:1px;border-right-style:solid;border-right-color:rgb(238, 238, 238);border-bottom-width:1px;border-bottom-style:solid;border-bottom-color:rgb(238, 238, 238);border-left-width:1px;border-left-style:solid;border-left-color:rgb(238, 238, 238);box-sizing:border-box;background-color:rgb(255, 255, 255);text-align:center;transition-duration:0.3s;padding:60px 20px}
+.age-18:hover{border-top-color:rgb(0, 0, 0);border-right-color:rgb(0, 0, 0);border-bottom-color:rgb(0, 0, 0);border-left-color:rgb(0, 0, 0);box-shadow:rgba(0, 0, 0, 0.12) 0px 14px 35px 0px}
+.age-19{display:flex;justify-content:center;align-items:center;margin-right:auto;margin-bottom:20px;margin-left:auto;box-sizing:border-box;background-color:rgb(247, 247, 247);transition-property:background;transition-duration:0.3s;width:56px;height:56px;max-width:100%;border-radius:50%}
+.age-20{display:block;margin-right:auto;margin-left:auto;box-sizing:border-box;transition-property:stroke;transition-duration:0.3s;fill:none;stroke:rgb(0, 0, 0);stroke-width:1.8px;width:22px;height:22px}
+.age-21{box-sizing:border-box;font-size:10px;font-weight:600;line-height:15px;letter-spacing:2px;text-transform:uppercase}
+.age-22{display:inline-block;box-sizing:border-box;background-color:rgb(0, 0, 0);color:rgb(255, 255, 255);font-family:Inter, sans-serif;font-size:10px;font-weight:500;line-height:10px;text-transform:uppercase;text-align:center;text-decoration-line:none;transition-property:transform;transition-duration:0.3s;fill:rgb(255, 255, 255);padding:12px 24px;border-radius:3px}
+.age-22:hover{background-color:rgba(0, 0, 0, 0.87);transform:matrix(0.9, 0, 0, 0.9, 0, 0)}
+.age-22:focus{background-color:rgba(0, 0, 0, 0.87);transform:matrix(0.9, 0, 0, 0.9, 0, 0);outline-style:auto;outline-width:1px;outline-color:rgb(0, 95, 204);outline-offset:1px}
+.age-23{display:flex;justify-content:center;row-gap:5px;column-gap:5px;box-sizing:border-box}
+.age-24{display:block;box-sizing:border-box}
+.age-25{display:flex;position:relative;flex-direction:column;padding-right:30px;padding-left:30px;box-sizing:border-box;max-width:100%;transition-property:background, border, box-shadow, transform;transition-duration:0.3s, 0.3s, 0.3s, 0.4s;transition-timing-function:ease, ease, ease, ease;transition-delay:0s, 0s, 0s, 0s}
+.age-26{display:flex;justify-content:center;align-items:center;flex-grow:1;row-gap:20px;column-gap:20px;margin-right:auto;margin-left:auto;padding-top:70px;padding-bottom:70px;box-sizing:border-box;max-width:min(100%, 1140px);width:min(1140px, 100%)}
+.age-27{display:flex;position:relative;flex-direction:column;row-gap:20px;column-gap:20px;box-sizing:border-box;transition-property:background, border, box-shadow, transform;transition-duration:0.3s, 0.3s, 0.3s, 0.4s;transition-timing-function:ease, ease, ease, ease;transition-delay:0s, 0s, 0s, 0s;width:41%;padding:10px}
+.age-28{display:flex;position:relative;flex-direction:column;row-gap:20px;column-gap:20px;box-sizing:border-box;min-height:443px;background-image:url("/images/imgi_17_469985513_18472743922047139_5191489162187586480_n.jpg");background-size:cover;background-position:50% 50%;background-repeat:no-repeat;transition-property:filter, transform;transition-duration:0.4s, 0.4s;transition-timing-function:ease, ease;transition-delay:0s, 0s;filter:grayscale(1);padding:10px}
+.age-28:hover{filter:grayscale(0)}
+.age-29{display:flex;position:relative;flex-direction:column;row-gap:20px;column-gap:20px;box-sizing:border-box;transition-property:background, border, box-shadow, transform;transition-duration:0.3s, 0.3s, 0.3s, 0.4s;transition-timing-function:ease, ease, ease, ease;transition-delay:0s, 0s, 0s, 0s;padding:10px}
+.age-30{position:absolute;top:-114px;right:-12.2969px;bottom:35px;z-index:1;row-gap:20px;column-gap:20px;border-top-width:1px;border-top-style:solid;border-top-color:rgb(245, 245, 245);border-right-width:1px;border-right-style:solid;border-right-color:rgb(245, 245, 245);border-bottom-width:1px;border-bottom-style:solid;border-bottom-color:rgb(245, 245, 245);border-left-width:1px;border-left-style:solid;border-left-color:rgb(245, 245, 245);box-sizing:border-box;max-width:100%;background-color:rgb(255, 255, 255);box-shadow:rgba(136, 136, 136, 0.53) 0px 0px 10px 0px;transition-property:background, border, border-radius, box-shadow, transform;transition-duration:0.3s, 0.3s, 0.3s, 0.3s, 0.4s;transition-timing-function:ease, ease, ease, ease, ease;transition-delay:0s, 0s, 0s, 0s, 0s;width:138.69px;padding:20px 30px}
+.age-31{display:flex;flex-direction:column;row-gap:15px;column-gap:15px;box-sizing:border-box;text-align:center}
+.age-32{flex-shrink:0;box-sizing:border-box;line-height:0px}
+.age-33{display:inline-block;box-sizing:border-box;color:rgb(0, 0, 0);font-size:24px;line-height:24px;transition-duration:0.3s}
+.age-33:hover{color:rgb(105, 114, 125);text-decoration-color:rgb(105, 114, 125);outline-color:rgb(105, 114, 125)}
+.age-34{display:block;position:relative;box-sizing:border-box;width:24px;height:24px}
+.age-35{flex-grow:1;box-sizing:border-box}
+.age-36{margin-top:0px;margin-bottom:0px;box-sizing:border-box;color:rgb(0, 0, 0);font-family:Inter, sans-serif;font-size:12px;line-height:18px}
+.age-37{display:flex;position:relative;flex-direction:column;row-gap:20px;column-gap:20px;box-sizing:border-box;transition-property:background, border, box-shadow, transform;transition-duration:0.3s, 0.3s, 0.3s, 0.4s;transition-timing-function:ease, ease, ease, ease;transition-delay:0s, 0s, 0s, 0s;width:41%;padding:10px}
+.age-38{margin-top:0px;margin-bottom:0px;box-sizing:border-box;color:rgb(163, 163, 163);font-family:Inter, sans-serif;font-size:10px;line-height:16px;letter-spacing:5px;text-transform:uppercase}
+.age-39{margin-top:0px;margin-bottom:0px;box-sizing:border-box;color:rgb(0, 0, 0);font-family:"Playfair Display", sans-serif;font-size:35px;font-weight:500;line-height:35px}
+.age-40{position:relative;row-gap:20px;column-gap:20px;box-sizing:border-box;max-width:100%;color:rgb(82, 82, 82);font-family:Inter, sans-serif;transition-property:background, border, border-radius, box-shadow, transform;transition-duration:0.3s, 0.3s, 0.3s, 0.3s, 0.4s;transition-timing-function:ease, ease, ease, ease, ease;transition-delay:0s, 0s, 0s, 0s, 0s;width:min(272.91px, 100%)}
+.age-41{position:relative;row-gap:20px;column-gap:20px;box-sizing:border-box;max-width:100%;color:rgb(82, 82, 82);font-family:Roboto, sans-serif;font-weight:300;line-height:35px;transition-property:background, border, border-radius, box-shadow, transform;transition-duration:0.3s, 0.3s, 0.3s, 0.3s, 0.4s;transition-timing-function:ease, ease, ease, ease, ease;transition-delay:0s, 0s, 0s, 0s, 0s}
+.age-42{margin-top:0px;margin-bottom:0px;box-sizing:border-box}
+@media (max-width:1024px){
+.age-3{margin-right:0px;margin-left:0px;max-width:min(100%, 1024px);width:revert}
+.age-9{width:min(820px, 100%)}
+.age-11{margin-right:373.094px;margin-left:373.109px}
+.age-12{width:min(565.8px, 100%)}
+.age-15{margin-right:0px;margin-left:0px;max-width:min(100%, 1024px);width:min(800px, 100%)}
+.age-17{grid-template-columns:minmax(0, 385fr) minmax(0, 385fr);grid-template-rows:minmax(213px, auto) minmax(213px, auto) minmax(213px, auto) minmax(213px, auto)}
+.age-26{margin-right:0px;margin-left:0px;max-width:min(100%, 1024px);width:revert}
+.age-30{right:-119.797px;bottom:17px;width:90.39px}
+.age-40{width:min(177.86px, 100%)}
+}
+@media (max-width:767px){
+.age-3{max-width:min(100%, 1140px);flex-wrap:wrap;width:min(390px, 100%)}
+.age-4{flex-wrap:wrap}
+.age-7{font-size:40px;line-height:40px}
+.age-9{width:min(390px, 100%)}
+.age-11{margin-right:177.453px;margin-left:177.453px}
+.age-12{width:min(306px, 100%)}
+.age-15{max-width:min(100%, 1140px);width:min(370px, 100%);flex-wrap:wrap}
+.age-17{grid-template-columns:minmax(0, 370fr);grid-template-rows:minmax(213px, auto) minmax(213px, auto) minmax(213px, auto) minmax(213px, auto) minmax(213px, auto) minmax(213px, auto) minmax(213px, auto) minmax(213px, auto)}
+.age-26{max-width:min(100%, 1140px);flex-wrap:wrap}
+.age-27{width:100%;flex-wrap:wrap;padding:0px}
+.age-28{flex-wrap:wrap}
+.age-29{display:none;flex-wrap:wrap}
+.age-30{right:auto;bottom:auto;width:revert;left:321px}
+.age-34{width:0px;height:0px}
+.age-37{width:revert;flex-wrap:wrap}
+.age-40{width:revert}
+}

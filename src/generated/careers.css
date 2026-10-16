@@ -1,0 +1,61 @@
+.car-1{box-sizing:border-box;color:rgb(51, 51, 51);font-family:-apple-system, "system-ui", "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"}
+.car-2{display:flex;position:relative;flex-direction:column;border-top-width:0px;border-top-style:solid;border-top-color:rgb(229, 229, 229);border-right-width:0px;border-right-style:solid;border-right-color:rgb(229, 229, 229);border-bottom-width:1px;border-bottom-style:solid;border-bottom-color:rgb(229, 229, 229);border-left-width:0px;border-left-style:solid;border-left-color:rgb(229, 229, 229);box-sizing:border-box;max-width:100%;transition-property:background, border, box-shadow, transform;transition-duration:0.3s, 0.3s, 0.3s, 0.4s;transition-timing-function:ease, ease, ease, ease;transition-delay:0s, 0s, 0s, 0s}
+.car-3{display:flex;flex-direction:column;flex-grow:1;row-gap:20px;column-gap:20px;margin-right:auto;margin-left:auto;box-sizing:border-box;max-width:min(100%, 1140px);width:min(1140px, 100%)}
+.car-4{display:flex;position:relative;flex-direction:column;justify-content:center;align-items:center;row-gap:20px;column-gap:20px;box-sizing:border-box;min-height:400px;transition-property:background, border, box-shadow, transform;transition-duration:0.3s, 0.3s, 0.3s, 0.4s;transition-timing-function:ease, ease, ease, ease;transition-delay:0s, 0s, 0s, 0s}
+.car-5{position:relative;row-gap:20px;column-gap:20px;box-sizing:border-box;max-width:100%;text-align:center;transition-property:background, border, border-radius, box-shadow, transform;transition-duration:0.3s, 0.3s, 0.3s, 0.3s, 0.4s;transition-timing-function:ease, ease, ease, ease, ease;transition-delay:0s, 0s, 0s, 0s, 0s}
+.car-6{margin-top:0px;margin-bottom:0px;box-sizing:border-box;color:rgb(163, 163, 163);font-family:Inter, sans-serif;font-size:12px;line-height:16px;letter-spacing:6px;text-transform:uppercase}
+.car-7{margin-top:0px;margin-bottom:0px;box-sizing:border-box;color:rgb(0, 0, 0);font-family:"Playfair Display", sans-serif;font-size:70px;font-weight:500;line-height:70px}
+.car-8{box-sizing:border-box}
+.car-9{position:relative;row-gap:20px;column-gap:20px;box-sizing:border-box;max-width:100%;transition-property:background, border, border-radius, box-shadow, transform;transition-duration:0.3s, 0.3s, 0.3s, 0.3s, 0.4s;transition-timing-function:ease, ease, ease, ease, ease;transition-delay:0s, 0s, 0s, 0s, 0s;width:min(1140px, 100%)}
+.car-10{display:flex;padding-top:10px;padding-bottom:10px;box-sizing:border-box;text-align:center}
+.car-11{display:flex;margin-right:518.703px;margin-left:518.703px;border-top-width:1px;border-top-style:solid;border-top-color:rgb(0, 0, 0);box-sizing:border-box;width:9%}
+.car-12{position:relative;row-gap:20px;column-gap:20px;box-sizing:border-box;max-width:100%;color:rgb(82, 82, 82);font-family:Inter, sans-serif;text-align:center;transition-property:background, border, border-radius, box-shadow, transform;transition-duration:0.3s, 0.3s, 0.3s, 0.3s, 0.4s;transition-timing-function:ease, ease, ease, ease, ease;transition-delay:0s, 0s, 0s, 0s, 0s;width:min(786.59px, 100%)}
+.car-13{margin-top:0px;margin-bottom:14.4px;box-sizing:border-box}
+.car-14{display:flex;position:relative;flex-direction:column;padding-right:30px;padding-left:30px;box-sizing:border-box;max-width:100%;transition-property:background, border, box-shadow, transform;transition-duration:0.3s, 0.3s, 0.3s, 0.4s;transition-timing-function:ease, ease, ease, ease;transition-delay:0s, 0s, 0s, 0s}
+.car-15{display:flex;flex-direction:column;flex-grow:1;row-gap:20px;column-gap:20px;margin-right:auto;margin-left:auto;padding-top:70px;padding-bottom:70px;box-sizing:border-box;max-width:min(100%, 1140px);width:min(1140px, 100%)}
+.car-16{position:relative;row-gap:20px;column-gap:20px;box-sizing:border-box;max-width:100%;transition-property:background, border, border-radius, box-shadow, transform;transition-duration:0.3s, 0.3s, 0.3s, 0.3s, 0.4s;transition-timing-function:ease, ease, ease, ease, ease;transition-delay:0s, 0s, 0s, 0s, 0s}
+.car-17{display:flex;align-items:center;row-gap:15px;column-gap:15px;box-sizing:border-box}
+.car-18{flex-shrink:0;box-sizing:border-box;line-height:0px}
+.car-19{display:inline-block;box-sizing:border-box;color:rgb(163, 163, 163);font-size:17px;line-height:17px;text-align:center;transition-duration:0.3s;fill:rgb(163, 163, 163)}
+.car-19:hover{color:rgb(105, 114, 125);text-decoration-color:rgb(105, 114, 125);outline-color:rgb(105, 114, 125)}
+.car-20{display:block;position:relative;box-sizing:border-box;width:17px;height:17px}
+.car-21{flex-grow:1;box-sizing:border-box}
+.car-22{margin-top:0px;margin-bottom:0px;box-sizing:border-box;color:rgb(0, 0, 0);font-family:"Playfair Display", sans-serif;font-size:12px;font-weight:600;line-height:18px;letter-spacing:2.9px}
+.car-23{position:relative;row-gap:20px;column-gap:20px;box-sizing:border-box;max-width:100%;transition-property:background, border, border-radius, box-shadow, transform;transition-duration:0.3s, 0.3s, 0.3s, 0.3s, 0.4s;transition-timing-function:ease, ease, ease, ease, ease;transition-delay:0s, 0s, 0s, 0s, 0s}
+.car-24{display:flex;position:relative;flex-direction:column;padding-right:10px;padding-left:10px;box-sizing:border-box;max-width:100%;min-height:400px;background-color:rgb(250, 250, 250);transition-property:background, border, box-shadow, transform;transition-duration:0.3s, 0.3s, 0.3s, 0.4s;transition-timing-function:ease, ease, ease, ease;transition-delay:0s, 0s, 0s, 0s}
+.car-25{display:flex;flex-direction:column;justify-content:center;align-items:center;flex-grow:1;row-gap:20px;column-gap:20px;margin-right:auto;margin-left:auto;padding-top:10px;padding-bottom:10px;box-sizing:border-box;max-width:min(100%, 1140px);width:min(1140px, 100%)}
+.car-26{margin-top:0px;margin-bottom:0px;box-sizing:border-box;color:rgb(0, 0, 0);font-family:"Playfair Display", sans-serif;font-size:35px;font-weight:600;line-height:35px}
+.car-27{position:relative;row-gap:20px;column-gap:20px;box-sizing:border-box;max-width:100%;color:rgb(82, 82, 82);font-family:Inter, sans-serif;text-align:center;transition-property:background, border, border-radius, box-shadow, transform;transition-duration:0.3s, 0.3s, 0.3s, 0.3s, 0.4s;transition-timing-function:ease, ease, ease, ease, ease;transition-delay:0s, 0s, 0s, 0s, 0s;width:min(706.8px, 100%)}
+.car-28{display:inline-block;box-sizing:border-box;background-color:rgb(0, 0, 0);color:rgb(255, 255, 255);font-family:Inter, sans-serif;font-size:10px;font-weight:500;line-height:10px;letter-spacing:1.7px;text-align:center;text-decoration-line:none;transition-duration:0.3s;fill:rgb(255, 255, 255);padding:12px 24px;border-radius:3px}
+.car-28:focus{outline-style:auto;outline-width:1px;outline-color:rgb(0, 95, 204);outline-offset:1px}
+.car-29{display:flex;flex-direction:row-reverse;justify-content:center;row-gap:5px;column-gap:5px;box-sizing:border-box}
+.car-30{display:flex;align-items:center;box-sizing:border-box}
+.car-31{display:block;box-sizing:border-box;width:10px;height:10px}
+.car-32{display:block;box-sizing:border-box}
+.car-33{margin-top:0px;margin-bottom:0px;box-sizing:border-box;color:rgb(163, 163, 163);font-family:Inter, sans-serif;font-size:11px;font-weight:500;line-height:11px;letter-spacing:2.7px}
+@media (max-width:1024px){
+.car-3{margin-right:0px;margin-left:0px;max-width:min(100%, 1024px);width:min(820px, 100%)}
+.car-9{width:min(820px, 100%)}
+.car-11{margin-right:307.5px;margin-left:307.5px;width:25%}
+.car-12{width:min(483px, 100%)}
+.car-15{margin-right:0px;margin-left:0px;max-width:min(100%, 1024px);width:min(760px, 100%)}
+.car-25{margin-right:0px;margin-left:0px;max-width:min(100%, 1024px);width:revert}
+.car-27{width:min(496px, 100%)}
+}
+@media (max-width:767px){
+.car-2{padding-right:16px;padding-left:16px}
+.car-3{max-width:min(100%, 1140px);width:revert;flex-wrap:wrap}
+.car-4{flex-wrap:wrap;width:min(358px, 100%);max-width:100%}
+.car-7{font-size:40px;line-height:40px}
+.car-9{width:min(358px, 100%)}
+.car-11{margin-right:121.719px;margin-left:121.734px;width:32%}
+.car-12{width:revert}
+.car-14{padding-right:16px;padding-left:16px}
+.car-15{max-width:min(100%, 1140px);width:revert;flex-wrap:wrap}
+.car-16{align-self:flex-start}
+.car-17{align-items:normal;flex-direction:column;text-align:center}
+.car-19{text-align:inherit}
+.car-25{max-width:min(100%, 1140px);flex-wrap:wrap}
+.car-26{font-size:30px;line-height:30px}
+.car-27{width:revert}
+}

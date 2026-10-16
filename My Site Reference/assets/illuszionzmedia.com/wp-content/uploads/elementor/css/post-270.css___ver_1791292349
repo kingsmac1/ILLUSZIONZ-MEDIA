@@ -1,0 +1,160 @@
+.elementor-270 .elementor-element.elementor-element-ee82578{--display:flex;--min-height:400px;--flex-direction:column;--container-widget-width:calc( ( 1 - var( --container-widget-flex-grow ) ) * 100% );--container-widget-height:initial;--container-widget-flex-grow:0;--container-widget-align-self:initial;--flex-wrap-mobile:wrap;--justify-content:center;--align-items:center;}.elementor-widget-heading .elementor-heading-title{font-family:var( --e-global-typography-primary-font-family ), Sans-serif;font-weight:var( --e-global-typography-primary-font-weight );color:var( --e-global-color-primary );}.elementor-270 .elementor-element.elementor-element-2a5dd2b{text-align:center;}.elementor-270 .elementor-element.elementor-element-2a5dd2b .elementor-heading-title{font-family:"Inter", Sans-serif;font-size:12px;font-weight:700;text-transform:uppercase;line-height:1rem;letter-spacing:0.6em;color:var( --e-global-color-3d1deef );}.elementor-270 .elementor-element.elementor-element-9a278d8{text-align:center;}.elementor-270 .elementor-element.elementor-element-9a278d8 .elementor-heading-title{font-family:"Playfair Display", Sans-serif;font-size:70px;font-weight:500;color:var( --e-global-color-e631ba2 );}.elementor-270 .elementor-element.elementor-element-bd5493e{width:var( --container-widget-width, 51% );max-width:51%;--container-widget-width:51%;--container-widget-flex-grow:0;text-align:center;}.elementor-270 .elementor-element.elementor-element-bd5493e .elementor-heading-title{font-family:var( --e-global-typography-795dafb-font-family ), Sans-serif;font-size:var( --e-global-typography-795dafb-font-size );font-weight:var( --e-global-typography-795dafb-font-weight );color:var( --e-global-color-94e04a8 );}.elementor-270 .elementor-element.elementor-element-81312c4{--display:flex;--flex-direction:row;--container-widget-width:initial;--container-widget-height:100%;--container-widget-flex-grow:1;--container-widget-align-self:stretch;--flex-wrap-mobile:wrap;}.elementor-270 .elementor-element.elementor-element-41caa31{--display:flex;}.elementor-270 .elementor-element.elementor-element-9630e9a{padding:0px 0px 0px 0px;}:root{--page-title-display:none;}@media(max-width:1024px){.elementor-270 .elementor-element.elementor-element-bd5493e .elementor-heading-title{font-size:var( --e-global-typography-795dafb-font-size );}}@media(max-width:767px){.elementor-270 .elementor-element.elementor-element-bd5493e .elementor-heading-title{font-size:var( --e-global-typography-795dafb-font-size );}}/* Start custom CSS for html, class: .elementor-element-9630e9a */* {
+  box-sizing: border-box;
+  font-family: "Georgia", serif;
+}
+
+/* ===================== */
+/* GRID WRAPPER */
+/* ===================== */
+.portfolio-grid {
+  display: flex;
+  gap: 70px;
+  flex-wrap: ;
+  justify-content: center;
+}
+
+/* ===================== */
+/* CARD SIZE & BASE STYLING */
+/* ===================== */
+.portfolio-card {
+  width: 100%;
+  max-width: 480px; /* reduced size for side-by-side layout */
+  border: 1px solid #e5e5e5;
+  background: #fff;
+  overflow: hidden;
+}
+
+/* ===================== */
+/* IMAGE SECTION */
+/* ===================== */
+.portfolio-image {
+  position: relative;
+  overflow: hidden;
+}
+
+.portfolio-image img {
+  width: 100%;
+  display: block;
+  filter: grayscale(100%);
+  transform: scale(1);
+  transition: filter 0.4s ease, transform 0.4s ease;
+}
+
+/* ===================== */
+/* CAMERA ICON */
+/* ===================== */
+.camera-icon {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  width: 40px;
+  height: 40px;
+  background: #fff;
+  border: 1px solid #ddd;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #000;
+  transition: all 0.3s ease;
+  z-index: 2;
+}
+
+/* ===================== */
+/* CONTENT SECTION */
+/* ===================== */
+.portfolio-content {
+  padding: 24px;
+}
+
+/* Title + Arrow inline row */
+.title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.title {
+  font-size: 22px;
+  margin: 0;
+  transition: font-style 0.3s ease;
+}
+
+.card-link .title {
+  color: #000;
+}
+
+.card-link:hover .title {
+  color: #000;
+}
+
+
+/* Arrow icon */
+.arrow-icon {
+  width: 34px;
+  height: 34px;
+  border: 1px solid #ccc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border 0.3s ease;
+}
+
+/* Description */
+.description {
+  font-size: 14px;
+  color: #555;
+  margin-bottom: 22px;
+}
+
+/* View Division button */
+.view-division {
+  display: inline-block;
+  text-decoration: none;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #000;
+  padding: 8px 0;
+  border-bottom: 1px solid #000;
+  transition: color 0.3s ease;
+}
+
+.view-division:hover {
+  color: #999; /* only text color changes on hover */
+}
+
+/* ===================== */
+/* HOVER EFFECTS ON CARD */
+/* ===================== */
+.portfolio-card:hover .camera-icon {
+  background: #000;
+  color: #fff;
+  border-color: #000;
+}
+
+.portfolio-card:hover img {
+  filter: grayscale(0%);
+  transform: scale(1.08);
+}
+
+.portfolio-card:hover .title {
+  font-style: italic;
+}
+
+.portfolio-card:hover .arrow-icon {
+  border-color: #000;
+}
+
+/* ===================== */
+@media (max-width: 767px) {
+  .portfolio-grid {
+    flex-wrap: wrap;
+  }
+
+  .portfolio-card {
+    flex: 0 0 100% !important;
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+}/* End custom CSS */

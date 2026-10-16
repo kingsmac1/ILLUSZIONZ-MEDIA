@@ -1,0 +1,16 @@
+/* Custom select (replaces Choices.js) */
+.choices-root { position: relative; }
+.choices-native { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0; overflow: hidden; clip: rect(0 0 0 0); opacity: 0; pointer-events: none; }
+.choices-root > div:first-child { cursor: pointer; }
+.choices-root.is-open > div:first-child { border-color: #000; box-shadow: 0 0 0 1px #000; }
+.choices-dropdown { position: absolute; left: 0; top: 100%; width: 100%; z-index: 20; background: #fff; border: 1px solid #000; border-radius: 0 0 3px 3px; box-shadow: 0 0 0 1px #000, 0 1px 2px rgba(0, 0, 0, 0.15); overflow: hidden; max-height: 280px; overflow-y: auto; }
+.choices-root.is-flipped .choices-dropdown { top: auto; bottom: 100%; border-radius: 3px 3px 0 0; }
+.choices-option { padding: 10px; font-size: 14px; line-height: 19px; color: rgba(0, 0, 0, 0.7); background: #fff; cursor: pointer; text-align: left; }
+.choices-option:hover, .choices-option.is-selected { background: #000; color: #fff; }
+.choices-root .is-placeholder { opacity: 0.7; }
+
+/* Submission feedback */
+.form-confirmation { padding: 15px 18px; border: 1px solid #b0d3a5; background: #f2fdf0; color: #2b6a1f; font-size: 15px; line-height: 1.5; }
+.form-error { margin: 12px 0 0; color: #d63637; font-size: 14px; }
+
+.form-hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }

@@ -1,0 +1,142 @@
+{
+ "360-photo-booth": {
+  "title": "360 Photo Booth \u2013 Illiszionz Media",
+  "meta": [
+   {
+    "name": "robots",
+    "content": "max-image-preview:large"
+   }
+  ],
+  "canonical": "https://illuszionzmedia.com/360-photo-booth/"
+ },
+ "about-us": {
+  "title": "About \u2013 Illiszionz Media",
+  "meta": [
+   {
+    "name": "robots",
+    "content": "max-image-preview:large"
+   }
+  ],
+  "canonical": "https://illuszionzmedia.com/about-us/"
+ },
+ "academy": {
+  "title": "Academy \u2013 Illiszionz Media",
+  "meta": [
+   {
+    "name": "robots",
+    "content": "max-image-preview:large"
+   }
+  ],
+  "canonical": "https://illuszionzmedia.com/academy/"
+ },
+ "agency": {
+  "title": "Agency \u2013 Illiszionz Media",
+  "meta": [
+   {
+    "name": "robots",
+    "content": "max-image-preview:large"
+   }
+  ],
+  "canonical": "https://illuszionzmedia.com/agency/"
+ },
+ "careers": {
+  "title": "Careers \u2013 Illiszionz Media",
+  "meta": [
+   {
+    "name": "robots",
+    "content": "max-image-preview:large"
+   }
+  ],
+  "canonical": "https://illuszionzmedia.com/careers/"
+ },
+ "contact": {
+  "title": "Contact \u2013 Illiszionz Media",
+  "meta": [
+   {
+    "name": "robots",
+    "content": "max-image-preview:large"
+   }
+  ],
+  "canonical": "https://illuszionzmedia.com/contact/"
+ },
+ "form": {
+  "title": "Form \u2013 Illiszionz Media",
+  "meta": [
+   {
+    "name": "robots",
+    "content": "max-image-preview:large"
+   }
+  ],
+  "canonical": "https://illuszionzmedia.com/form/"
+ },
+ "home": {
+  "title": "Illiszionz Media \u2013 Capturing your Best Moments in Pictures",
+  "meta": [
+   {
+    "name": "robots",
+    "content": "max-image-preview:large"
+   }
+  ],
+  "canonical": "https://illuszionzmedia.com/"
+ },
+ "media": {
+  "title": "Media \u2013 Illiszionz Media",
+  "meta": [
+   {
+    "name": "robots",
+    "content": "max-image-preview:large"
+   }
+  ],
+  "canonical": "https://illuszionzmedia.com/media/"
+ },
+ "photography-services": {
+  "title": "Portrait Photography Services \u2013 Illiszionz Media",
+  "meta": [
+   {
+    "name": "robots",
+    "content": "max-image-preview:large"
+   }
+  ],
+  "canonical": "https://illuszionzmedia.com/photography-services/"
+ },
+ "review": {
+  "title": "Review \u2013 Illiszionz Media",
+  "meta": [
+   {
+    "name": "robots",
+    "content": "max-image-preview:large"
+   }
+  ],
+  "canonical": "https://illuszionzmedia.com/review/"
+ },
+ "store": {
+  "title": "Store \u2013 Illiszionz Media",
+  "meta": [
+   {
+    "name": "robots",
+    "content": "max-image-preview:large"
+   }
+  ],
+  "canonical": "https://illuszionzmedia.com/store/"
+ },
+ "videography-services": {
+  "title": "Videography Services \u2013 Illiszionz Media",
+  "meta": [
+   {
+    "name": "robots",
+    "content": "max-image-preview:large"
+   }
+  ],
+  "canonical": "https://illuszionzmedia.com/videography-services/"
+ },
+ "wedding": {
+  "title": "Wedding \u2013 Illiszionz Media",
+  "meta": [
+   {
+    "name": "robots",
+    "content": "max-image-preview:large"
+   }
+  ],
+  "canonical": "https://illuszionzmedia.com/wedding/"
+ }
+}
