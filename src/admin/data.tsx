@@ -19,6 +19,9 @@ type Ctx = {
   refresh: (...t: Table[]) => Promise<void>
   toast: (msg: string, kind?: 'ok' | 'err') => void
   setting: <T = R>(key: string, fallback: T) => T
+  /** when the last change was saved (ms), or null */
+  saved: number | null
+  markSaved: () => void
 }
 const DataCtx = createContext<Ctx>(null as any)
 export const useData = () => useContext(DataCtx)
@@ -27,6 +30,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [d, setD] = useState<Record<Table, R[]>>(() => Object.fromEntries(TABLES.map((t) => [t, []])) as any)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [saved, setSaved] = useState<number | null>(null)
+  const markSaved = useCallback(() => setSaved(Date.now()), [])
   const [toasts, setToasts] = useState<{ id: number; msg: string; kind: string }[]>([])
 
   const load = useCallback(async (tables: readonly Table[]) => {
@@ -57,7 +62,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   }, [])
   const setting = useCallback(<T,>(key: string, fallback: T): T => ((d.settings.find((s) => s.key === key)?.value as T) ?? fallback), [d.settings])
 
-  const value = useMemo(() => ({ d, loading, error, refresh, toast, setting }), [d, loading, error, refresh, toast, setting])
+  const value = useMemo(() => ({ d, loading, error, refresh, toast, setting, saved, markSaved }), [d, loading, error, refresh, toast, setting, saved, markSaved])
   return (
     <DataCtx.Provider value={value}>
       {children}
@@ -72,7 +77,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
 /** Run a Supabase write, refresh the affected tables and report errors as toasts. */
 export function useDb() {
-  const { refresh, toast } = useData()
+  const { refresh, toast, markSaved } = useData()
   return useMemo(() => {
     const run = async (p: PromiseLike<{ error: any; data?: any }>, tables: Table[], ok?: string) => {
       const { error, data } = await p
@@ -81,7 +86,8 @@ export function useDb() {
         return { ok: false as const, data: null as any }
       }
       await refresh(...tables)
-      if (ok) toast(ok)
+      markSaved()
+      toast(ok ? `✓ ${ok}` : '✓ Saved')
       return { ok: true as const, data }
     }
     const s = () => supabase!
@@ -96,5 +102,5 @@ export function useDb() {
         await s().from('activities').insert({ created_by: data.user?.email ?? '', ...row })
       },
     }
-  }, [refresh, toast])
+  }, [refresh, toast, markSaved])
 }

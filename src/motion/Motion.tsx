@@ -35,7 +35,7 @@ const wait = (ms: number) => new Promise<void>((r) => setTimeout(r, ms))
 /** Decode the pictures in the first screen (and the hero slideshow's first slide), but never wait more than 1.2 s. */
 async function aboveFoldReady() {
   const imgs = [...document.querySelectorAll<HTMLImageElement>('main img')].filter((i) => i.getBoundingClientRect().top < window.innerHeight && !i.closest('.bk-panel'))
-  const slide = document.querySelector<HTMLElement>('.bg-slideshow__slide.is-active .bg-slideshow__img')
+  const slide = document.querySelector<HTMLElement>('.bg-slideshow__slide.is-active')
   const url = slide ? /url\(["']?(.*?)["']?\)/.exec(getComputedStyle(slide).backgroundImage)?.[1] : null
   const jobs: Promise<unknown>[] = imgs.map((i) => (i.complete ? Promise.resolve() : i.decode?.().catch(() => undefined) ?? Promise.resolve()))
   if (url) jobs.push(new Promise((r) => { const im = new Image(); im.onload = im.onerror = () => r(null); im.src = url }))

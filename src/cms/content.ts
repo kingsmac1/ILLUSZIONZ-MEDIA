@@ -27,3 +27,11 @@ export function useContent(): SiteContent | null {
 }
 
 export const toGallery = (list: CmsImage[]) => list.map((i) => ({ href: i.url, thumb: i.thumb_url || i.url, w: i.width || 1200, h: i.height || 1200, alt: i.alt || '' }))
+
+/** Like useContent, plus whether the answer is in (or we gave up waiting), so pages can avoid flashing built-in content that is about to be replaced. */
+export function useContentSettled(maxWaitMs = 900): [SiteContent | null, boolean] {
+  const c = useContent()
+  const [late, setLate] = useState(false)
+  useEffect(() => { const t = setTimeout(() => setLate(true), maxWaitMs); return () => clearTimeout(t) }, [maxWaitMs])
+  return [c, c !== null || late]
+}

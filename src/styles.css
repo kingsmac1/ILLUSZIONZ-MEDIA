@@ -11,12 +11,8 @@ html, body { overflow-x: clip; }
 
 /* Hero background slideshow (fade + Ken Burns zoom) */
 .bg-slideshow { position: absolute; inset: 0; width: 100%; height: 100%; overflow: hidden; z-index: 0; }
-.bg-slideshow__slide { position: absolute; inset: 0; opacity: 0; }
-.bg-slideshow__slide.is-active { opacity: 1; }
-.bg-slideshow__blur, .bg-slideshow__img { position: absolute; inset: 0; background-position: center; background-repeat: no-repeat; }
-.bg-slideshow__blur { background-size: cover; filter: blur(26px) brightness(0.82) saturate(1.1); transform: scale(1.18); }
-.bg-slideshow__img { background-size: contain; }
-.bg-slideshow__slide.is-active .bg-slideshow__img { animation-name: kenburns; animation-timing-function: ease-out; animation-fill-mode: both; }
+.bg-slideshow__slide { position: absolute; inset: 0; background-size: cover; background-position: center 22%; background-repeat: no-repeat; opacity: 0; }
+.bg-slideshow__slide.is-active { opacity: 1; animation-name: kenburns; animation-timing-function: ease-out; animation-fill-mode: both; }
 @keyframes kenburns { from { transform: scale(1); } to { transform: scale(1.07); } }
 
 /* Portfolio gallery (masonry: 3 columns desktop, 2 on tablet/mobile) */

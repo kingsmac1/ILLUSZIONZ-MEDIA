@@ -3,15 +3,15 @@ import { BackgroundSlideshow } from '../components/BackgroundSlideshow'
 import { Gallery } from '../components/Gallery'
 import { Marquee } from '../components/Marquee'
 import { TestimonialSlider } from '../components/TestimonialSlider'
-import { useContent, toGallery } from '../cms/content'
+import { useContentSettled, toGallery } from '../cms/content'
 import { homeGallery, homeHero, homeTestimonials } from '../cms/builtin'
 import './home.css'
 
 
 
 export default function Home() {
-  const cms = useContent()
-  const heroImgs = cms?.images['home-hero']?.length ? cms.images['home-hero'].map((i) => i.url) : homeHero
+  const [cms, settled] = useContentSettled()
+  const heroImgs = !settled ? [] : cms?.images['home-hero']?.length ? cms.images['home-hero'].map((i) => i.url) : homeHero
   const galManaged = !!cms?.images['home-gallery']?.length
   const galleryImgs = galManaged ? toGallery(cms!.images['home-gallery']) : homeGallery
   const testimonials = cms?.testimonials?.length ? cms.testimonials.map((t) => ({ quote: t.quote, author: t.author, role: t.role })) : homeTestimonials

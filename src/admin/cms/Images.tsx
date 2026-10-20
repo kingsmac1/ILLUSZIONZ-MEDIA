@@ -5,7 +5,7 @@ import { homeGallery, homeHero, weddingGallery } from '../../cms/builtin'
 import { ManagePanel, uploadSiteImage } from './shared'
 
 const SETS = {
-  'home-hero': { label: 'Home — hero slideshow', note: 'The portrait picture beside the headline on the home page. Portrait photos (about 3:4, for example 1200×1600) look best. Pictures are shown whole over a soft blurred background, so nothing important is cropped.', seed: () => homeHero.map((u) => ({ url: u, thumb_url: u, alt: '', width: 1200, height: 1600 })) },
+  'home-hero': { label: 'Home — hero slideshow', note: 'The portrait picture beside the headline on the home page. Portrait photos (about 3:4, for example 1200×1600) look best. Each picture fills the frame in the order shown below.', seed: () => homeHero.map((u) => ({ url: u, thumb_url: u, alt: '', width: 1200, height: 1600 })) },
   'home-gallery': { label: 'Home — portfolio gallery', note: 'The masonry portfolio on the home page.', seed: () => homeGallery.map((g) => ({ url: g.href, thumb_url: g.thumb, alt: g.alt, width: g.w, height: g.h })) },
   'wedding-gallery': { label: 'Wedding — featured gallery', note: 'The masonry gallery on the wedding page.', seed: () => weddingGallery.map((g) => ({ url: g.href, thumb_url: g.thumb, alt: g.alt, width: g.w, height: g.h })) },
 } as const
@@ -43,7 +43,7 @@ export function ImagesCms() {
     if (!o) return
     const a = it.sort_order === o.sort_order ? it.sort_order + dir : it.sort_order
     await db.update('site_images', { id: it.id }, { sort_order: o.sort_order })
-    await db.update('site_images', { id: o.id }, { sort_order: a })
+    await db.update('site_images', { id: o.id }, { sort_order: a }, 'New order saved')
   }
   return (
     <>
@@ -54,7 +54,7 @@ export function ImagesCms() {
         {items.map((it, i) => (
           <div key={it.id} className="ad-card" style={{ padding: 10 }}>
             <img src={it.thumb_url || it.url} alt={it.alt} style={{ width: '100%', aspectRatio: '4/3', objectFit: 'cover', borderRadius: 8, background: '#efeee9' }} loading="lazy" />
-            <input type="text" defaultValue={it.alt} placeholder="Alt text (describe the picture)" style={{ marginTop: 8 }} onBlur={(e) => e.target.value !== it.alt && db.update('site_images', { id: it.id }, { alt: e.target.value })} />
+            <input type="text" defaultValue={it.alt} placeholder="Alt text (describe the picture)" style={{ marginTop: 8 }} onBlur={(e) => e.target.value !== it.alt && db.update('site_images', { id: it.id }, { alt: e.target.value }, 'Alt text saved')} />
             <div className="ad-actions" style={{ marginTop: 8 }}><button className="ad-btn sm" disabled={i === 0} onClick={() => move(it, -1)}>←</button><button className="ad-btn sm" disabled={i === items.length - 1} onClick={() => move(it, 1)}>→</button><button className="ad-btn sm danger" onClick={() => window.confirm('Remove this image from the set?') && db.remove('site_images', { id: it.id })}>Remove</button></div>
           </div>
         ))}

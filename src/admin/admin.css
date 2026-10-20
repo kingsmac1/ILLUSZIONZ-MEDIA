@@ -236,3 +236,11 @@
   .ad-lane { flex-basis: 262px; }
   .ad-kanban { height: calc(100vh - 300px); }
 }
+
+/* save confirmation strip on the Website pages */
+.ad-savebar { display: flex; align-items: center; gap: 12px; padding: 11px 16px; margin: -6px 0 18px; border: 1px solid #e6e5e0; border-radius: 12px; background: #fff; font-size: 13px; color: #555; flex-wrap: wrap; }
+.ad-savebar b { color: #0b0b0c; }
+.ad-savebar.is-saved { background: #f0fdf4; border-color: #bbf7d0; }
+.ad-savebar-dot { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: #e6e5e0; color: #555; font-size: 12px; font-weight: 800; flex: none; }
+.ad-savebar.is-saved .ad-savebar-dot { background: #16a34a; color: #fff; }
+.ad-savebar-text { flex: 1; min-width: 220px; line-height: 1.45; }

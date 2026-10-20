@@ -22,6 +22,7 @@ import { TestimonialsCms } from './cms/Testimonials'
 import { ImagesCms } from './cms/Images'
 import { BannerCms } from './cms/Banner'
 import { SeoCms } from './cms/Seo'
+import { SaveStatus } from './cms/SaveStatus'
 import './admin.css'
 
 const I: Record<string, string> = {
@@ -51,6 +52,8 @@ const Icon = ({ n }: { n: string }) => (
 )
 
 type Item = { id: string; label: string; icon: string; badge?: number }
+/** where each Website page shows up on the live site */
+const LIVE: Record<string, string> = { 'cms/blog': '/blog/', 'cms/store': '/store/', 'cms/testimonials': '/', 'cms/images': '/', 'cms/banner': '/', 'cms/seo': '/' }
 
 function useHash() {
   const [h, setH] = useState(() => (typeof window === 'undefined' ? '' : window.location.hash.replace(/^#\/?/, '')))
@@ -187,7 +190,7 @@ function Shell({ session }: { session: Session }) {
       </aside>
       <main className="ad-main">
         {error && <div className="ad-note" style={{ marginBottom: 16 }}>Could not load some data: {error}. Did you run <b>supabase/schema.sql</b> and add your email to <b>admin_users</b>?</div>}
-        {loading ? <p className="ad-muted">Loading…</p> : page}
+        {loading ? <p className="ad-muted">Loading…</p> : <>{current.id.startsWith('cms/') && <SaveStatus liveHref={LIVE[current.id] ?? '/'} />}{page}</>}
       </main>
     </div>
   )

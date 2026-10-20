@@ -85,6 +85,7 @@ const go = async (hash, h1) => { await dash.evaluate((h) => (location.hash = h),
 ok('Website group appears in the sidebar', (await dash.locator('.ad-nav h6:has-text("Website")').count()) === 1)
 
 await go('#/cms/blog', 'Blog')
+ok('Website pages show the autosave notice', await dash.locator('.ad-savebar:has-text("no Save button")').isVisible())
 ok('blog list shows the seeded posts', (await dash.locator('tbody tr').count()) === 5)
 await dash.click('button:has-text("+ New post")')
 await dash.waitForSelector('.ad-modal.xl')
@@ -100,6 +101,7 @@ await dash.click('.ad-modal button:has-text("Publish")')
 await dash.waitForTimeout(800)
 let db = await dump()
 const np = db.blog_posts.find((p) => p.slug === 'my-brand-new-post-about-weddings')
+ok('save status confirms the change', await dash.locator('.ad-savebar.is-saved:has-text("All changes saved")').isVisible())
 ok('post saved + published with computed read time', np && np.published && np.published_at && np.read_minutes >= 1 && np.seo_title.startsWith('Wedding Post SEO'))
 const live = await get('/blog/my-brand-new-post-about-weddings/')
 ok('the new post is live at /blog/slug/ with its SEO title', live.status === 200 && live.text.includes('<title>Wedding Post SEO Title | Illuszionz Media</title>') && live.text.includes('This is the body of the new article.'))
@@ -148,6 +150,24 @@ await dash.waitForSelector('text=showing your dashboard')
 await dash.waitForTimeout(500)
 db = await dump()
 ok('hero images imported', db.site_images.filter((i) => i.section === 'home-hero').length === 3)
+{
+  // move the last hero picture to the front: the live site must play all three, in exactly that order
+  const heroes = db.site_images.filter((i) => i.section === 'home-hero').sort((a, b) => a.sort_order - b.sort_order)
+  await fetch(SB + '/rest/v1/site_images?id=eq.' + heroes[2].id, { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ sort_order: -1 }) })
+  const want = [heroes[2], heroes[0], heroes[1]].map((h) => h.url)
+  const hp = await (await browser.newContext({ viewport: { width: 1440, height: 900 } })).newPage()
+  await hp.goto(BASE + '/', { waitUntil: 'networkidle' })
+  const seen = []
+  for (let t = 0; t < 40; t++) {
+    const cur = await hp.evaluate(() => (document.querySelector('.bg-slideshow__slide.is-active')?.style.backgroundImage ?? '').replace(/^url\("?|"?\)$/g, ''))
+    if (cur && seen[seen.length - 1] !== cur) seen.push(cur)
+    if (seen.length >= 3) break
+    await hp.waitForTimeout(500)
+  }
+  const norm = (u) => u.replace(/^https?:\/\/[^/]+/, '')
+  ok('hero slideshow plays all pictures in dashboard order', seen.length === 3 && seen.every((u, i) => norm(u) === norm(want[i])), seen.map(norm).join(' > ').slice(0, 160))
+  await hp.context().close()
+}
 await dash.click('.ad-tabs button:has-text("Home — portfolio gallery")')
 await dash.click('button:has-text("Start managing")')
 await dash.waitForTimeout(700)
