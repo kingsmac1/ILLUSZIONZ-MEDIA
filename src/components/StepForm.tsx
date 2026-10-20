@@ -108,7 +108,7 @@ export function StepForm({ def }: { def: FormDef }) {
       fd.set('payload', JSON.stringify({ formName: def.key, fields: allFields.map((f) => ({ label: f.label.replace(/ \(optional\)$/, ''), value: (values[f.id] ?? '').trim() })), website }))
       const res = await fetch('/api/form', { method: 'POST', body: fd })
       const data = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string }
-      if (!res.ok || !data.ok) throw new Error(data.error)
+      if (!res.ok || !data.ok) throw new Error(data.error || `The server did not answer properly (HTTP ${res.status}).`)
       try { localStorage.setItem(STORE_KEY, JSON.stringify({ ...remembered(), ...(values.name ? { name: values.name } : {}), ...(values.email ? { email: values.email } : {}), ...(values.phone ? { phone: values.phone } : {}) })) } catch { /* ignore */ }
       setDone(true)
     } catch (err) {

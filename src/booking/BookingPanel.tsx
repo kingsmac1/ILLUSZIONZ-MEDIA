@@ -261,7 +261,7 @@ export function BookingPanel({ flow: baseFlow, initialOptionId, onClose }: { flo
       const sel: Selection & { website: string; promo?: string } = { flowId: flow.id, optionIds, units, extras, fields, website, promo: promo?.code }
       const res = await fetch('/api/booking', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(sel) })
       const data = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string; total?: string }
-      if (!res.ok || !data.ok) throw new Error(data.error || 'Something went wrong.')
+      if (!res.ok || !data.ok) throw new Error(data.error || `The server did not answer properly (HTTP ${res.status}).`)
       try {
         localStorage.setItem(STORE_KEY, JSON.stringify({ name: fields.name, phone: fields.phone, email: fields.email }))
       } catch {

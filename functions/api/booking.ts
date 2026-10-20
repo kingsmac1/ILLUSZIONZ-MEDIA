@@ -33,7 +33,13 @@ export const onRequestPost = async ({ request, env }: { request: Request; env: M
   const problems = validateSelection(flow, sel)
   if (problems.length) return json({ ok: false, error: problems.join('; ') }, 422)
 
-  const quote = computeQuote(flow, sel)
+  let quote: ReturnType<typeof computeQuote>
+  try {
+    quote = computeQuote(flow, sel)
+  } catch (err) {
+    console.error('Quote failed', err)
+    return json({ ok: false, error: 'Could not price this booking.' }, 422)
+  }
   let promo: { code: string; amount: number } | undefined
   const code = (sel.promo ?? '').trim().toUpperCase()
   if (code && dbReady(env)) {
