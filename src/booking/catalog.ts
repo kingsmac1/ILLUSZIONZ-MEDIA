@@ -64,6 +64,9 @@ export type Flow = {
   extrasTitle?: string
   extrasBlurb?: string
   extras: Extra[]
+  /** extras (by id) that belong with the package choice: shown right under the packages as simple +/- counters, not in the add-ons step */
+  optionExtras?: string[]
+  optionExtrasTitle?: string
   terms: string[]
   /** shown on the review step and in emails when nothing is priced */
   quoteText?: string
@@ -265,32 +268,29 @@ export const flows: Record<string, Flow> = {
     id: 'family',
     kind: 'Family session booking',
     title: 'Family Photo Sessions',
-    intro: 'A family of 4 per look. Add extra family members below.',
+    intro: 'One look covers a family of up to 4. Choose how many looks you would like, then add any extra family members.',
     optionTitle: 'Choose your session',
     options: [
       {
         id: 'family-look',
         label: 'Family of 4',
         price: 250,
-        note: '7 pictures per look',
+        note: '7 pictures per look · up to 4 people',
         unit: { label: 'look', plural: 'looks', min: 1, max: 4, def: 1 },
       },
     ],
-    steps: [
-      who(),
-      shootDetails([{ id: 'people', label: 'Family size', type: 'select', options: ['2', '3', '4', '5', '6', '7', '8+'], half: true }]),
-    ],
+    optionExtras: ['family-extra-person'],
+    optionExtrasTitle: 'Bigger family?',
+    steps: [who(), shootDetails()],
     extrasTitle: 'Add-ons & extras',
     extras: [
-      { id: 'family-extra-person', label: 'Extra family member', price: 20, max: 10, unit: 'person', note: 'Per extra person beyond four' },
+      { id: 'family-extra-person', label: 'Extra family member', price: 20, max: 10, unit: 'person', note: 'Per person beyond four — every look includes them' },
       ...photoExtras.filter((e) => e.id !== 'extra-person'),
     ],
     terms: photoTerms,
     headline: 'Booking request received',
     nextSteps: photoNext,
   },
-
-  /* ------------------------------- weddings ------------------------------- */
   wedding: {
     id: 'wedding',
     kind: 'Wedding enquiry',

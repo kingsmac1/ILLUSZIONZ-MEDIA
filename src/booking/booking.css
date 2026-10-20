@@ -32,6 +32,9 @@
 .bk-price { flex: none; font-family: 'Playfair Display', serif; font-weight: 800; font-size: 24px; line-height: 1.2; color: #fff; white-space: nowrap; }
 .bk-price em { font-family: Inter, sans-serif; font-style: normal; font-weight: 600; font-size: 12px; color: var(--bk-mute); }
 .bk-extra .bk-price { font-size: 18px; }
+.bk-inline-extras { display: grid; gap: 12px; margin-top: 8px; }
+.bk-inline-title { margin: 14px 0 0; font-size: 11px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--bk-mute); }
+.bk-inline-extras .bk-unit { padding-left: 22px; }
 .bk-radio, .bk-check { flex: none; width: 20px; height: 20px; margin-top: 2px; border: 1.5px solid rgba(255, 255, 255, 0.5); border-radius: 50%; position: relative; }
 .bk-radio[data-multi], .bk-check { border-radius: 3px; }
 .is-on > button > .bk-radio, .is-on > button > .bk-check { background: #fff; border-color: #fff; }

@@ -141,6 +141,24 @@ for (const [path, cta, id] of FLOWS) {
   await fp.close()
 }
 
+/* 6b ─ family flow: extra family members are chosen on the package step, not asked twice */
+{
+  const fp = await ctx.newPage()
+  await fp.goto(BASE + '/photography-services/#book-family', { waitUntil: 'networkidle' })
+  await fp.locator('.bk-panel').waitFor({ timeout: 6000 })
+  ok('family: package step offers "extra family members" counters', (await fp.locator('.bk-inline-extras').count()) === 1)
+  const plus = fp.locator('.bk-inline-extras .bk-stepper button[aria-label^="Increase"]')
+  await plus.click(); await plus.click()
+  ok('family: 1 look + 2 extra members totals £290', (await fp.locator('.bk-total strong').innerText()) === '£290', await fp.locator('.bk-total strong').innerText())
+  await fp.getByRole('button', { name: 'Continue' }).click(); await fp.waitForTimeout(450)
+  await fillStep(fp)
+  await fp.getByRole('button', { name: 'Continue' }).click(); await fp.waitForTimeout(450)
+  ok('family: no second "family size" question on the session step', (await fp.locator('#bk-people').count()) === 0)
+  for (let n = 0; n < 4 && !(await fp.locator('.bk-agree').count()); n++) { await fillStep(fp); await fp.getByRole('button', { name: 'Continue' }).click(); await fp.waitForTimeout(450) }
+  ok('family: the add-ons step no longer repeats extra family members', !(await fp.locator('.bk-extra-main', { hasText: 'Extra family member' }).count()))
+  await fp.close()
+}
+
 /* 7 ─ booking API: pricing is recomputed on the server, bad input rejected */
 const post = (body) => ctx.request.post(BASE + '/api/booking', { data: body })
 let r = await post({ flowId: 'portrait', optionIds: ['portrait-2'], units: {}, extras: { 'extra-images': 3, 'express-24': 1 }, fields: { name: 'A B', phone: '+447000000000', email: 'a@b.co', date: '2027-01-01', time: '10:00', setting: 'Studio' } })

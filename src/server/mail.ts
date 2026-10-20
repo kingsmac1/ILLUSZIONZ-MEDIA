@@ -4,6 +4,7 @@
  * rendered twice: `customerEmail` (confirmation) and `ownerEmail` (internal notification).
  */
 import { site } from '../site'
+import { LOGO_BASE64, LOGO_CID } from './logo'
 
 export type EmailSummary = {
   /** e.g. "Portrait booking" */
@@ -101,7 +102,7 @@ function steps(list: string[]) {
 }
 
 function layout(o: { siteUrl: string; preheader: string; eyebrow?: string; title?: string; body: string }) {
-  const logo = `${o.siteUrl}/images/illuszionz-logo-white.png`
+  const logo = `cid:${LOGO_CID}` // inline attachment added by send(); never blocked like a remote image
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light only"><title>${esc(o.title ?? site.name)}</title></head>
 <body style="margin:0;padding:0;background:${PAPER};">
@@ -255,7 +256,7 @@ export function mailConfig(env: MailEnv) {
   }
 }
 
-export type Attachment = { filename: string; content: string }
+export type Attachment = { filename: string; content: string; content_id?: string; content_type?: string }
 
 export async function send(env: MailEnv, o: { to: string | string[]; replyTo?: string; message: RenderedEmail; attachments?: Attachment[] }) {
   const { apiKey, from, dryRun } = mailConfig(env)
@@ -272,7 +273,7 @@ export async function send(env: MailEnv, o: { to: string | string[]; replyTo?: s
       subject: o.message.subject,
       html: o.message.html,
       text: o.message.text,
-      attachments: o.attachments?.length ? o.attachments : undefined,
+      attachments: [...(o.attachments ?? []), { filename: 'illuszionz-logo.png', content: LOGO_BASE64, content_id: LOGO_CID, content_type: 'image/png' }],
     }),
   })
   if (!res.ok) {

@@ -22,7 +22,7 @@ type StepDef = { id: string; title: string; kind: 'options' | 'fields' | 'extras
 function stepsFor(flow: Flow): StepDef[] {
   const out: StepDef[] = [{ id: 'options', title: flow.optionTitle.replace(/^Choose your /i, '').replace(/^Your /i, '') || 'Package', kind: 'options', blurb: flow.optionBlurb }]
   for (const s of flow.steps) out.push({ id: s.id, title: s.title, kind: 'fields', fields: s.fields, blurb: s.blurb })
-  if (flow.extras.length) out.push({ id: 'extras', title: flow.extrasTitle ?? 'Extras', kind: 'extras', blurb: flow.extrasBlurb })
+  if (flow.extras.some((x) => !flow.optionExtras?.includes(x.id))) out.push({ id: 'extras', title: flow.extrasTitle ?? 'Extras', kind: 'extras', blurb: flow.extrasBlurb })
   out.push({ id: 'review', title: 'Review', kind: 'review' })
   return out
 }
@@ -396,6 +396,26 @@ export function BookingPanel({ flow: baseFlow, initialOptionId, onClose }: { flo
                     )
                   })}
                   {optionError && <p className="bk-err" role="alert">{optionError}</p>}
+                  {flow.optionExtras?.length ? (
+                    <div className="bk-inline-extras">
+                      <p className="bk-inline-title">{flow.optionExtrasTitle ?? 'Add more'}</p>
+                      {flow.extras.filter((x) => flow.optionExtras!.includes(x.id)).map((x) => (
+                        <div key={x.id} className={'bk-option' + ((extras[x.id] ?? 0) > 0 ? ' is-on' : '')}>
+                          <div className="bk-option-main" style={{ cursor: 'default' }}>
+                            <span className="bk-option-text">
+                              <strong>{x.label}</strong>
+                              {x.note && <small>{x.note}</small>}
+                            </span>
+                            <span className="bk-price">{formatGBP(x.price)}{x.unit ? <em>/{x.unit}</em> : null}</span>
+                          </div>
+                          <div className="bk-unit">
+                            <span>How many {x.unit ? `${x.unit}s` : 'extra'}?</span>
+                            <Stepper value={extras[x.id] ?? 0} min={0} max={x.max ?? 10} label={x.unit ?? 'quantity'} onChange={(n) => setExtras((c) => ({ ...c, [x.id]: n }))} />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
                 </div>
               )}
 
@@ -418,7 +438,7 @@ export function BookingPanel({ flow: baseFlow, initialOptionId, onClose }: { flo
 
               {step.kind === 'extras' && (
                 <div className="bk-extras">
-                  {flow.extras.map((x) => {
+                  {flow.extras.filter((x) => !flow.optionExtras?.includes(x.id)).map((x) => {
                     const qty = extras[x.id] ?? 0
                     const on = qty > 0
                     return (

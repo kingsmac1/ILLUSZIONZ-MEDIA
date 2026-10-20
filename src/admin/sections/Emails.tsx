@@ -147,7 +147,7 @@ function CampaignEditor({ campaign, onClose }: { campaign?: R; onClose: () => vo
   const previewHtml = useMemo(() => {
     if (!preview) return ''
     const fill = (t: string) => t.replace(/\{\{\s*first_name\s*\}\}/g, 'Ada')
-    return blocksEmail({ siteUrl: window.location.origin, subject: f.subject, html: fill(blocksToHtml(blocks)), text: '', footerNote: 'Not interested in these emails? Just reply with “unsubscribe” and we will stop.' }).html
+    return blocksEmail({ siteUrl: window.location.origin, subject: f.subject, html: fill(blocksToHtml(blocks)), text: '', footerNote: 'Not interested in these emails? Just reply with “unsubscribe” and we will stop.' }).html.replace('cid:illuszionz-logo', `${window.location.origin}/images/illuszionz-logo-white.png`)
   }, [preview, blocks, f.subject])
 
   async function persist(): Promise<string | null> {
