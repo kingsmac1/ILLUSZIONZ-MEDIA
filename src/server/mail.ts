@@ -240,19 +240,24 @@ export function blocksEmail(o: { siteUrl: string; subject: string; preheader?: s
 
 /* --------------------------------- delivery --------------------------------- */
 
+/** Pulls every plain e-mail address out of a settings value, so stray quotes, spaces, a "Name <a@b.c>" form or a comma-separated list never reach the mail API. */
+export const extractEmails = (v?: string) => [...new Set((v ?? '').match(/[^\s<>"',;()]+@[^\s<>"',;()]+\.[^\s<>"',;()]+/g) ?? [])]
+
 export function mailConfig(env: MailEnv) {
+  const owners = extractEmails(env.OWNER_EMAIL)
   return {
-    apiKey: env.RESEND_API_KEY,
-    from: env.EMAIL_FROM ?? env.RESEND_FROM,
-    owner: env.OWNER_EMAIL || site.email,
-    siteUrl: (env.SITE_URL || site.url).replace(/\/$/, ''),
+    apiKey: env.RESEND_API_KEY?.trim(),
+    from: (env.EMAIL_FROM ?? env.RESEND_FROM)?.trim(),
+    owner: owners[0] ?? site.email,
+    owners: owners.length ? owners : [site.email],
+    siteUrl: (env.SITE_URL || site.url).trim().replace(/\/$/, ''),
     dryRun: env.MAIL_DRY_RUN === '1',
   }
 }
 
 export type Attachment = { filename: string; content: string }
 
-export async function send(env: MailEnv, o: { to: string; replyTo?: string; message: RenderedEmail; attachments?: Attachment[] }) {
+export async function send(env: MailEnv, o: { to: string | string[]; replyTo?: string; message: RenderedEmail; attachments?: Attachment[] }) {
   const { apiKey, from, dryRun } = mailConfig(env)
   if (dryRun) return // MAIL_DRY_RUN: render + log only
   const missing = [!apiKey && 'RESEND_API_KEY', !from && 'EMAIL_FROM'].filter(Boolean)
@@ -262,7 +267,7 @@ export async function send(env: MailEnv, o: { to: string; replyTo?: string; mess
     headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
       from,
-      to: [o.to],
+      to: Array.isArray(o.to) ? o.to : [o.to],
       reply_to: o.replyTo,
       subject: o.message.subject,
       html: o.message.html,
@@ -288,7 +293,7 @@ export async function deliver(env: MailEnv, s: EmailSummary, attachments: Attach
   const customer = customerEmail(s, cfg.siteUrl)
   const owner = ownerEmail(s, cfg.siteUrl)
   if (cfg.dryRun) return { dryRun: true as const, customer, owner }
-  await send(env, { to: cfg.owner, replyTo: s.email, message: owner, attachments })
+  await send(env, { to: cfg.owners, replyTo: s.email, message: owner, attachments })
   if (s.email) {
     try {
       await send(env, { to: s.email, replyTo: cfg.owner, message: customer })
