@@ -58,9 +58,7 @@ export function ManagePanel({ keyName, label, count, onImport, children }: { key
           <b>{on ? `✓ The website is showing your dashboard ${label.toLowerCase()}` : `The website is showing the built-in ${label.toLowerCase()}`}</b>
           <p className="ad-muted" style={{ marginTop: 4 }}>{on ? 'Changes you make here go live within about a minute.' : count ? 'You have saved items below. Switch on to show them on the website.' : 'Start managing to copy the current content here so you can edit it.'}</p>
         </div>
-        {on
-          ? <button className="ad-btn" onClick={() => window.confirm('Go back to the built-in content? Your dashboard items are kept.') && setFlag(false)}>Switch back to built-in</button>
-          : <button className="ad-btn primary" disabled={busy} onClick={start}>{busy ? 'Working…' : count ? 'Show on website' : 'Start managing — import current content'}</button>}
+        {!on && <button className="ad-btn primary" disabled={busy} onClick={start}>{busy ? 'Working…' : count ? 'Show on website' : 'Start managing — import current content'}</button>}
       </div>
       {children}
     </div>
