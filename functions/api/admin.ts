@@ -177,6 +177,6 @@ export const onRequestPost = async ({ request, env }: { request: Request; env: E
     }
   } catch (err) {
     console.error('admin action failed', err)
-    return json({ ok: false, error: err instanceof Error ? err.message : 'Failed.' }, 500)
+    return json({ ok: false, error: err instanceof Error ? err.message : 'Failed.' }, 424)
   }
 }

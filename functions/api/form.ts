@@ -94,6 +94,6 @@ export const onRequestPost = async ({ request, env }: { request: Request; env: M
     return json({ ok: true, ...(result.dryRun ? { dryRun: true, emails: { customer: result.customer, owner: result.owner } } : {}) })
   } catch (err) {
     console.error('Form failed', err)
-    return json({ ok: false, error: err instanceof Error ? err.message : 'Could not send.' }, 502)
+    return json({ ok: false, error: err instanceof Error ? err.message : 'Could not send.' }, 424)
   }
 }

@@ -1,4 +1,5 @@
-/** POST /api/booking — validates + re-prices a multi-step booking, stores it (+ CRM records) and sends the emails (Cloudflare Pages Function). */
+/** NOTE: failures use 424, not 502/5xx — Cloudflare replaces 502/5xx bodies with its own error page, which hides the real reason from the form.
+ * POST /api/booking — validates + re-prices a multi-step booking, stores it (+ CRM records) and sends the emails (Cloudflare Pages Function). */
 import { computeQuote, flows, validateSelection, type Selection } from '../../src/booking/catalog'
 import { applyOverrides, evaluatePromo, type PriceOverride, type PromoRow } from '../../src/booking/overrides'
 import { deliver, type MailEnv } from '../../src/server/mail'
@@ -64,6 +65,6 @@ export const onRequestPost = async ({ request, env }: { request: Request; env: M
     return json({ ok: true, total: summary.total, ref, ...(result.dryRun ? { dryRun: true, emails: { customer: result.customer, owner: result.owner } } : {}) })
   } catch (err) {
     console.error('Booking failed', err)
-    return json({ ok: false, error: err instanceof Error ? err.message : 'Could not send.' }, 502)
+    return json({ ok: false, error: err instanceof Error ? err.message : 'Could not send.' }, 424)
   }
 }
