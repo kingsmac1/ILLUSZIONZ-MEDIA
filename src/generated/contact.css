@@ -108,3 +108,9 @@
 .con-15{padding-top:130px;padding-bottom:120px}
 @media (max-width:1024px){.con-15{padding-top:100px;padding-bottom:100px}}
 @media (max-width:767px){.con-15{padding-top:96px;padding-bottom:96px;row-gap:44px}.con-41{width:100%}}
+
+/* Get In Touch card: roomier inside, especially on phones */
+.con-16{padding:48px 40px}
+@media (max-width:1024px){.con-16{padding:48px 34px}}
+@media (max-width:767px){.con-16{width:100%;max-width:100%;padding:56px 26px 60px;row-gap:26px}}
+@media (max-width:767px){.con-16 div{box-sizing:border-box;max-width:100%}}
