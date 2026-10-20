@@ -35,7 +35,7 @@ const wait = (ms: number) => new Promise<void>((r) => setTimeout(r, ms))
 /** Decode the pictures in the first screen (and the hero slideshow's first slide), but never wait more than 1.2 s. */
 async function aboveFoldReady() {
   const imgs = [...document.querySelectorAll<HTMLImageElement>('main img')].filter((i) => i.getBoundingClientRect().top < window.innerHeight && !i.closest('.bk-panel'))
-  const slide = document.querySelector<HTMLElement>('.bg-slideshow__slide.is-active')
+  const slide = document.querySelector<HTMLElement>('.bg-slideshow__slide.is-active .bg-slideshow__img')
   const url = slide ? /url\(["']?(.*?)["']?\)/.exec(getComputedStyle(slide).backgroundImage)?.[1] : null
   const jobs: Promise<unknown>[] = imgs.map((i) => (i.complete ? Promise.resolve() : i.decode?.().catch(() => undefined) ?? Promise.resolve()))
   if (url) jobs.push(new Promise((r) => { const im = new Image(); im.onload = im.onerror = () => r(null); im.src = url }))
@@ -265,7 +265,7 @@ export function Motion() {
 
           /* hero slideshow parallax */
           for (const bg of document.querySelectorAll<HTMLElement>('.bg-slideshow')) {
-            gsap.to(bg, { yPercent: 14, ease: 'none', scrollTrigger: { trigger: bg.parentElement ?? bg, start: 'top top', end: 'bottom top', scrub: true } })
+            gsap.to(bg, { yPercent: 5, ease: 'none', scrollTrigger: { trigger: bg.parentElement ?? bg, start: 'top top', end: 'bottom top', scrub: true } })
           }
 
           /* counters: "850+", "5.0", "1,200" */

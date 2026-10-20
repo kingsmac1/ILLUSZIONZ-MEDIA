@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 
 /**
- * Cross-fading background slideshow with a slow "Ken Burns" zoom (replaces Elementor's background slideshow).
+ * Cross-fading portrait slideshow with a gentle "Ken Burns" zoom (replaces Elementor's background slideshow). Pictures are shown whole (contain) over a blurred copy of themselves, so nothing important is cropped.
  * Only the first slide is requested immediately (and preloaded by the page); the others are fetched quietly once the page has settled,
  * so the hero never competes with the rest of the page for bandwidth.
  */
@@ -35,12 +35,12 @@ export function BackgroundSlideshow({ images, duration = 5000, transition = 500 
         <div
           key={src}
           className={'bg-slideshow__slide' + (i === active ? ' is-active' : '')}
-          style={{
-            backgroundImage: ready.has(src) ? `url("${src}")` : undefined,
-            transition: `opacity ${transition}ms ease`,
-            animationDuration: `${duration + transition}ms`,
-          }}
-        />
+          style={{ transition: `opacity ${transition}ms ease` }}
+        >
+          {/* a blurred copy fills the frame, the sharp picture sits inside it uncropped */}
+          <div className="bg-slideshow__blur" style={{ backgroundImage: ready.has(src) ? `url("${src}")` : undefined }} />
+          <div className="bg-slideshow__img" style={{ backgroundImage: ready.has(src) ? `url("${src}")` : undefined, animationDuration: `${duration + transition}ms` }} />
+        </div>
       ))}
     </div>
   )

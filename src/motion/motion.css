@@ -26,8 +26,8 @@ img { image-rendering: auto; }
 .cursor-lens.is-hot { width: 64px; height: 64px; margin: -32px 0 0 -32px; background: #fff; border-color: #fff; }
 .cursor-lens.is-view { width: 92px; height: 92px; margin: -46px 0 0 -46px; }
 
-/* hero slideshow is oversized so its parallax never exposes an edge */
-html.motion-on .bg-slideshow { inset: -16% 0 -16% 0; height: auto; }
+/* hero slideshow is slightly oversized so its (small) parallax never exposes an edge */
+html.motion-on .bg-slideshow { inset: -7% 0 -7% 0; height: auto; }
 
 /* masked heading lines */
 .split-line { display: block; }

@@ -5,7 +5,7 @@ import { homeGallery, homeHero, weddingGallery } from '../../cms/builtin'
 import { ManagePanel, uploadSiteImage } from './shared'
 
 const SETS = {
-  'home-hero': { label: 'Home — hero slideshow', note: 'Full-width background slides at the top of the home page. Wide landscape images (1920×1080 or larger) look best.', seed: () => homeHero.map((u) => ({ url: u, thumb_url: u, alt: '', width: 1920, height: 1080 })) },
+  'home-hero': { label: 'Home — hero slideshow', note: 'The portrait picture beside the headline on the home page. Portrait photos (about 3:4, for example 1200×1600) look best. Pictures are shown whole over a soft blurred background, so nothing important is cropped.', seed: () => homeHero.map((u) => ({ url: u, thumb_url: u, alt: '', width: 1200, height: 1600 })) },
   'home-gallery': { label: 'Home — portfolio gallery', note: 'The masonry portfolio on the home page.', seed: () => homeGallery.map((g) => ({ url: g.href, thumb_url: g.thumb, alt: g.alt, width: g.w, height: g.h })) },
   'wedding-gallery': { label: 'Wedding — featured gallery', note: 'The masonry gallery on the wedding page.', seed: () => weddingGallery.map((g) => ({ url: g.href, thumb_url: g.thumb, alt: g.alt, width: g.w, height: g.h })) },
 } as const
