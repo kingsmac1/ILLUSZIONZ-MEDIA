@@ -64,7 +64,51 @@ export const BLOG_CSS = `
 .bl-cta a{display:inline-block;margin:4px 6px;padding:14px 30px;border-radius:99px;border:1px solid #fff;color:#fff;text-decoration:none;font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase}
 .bl-cta a.solid{background:#fff;color:#000}
 .bl-related{padding:30px 0 90px}
-.bl-related h2{font-family:'Playfair Display',serif;font-weight:600;font-size:30px;text-align:center;margin:60px 0 0}
+.bl-related>h2{font-family:'Playfair Display',serif;font-weight:600;font-size:30px;text-align:center;margin:60px 0 0}
+.bp{padding:34px 24px 0}
+.bp-wrap{max-width:1140px;margin:0 auto}
+.bp-crumbs{font-size:13px;color:#85847e;margin:0 0 22px}
+.bp-crumbs a{text-decoration:none}
+.bp-crumbs a:hover{color:#000;text-decoration:underline}
+.bp-cover{margin:0;border-radius:20px;overflow:hidden;background:#efeee9;aspect-ratio:16/7}
+.bp-cover img{width:100%;height:100%;object-fit:cover;display:block}
+.bp-grid{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:64px;align-items:start;padding:44px 0 30px}
+.bp-pill{display:inline-block;padding:5px 14px;border:1px solid #cfcdc3;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#525252}
+.bp-main h1{font-family:'Playfair Display',serif;font-weight:500;font-size:clamp(32px,4.4vw,50px);line-height:1.12;margin:18px 0 22px;color:#000}
+.bp-by{display:flex;align-items:center;gap:12px;font-size:14px;color:#525252}
+.bp-av{display:grid;place-items:center;flex:none;width:36px;height:36px;border-radius:9px;background:#000;color:#fff;font-weight:700;font-size:13px;letter-spacing:.02em}
+.bp-by time{margin-left:auto;white-space:nowrap;color:#85847e}
+.bp-lead{margin:26px 0 0;font-size:19px;line-height:1.7;color:#444}
+.bp-rule{border:0;border-top:1px solid #e6e5e0;margin:30px 0 34px}
+.bp-main .bl-content{font-size:17.5px}
+.bp-main .bl-content h2{font-size:27px}
+.bp-end{margin:40px 0 0;padding:26px 28px;border:1px solid #e6e5e0;border-radius:16px;background:#faf9f6;display:flex;align-items:center;gap:22px;flex-wrap:wrap}
+.bp-end-text{flex:1;min-width:220px}
+.bp-end strong{display:block;font-family:'Playfair Display',serif;font-weight:600;font-size:22px;line-height:1.25;color:#000}
+.bp-end span{display:block;margin-top:4px;color:#666;font-size:15px;line-height:1.55}
+.bp-btn{display:inline-block;padding:13px 26px;border-radius:999px;background:#000;color:#fff!important;text-decoration:none;font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;transition:transform .2s,background .2s}
+.bp-btn:hover{background:#262626;transform:translateY(-1px)}
+.bp-btn.ghost{background:transparent;color:#000!important;border:1px solid #000}
+.bp-btn.ghost:hover{background:#000;color:#fff!important}
+.bp-side{position:sticky;top:112px;display:grid;gap:18px}
+.bp-card{padding:26px;border-radius:18px;background:#fff;border:1px solid #e6e5e0;box-shadow:0 20px 40px -32px rgba(0,0,0,.35)}
+.bp-card.dark{background:#000;border-color:#000;color:#fff}
+.bp-card h3{font-family:'Playfair Display',serif;font-weight:600;font-size:24px;line-height:1.25;margin:0 0 8px}
+.bp-card p{margin:0 0 18px;font-size:14.5px;line-height:1.65;color:#666}
+.bp-card.dark p{color:rgba(255,255,255,.72)}
+.bp-card .bp-btn{display:block;text-align:center;margin-top:10px}
+.bp-card.dark .bp-btn{background:#fff;color:#000!important}
+.bp-card.dark .bp-btn:hover{background:#e9e8e3}
+.bp-card.dark .bp-btn.ghost{background:transparent;color:#fff!important;border-color:rgba(255,255,255,.55)}
+.bp-card.dark .bp-btn.ghost:hover{background:#fff;color:#000!important}
+.bp-eyebrow{display:block;margin-bottom:12px;font-size:11px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.55)}
+.bp-share-title{display:block;margin-bottom:12px;font-size:13px;font-weight:600;color:#000}
+.bp-icons{display:flex;gap:10px;flex-wrap:wrap}
+.bp-icons a,.bp-icons button{display:grid;place-items:center;width:42px;height:42px;border-radius:50%;border:1px solid #cfcdc3;background:#fff;color:#000;cursor:pointer;transition:background .2s,color .2s,border-color .2s}
+.bp-icons a:hover,.bp-icons button:hover{background:#000;color:#fff;border-color:#000}
+.bp-icons svg{width:17px;height:17px;display:block}
+@media(max-width:1000px){.bp-grid{grid-template-columns:minmax(0,1fr);gap:40px}.bp-side{position:static}}
+@media(max-width:600px){.bp{padding:20px 16px 0}.bp-cover{border-radius:14px;aspect-ratio:4/3}.bp-grid{padding-top:30px}.bp-lead{font-size:17.5px}.bp-by time{display:none}.bp-end{padding:22px}.bp-card{padding:22px}}
 @media(max-width:900px){.bl-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:600px){.bl-grid{grid-template-columns:1fr;gap:40px;padding:44px 0 60px}.bl-hero{padding:60px 20px 56px}.bl-content{font-size:17px}.bl-cover{margin-top:-24px}}
 `
@@ -90,18 +134,39 @@ export function postHtml(p: Post, related: Post[]) {
   const url = `${site.url}/blog/${p.slug}/`
   const body = cleanParagraphHtml(p.content).replace(/<img /g, '<img loading="lazy" ')
   const enc = encodeURIComponent
-  return `<style>${BLOG_CSS}</style><article class="bl">
-  <header class="bl-hero bl-art-hero"><div class="bl-crumbs"><a href="/">Home</a> / <a href="/blog/">Journal</a>${p.category ? ` / ${esc(p.category)}` : ''}</div>
-    ${p.category ? `<p class="bl-eyebrow">${esc(p.category)}</p>` : ''}<h1>${esc(p.title)}</h1>
-    <div class="bl-byline">By ${esc(p.author)} · <time datetime="${esc(p.published_at ?? '')}">${esc(fmt(p.published_at))}</time> · ${p.read_minutes} min read</div></header>
-  ${p.cover_url ? `<div class="bl-cover"><img src="${esc(p.cover_url)}" alt="${esc(p.cover_alt || p.title)}" width="1200" height="750"></div>` : ''}
-  <div class="bl-article"><div class="bl-content">${body}</div>
-    ${p.tags?.length ? `<div class="bl-tags">${p.tags.map((t) => `<span>#${esc(t)}</span>`).join('')}</div>` : ''}
-    <div class="bl-share"><span>Share</span><a href="https://wa.me/?text=${enc(p.title + ' ' + url)}" target="_blank" rel="noopener">WhatsApp</a><a href="https://twitter.com/intent/tweet?text=${enc(p.title)}&url=${enc(url)}" target="_blank" rel="noopener">X</a><a href="https://www.facebook.com/sharer/sharer.php?u=${enc(url)}" target="_blank" rel="noopener">Facebook</a></div></div>
-  <div class="bl-cta"><div><h2>Ready to create something unforgettable?</h2><p>Book your session or tell us about your event — we will help you choose the right package.</p>
-    <a class="solid" href="/photography-services/">Book a session</a><a href="/contact/">Get in touch</a></div></div>
-  ${related.length ? `<div class="bl-wrap bl-related"><h2>Keep reading</h2><div class="bl-grid">${related.map(card).join('')}</div></div>` : '<div style="height:70px"></div>'}
-  </article>`
+  const icon = (d: string) => `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="${d}"/></svg>`
+  const X = 'M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z'
+  const FB = 'M13.5 21v-8h2.7l.4-3.2h-3.1V7.8c0-.9.3-1.5 1.6-1.5h1.7V3.4c-.3 0-1.3-.1-2.4-.1-2.4 0-4.1 1.5-4.1 4.2v2.3H7.6V13h2.7v8z'
+  const WA = 'M12 3a9 9 0 0 0-7.7 13.6L3 21l4.5-1.2A9 9 0 1 0 12 3zm4.6 12.6c-.2.5-1.1 1-1.6 1-.4.1-.9.1-2.8-.6-2.3-1-3.8-3.3-3.9-3.5-.1-.2-.9-1.2-.9-2.2s.5-1.5.7-1.7c.2-.2.4-.3.6-.3h.4c.1 0 .3 0 .5.4l.7 1.7c.1.1.1.3 0 .4l-.3.4-.3.3c-.1.1-.2.3-.1.5.1.2.6 1 1.4 1.6.9.8 1.7 1 1.9 1.1.2.1.4.1.5-.1l.7-.9c.2-.2.3-.2.5-.1l1.6.8c.2.1.4.2.4.3.1.1.1.6-.1 1.1z'
+  const LINK = 'M10.6 13.4a1 1 0 0 1 0-1.4l3.4-3.4a3 3 0 1 1 4.2 4.2l-1.6 1.6-1.4-1.4 1.6-1.6a1 1 0 0 0-1.4-1.4L12 13.4a1 1 0 0 1-1.4 0zm2.8-2.8a1 1 0 0 1 0 1.4L10 15.4a3 3 0 1 1-4.2-4.2l1.6-1.6 1.4 1.4-1.6 1.6a1 1 0 0 0 1.4 1.4L12 10.6a1 1 0 0 1 1.4 0z'
+  const share = `<span class="bp-share-title">Share this article</span><div class="bp-icons">
+      <a href="https://wa.me/?text=${enc(p.title + ' ' + url)}" target="_blank" rel="noopener" aria-label="Share on WhatsApp">${icon(WA)}</a>
+      <a href="https://twitter.com/intent/tweet?text=${enc(p.title)}&url=${enc(url)}" target="_blank" rel="noopener" aria-label="Share on X">${icon(X)}</a>
+      <a href="https://www.facebook.com/sharer/sharer.php?u=${enc(url)}" target="_blank" rel="noopener" aria-label="Share on Facebook">${icon(FB)}</a>
+      <button type="button" data-copy-link aria-label="Copy link" title="Copy link">${icon(LINK)}</button></div>`
+  return `<style>${BLOG_CSS}</style><article class="bl bp"><div class="bp-wrap">
+  <nav class="bp-crumbs" aria-label="Breadcrumb"><a href="/">Home</a> / <a href="/blog/">Journal</a>${p.category ? ` / ${esc(p.category)}` : ''}</nav>
+  ${p.cover_url ? `<figure class="bp-cover"><img src="${esc(p.cover_url)}" alt="${esc(p.cover_alt || p.title)}" width="1200" height="525" fetchpriority="high"></figure>` : ''}
+  <div class="bp-grid">
+    <div class="bp-main">
+      ${p.category ? `<span class="bp-pill">${esc(p.category)}</span>` : ''}
+      <h1>${esc(p.title)}</h1>
+      <div class="bp-by"><span class="bp-av" aria-hidden="true">iL</span><span>By ${esc(p.author)}</span><time datetime="${esc(p.published_at ?? '')}">${esc(fmt(p.published_at))} · ${p.read_minutes} min read</time></div>
+      ${p.excerpt ? `<p class="bp-lead">${esc(p.excerpt)}</p>` : ''}
+      <hr class="bp-rule">
+      <div class="bl-content">${body}</div>
+      ${p.tags?.length ? `<div class="bl-tags">${p.tags.map((t) => `<span>#${esc(t)}</span>`).join('')}</div>` : ''}
+      <div class="bp-end"><div class="bp-end-text"><strong>Planning a session or an event?</strong><span>Tell us what you have in mind and we will help you choose the right package.</span></div>
+        <a class="bp-btn" href="/photography-services/">Book a session</a></div>
+    </div>
+    <aside class="bp-side" aria-label="Article sidebar">
+      <div class="bp-card dark"><span class="bp-eyebrow">Work with us</span><h3>Your story, beautifully told</h3><p>Portraits, weddings, events and film — book your date or ask us anything.</p>
+        <a class="bp-btn" href="/photography-services/">Book a session</a><a class="bp-btn ghost" href="/contact/">Get in touch</a></div>
+      <div class="bp-card">${share}</div>
+    </aside>
+  </div>
+  ${related.length ? `<div class="bl-related"><h2>Keep reading</h2><div class="bl-grid">${related.map(card).join('')}</div></div>` : '<div style="height:60px"></div>'}
+  </div><script>document.querySelectorAll('[data-copy-link]').forEach(function(b){b.addEventListener('click',function(){if(navigator.clipboard)navigator.clipboard.writeText(location.href).then(function(){b.title='Copied!';b.setAttribute('aria-label','Link copied')})})})</script></article>`
 }
 
 /** Head tags appended to the shell for a blog page. */
