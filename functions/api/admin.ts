@@ -6,9 +6,10 @@ import { db, dbReady, q, type DbEnv } from '../../src/server/db'
 import { blocksEmail, genericEmail, mailConfig, send, type MailEnv } from '../../src/server/mail'
 import { blocksToHtml, blocksToText, type EmailBlock } from '../../src/server/emailBlocks'
 import { bookingVars, contactVars, renderTemplate, type Template } from '../../src/server/automations'
+import { syncInstagram, type IgEnv } from '../../src/server/instagram'
 import { matchesAudience, type AudienceFilter } from '../../src/server/audience'
 
-type Env = MailEnv & DbEnv
+type Env = MailEnv & DbEnv & IgEnv
 const json = (d: unknown, status = 200) => new Response(JSON.stringify(d), { status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } })
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 const BATCH = 12
@@ -45,6 +46,10 @@ export const onRequestPost = async ({ request, env }: { request: Request; env: E
 
   try {
     switch (body.action) {
+      /* copy the latest Instagram posts into the website gallery (the dashboard repeats this while `more` is true) */
+      case 'instagram_sync':
+        return json(await syncInstagram(env, { force: true }))
+
       case 'whoami':
         return json({ ok: true, email: who, mail: !!(cfg.apiKey && cfg.from), dryRun: dry })
 

@@ -116,3 +116,8 @@ MIGRATION-NOTES.md     progress log, open decisions, content typos
 parallax, count-up numbers), magnetic buttons, a cursor lens, a smart glass header, a scroll-progress bar, a service marquee on the home page, and
 View Transitions between pages (`router.tsx`). Content is pre-hidden by CSS only while JS will reveal it (4 s failsafe), nothing is hidden for visitors who prefer
 reduced motion or have JavaScript off, and setup waits for React hydration. Tests: `node tests/motion-e2e.mjs` against the preview.
+
+## Integrations
+
+- **Google Calendar booking sync:** `calendar-sync.sql` + `supabase/google-calendar.gs` — guide in `supabase/CALENDAR_SYNC.md`.
+- **Instagram → homepage gallery:** `supabase/instagram.sql`, `/api/instagram`, `INSTAGRAM_ACCESS_TOKEN` — guide in `supabase/INSTAGRAM_SYNC.md`.
