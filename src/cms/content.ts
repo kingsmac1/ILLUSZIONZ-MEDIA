@@ -10,9 +10,24 @@ export type SiteContent = {
 }
 
 let pending: Promise<SiteContent | null> | null = null
+const listeners = new Set<(c: SiteContent | null) => void>()
+const fetchContent = () => fetch('/api/content').then((r) => (r.ok ? (r.json() as Promise<SiteContent>) : null)).catch(() => null)
 /** One shared request for all components; failures fall back to the built-in content. */
 export function loadContent(): Promise<SiteContent | null> {
-  if (!pending) pending = fetch('/api/content').then((r) => (r.ok ? (r.json() as Promise<SiteContent>) : null)).catch(() => null)
+  if (!pending) {
+    pending = fetchContent()
+    // every homepage load asks the server to pull new Instagram posts; if there were any, swap them in without a reload
+    if (typeof location !== 'undefined' && location.pathname === '/') {
+      fetch('/api/instagram', { method: 'POST' })
+        .then((r) => r.json())
+        .then(async (r: { added?: number; removed?: number }) => {
+          if (!r.added && !r.removed) return
+          const fresh = await fetch('/api/content', { cache: 'reload' }).then((x) => (x.ok ? (x.json() as Promise<SiteContent>) : null)).catch(() => null)
+          if (fresh) { pending = Promise.resolve(fresh); listeners.forEach((f) => f(fresh)) }
+        })
+        .catch(() => {})
+    }
+  }
   return pending
 }
 
@@ -21,7 +36,9 @@ export function useContent(): SiteContent | null {
   useEffect(() => {
     let live = true
     loadContent().then((x) => live && setC(x))
-    return () => { live = false }
+    const on = (x: SiteContent | null) => live && setC(x)
+    listeners.add(on)
+    return () => { live = false; listeners.delete(on) }
   }, [])
   return c
 }

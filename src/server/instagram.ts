@@ -9,9 +9,10 @@ import { db, q, type DbEnv } from './db'
 
 type Row = Record<string, any>
 export type IgEnv = DbEnv & { INSTAGRAM_ACCESS_TOKEN?: string }
-export type IgSettings = { enabled?: boolean; section?: string; limit?: number; interval_hours?: number; last_sync?: string; last_error?: string; last_added?: number; seen?: string[]; pending?: boolean }
+export type IgSettings = { enabled?: boolean; section?: string; limit?: number; interval_hours?: number; last_sync?: string; last_attempt?: string; last_error?: string; last_added?: number; seen?: string[]; pending?: boolean }
 
 const MAX_NEW = 8
+const COOLDOWN_MS = 60_000
 const GRAPH = 'https://graph.instagram.com'
 const now = () => new Date().toISOString()
 
@@ -55,13 +56,16 @@ async function currentToken(env: IgEnv): Promise<{ token: string; error?: string
   return { token }
 }
 
-export async function syncInstagram(env: IgEnv, opts: { force?: boolean } = {}): Promise<{ ok: boolean; skipped?: string; added: number; removed: number; more: boolean; error?: string }> {
+export async function syncInstagram(env: IgEnv, opts: { force?: boolean; visit?: boolean } = {}): Promise<{ ok: boolean; skipped?: string; added: number; removed: number; more: boolean; error?: string }> {
   const cfg = ((await getSetting(env, 'instagram')) ?? {}) as IgSettings
   const fail = async (error: string) => { await putSetting(env, 'instagram', { ...cfg, last_error: error }); return { ok: false, added: 0, removed: 0, more: false, error } }
   if (!opts.force && !cfg.enabled) return { ok: true, skipped: 'Instagram sync is switched off.', added: 0, removed: 0, more: false }
-  const every = Math.max(1, cfg.interval_hours ?? 6) * 3_600_000
-  if (!opts.force && !cfg.pending && cfg.last_sync && Date.now() - Date.parse(cfg.last_sync) < every) return { ok: true, skipped: 'Not due yet.', added: 0, removed: 0, more: false }
-
+  // a page visit checks Instagram, but never more than once a minute however many people are browsing
+  if (opts.visit) {
+    if (cfg.last_attempt && Date.now() - Date.parse(cfg.last_attempt) < COOLDOWN_MS) return { ok: true, skipped: 'Checked a moment ago.', added: 0, removed: 0, more: false }
+    cfg.last_attempt = now()
+    await putSetting(env, 'instagram', cfg)
+  }
   const section = cfg.section || 'home-gallery'
   const limit = Math.min(30, Math.max(3, cfg.limit ?? 12))
   const { token, error: tokErr } = await currentToken(env)
@@ -98,7 +102,8 @@ export async function syncInstagram(env: IgEnv, opts: { force?: boolean } = {}):
       rows.push({ section, url, thumb_url: url, alt: String(p.caption ?? 'Instagram post from Illuszionz Media').replace(/\s+/g, ' ').slice(0, 140), width: size.w, height: size.h, sort_order: lowest - batch.length + i, source: 'instagram', ext_id: String(p.id), link: p.permalink ?? '' })
     } catch { /* skip this picture, try again next run */ }
   }
-  if (rows.length) await db.insert(env, 'site_images', rows)
+  // two visitors syncing at the same instant would hit the unique index; the other one already added them
+  if (rows.length) await db.insert(env, 'site_images', rows).catch(() => { rows.length = 0 })
 
   // posts that fell out of the latest N (or were deleted on Instagram) leave the gallery; manual pictures are never touched
   const stale = existing.filter((r) => r.source === 'instagram' && r.ext_id && !latestIds.has(String(r.ext_id)))
@@ -106,6 +111,6 @@ export async function syncInstagram(env: IgEnv, opts: { force?: boolean } = {}):
 
   const more = fresh.length > batch.length
   const imported = [...seen, ...rows.map((r) => r.ext_id)].filter((id) => latestIds.has(id))
-  await putSetting(env, 'instagram', { ...cfg, seen: imported, pending: more, last_sync: more ? cfg.last_sync : now(), last_error: '', last_added: rows.length })
+  await putSetting(env, 'instagram', { ...cfg, seen: imported, pending: more, last_sync: now(), last_error: '', last_added: rows.length })
   return { ok: true, added: rows.length, removed: stale.length, more }
 }

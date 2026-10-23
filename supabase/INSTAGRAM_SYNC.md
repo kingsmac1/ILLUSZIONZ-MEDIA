@@ -10,8 +10,7 @@ You need: your Instagram account set to **Professional** (Business or Creator �
 
 ## 1. Database (once)
 
-Supabase → **SQL Editor** → paste [`supabase/instagram.sql`](instagram.sql) → before running, replace `YOUR_CRON_SECRET` in it with your existing Cloudflare `CRON_SECRET` value (the same one the email scheduler uses) → **Run**.
-(It needs the `pg_cron` and `pg_net` extensions already enabled — you did this for the email scheduler.)
+Supabase → **SQL Editor** → paste [`supabase/instagram.sql`](instagram.sql) → **Run**. (It only adds three columns; there is no scheduler to set up.)
 
 ## 2. Create a Meta app and get the access token
 
@@ -37,10 +36,14 @@ The token lasts 60 days, but the site **renews it by itself** each time a sync r
 
 1. **Dashboard → Website images → Home — portfolio gallery**.
 2. If the green bar doesn't say "the website is showing your dashboard…", click **Start managing — import current content** first (otherwise the website keeps showing the built-in photos).
-3. In the **Instagram sync** card tick **Sync automatically**, choose how many posts (latest 6–30) and how often (hourly, 6-hourly, daily), then press **Sync now**.
+3. In the **Instagram sync** card tick **Sync automatically**, choose how many posts (latest 6–30), then press **Sync now**.
 4. A toast says how many pictures were added. They appear at the **start** of the gallery, newest first; reorder with the ← → buttons if you want. The homepage updates within about a minute.
 
 The card also shows when it last synced, or the reason it failed (usually an expired or missing token).
+
+## When it syncs
+
+Every time someone opens (or refreshes) the **homepage**, the site quietly asks Instagram for new posts. To protect Instagram's limits it really checks at most **once a minute**, however many people visit. If new posts were found, they appear in the gallery on that page without a reload; otherwise the next refresh shows them. **Sync now** in the dashboard does the same on demand.
 
 ## What gets synced
 
@@ -55,7 +58,7 @@ The card also shows when it last synced, or the reason it failed (usually an exp
 | "No Instagram access token yet" | Step 3 — add `INSTAGRAM_ACCESS_TOKEN` in Cloudflare and redeploy. |
 | "Instagram said: … token …" | The token expired/was revoked: generate a new one (step 2.5), update Cloudflare, redeploy. |
 | Sync says "up to date" but the homepage still shows old photos | Gallery not managed — step 4.2. |
-| Only 8 pictures arrived at first | Normal: it copies 8 per run to stay inside Cloudflare's limits; **Sync now** keeps going automatically until all are in, and the hourly job finishes the rest. |
+| Only 8 pictures arrived at first | Normal: it copies 8 per run to stay inside Cloudflare's limits; **Sync now** keeps going automatically until all are in; each homepage refresh copies the next 8. |
 | You deleted a synced picture and want it back | It is remembered as "deleted" so it won't return by itself. Download it from Instagram and upload it with **⬆ Upload**. |
 
-To stop syncing, untick **Sync automatically**; the pictures already copied stay. To remove the schedule entirely: `select cron.unschedule('illuszionz-instagram');`
+To stop syncing, untick **Sync automatically**; the pictures already copied stay.

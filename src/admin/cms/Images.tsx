@@ -6,7 +6,7 @@ import { homeGallery, homeHero, weddingGallery } from '../../cms/builtin'
 import { ManagePanel, uploadSiteImage } from './shared'
 import { adminApi } from '../supabase'
 
-type Ig = { enabled?: boolean; limit?: number; interval_hours?: number; last_sync?: string; last_error?: string; last_added?: number; pending?: boolean }
+type Ig = { enabled?: boolean; limit?: number; last_sync?: string; last_error?: string; last_added?: number; pending?: boolean }
 
 /** Pulls the latest Instagram posts into the home gallery. The access token lives in Cloudflare, never in the browser. */
 function InstagramPanel({ managed }: { managed: boolean }) {
@@ -32,14 +32,13 @@ function InstagramPanel({ managed }: { managed: boolean }) {
       <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ flex: 1, minWidth: 240 }}>
           <b>Instagram sync</b>
-          <p className="ad-muted" style={{ marginTop: 4 }}>Your latest Instagram pictures are copied into this gallery automatically. Pictures you upload yourself are never touched, and you can delete or reorder synced ones.</p>
+          <p className="ad-muted" style={{ marginTop: 4 }}>Your latest Instagram pictures are copied into this gallery automatically, every time someone opens the homepage (checked at most once a minute). Pictures you upload yourself are never touched, and you can delete or reorder synced ones.</p>
           {!managed && <p className="ad-err" style={{ marginTop: 6 }}>Switch this gallery on with “Start managing” below first, otherwise the website keeps showing the built-in photos.</p>}
           <p className="ad-muted" style={{ marginTop: 6 }}>{cfg.last_error ? <span className="ad-err">{cfg.last_error}</span> : cfg.last_sync ? `Last synced ${new Date(cfg.last_sync).toLocaleString('en-GB')}${cfg.last_added ? ` · ${cfg.last_added} added` : ''}` : 'Not synced yet.'}{cfg.pending ? ' · more pictures are still being copied' : ''}</p>
         </div>
         <div className="ad-actions" style={{ alignItems: 'center' }}>
           <label className="ad-check"><input type="checkbox" checked={!!cfg.enabled} onChange={(e) => save({ enabled: e.target.checked })} />Sync automatically</label>
           <select aria-label="How many posts" value={cfg.limit ?? 12} onChange={(e) => save({ limit: Number(e.target.value) })} className="ad-btn">{[6, 9, 12, 18, 24, 30].map((n) => <option key={n} value={n}>Latest {n}</option>)}</select>
-          <select aria-label="How often" value={cfg.interval_hours ?? 6} onChange={(e) => save({ interval_hours: Number(e.target.value) })} className="ad-btn">{[[1, 'every hour'], [6, 'every 6 hours'], [24, 'daily']].map(([n, l]) => <option key={n} value={n}>Check {l}</option>)}</select>
           <button className="ad-btn primary" disabled={busy} onClick={syncNow}>{busy ? 'Syncing…' : 'Sync now'}</button>
         </div>
       </div>
