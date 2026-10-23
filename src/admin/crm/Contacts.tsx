@@ -1,5 +1,7 @@
 import { useMemo, useRef, useState } from 'react'
 import { useData, useDb, type R } from '../data'
+import { supabase } from '../supabase'
+import { BulkBar, BulkBtn, BulkSelect, RowBox, SelectAllBox, confirmN, useSelection } from '../bulk'
 import { matchesAudience, type AudienceFilter } from '../../server/audience'
 import { Badge, Empty, Modal, PageHead, Pager, ago, downloadCsv, gbp, initials, parseCsv, useDebounced, Field } from '../ui'
 import { ContactDrawer } from './ContactDrawer'
@@ -37,7 +39,7 @@ function ImportModal({ onClose }: { onClose: () => void }) {
 }
 
 export function Contacts({ openId }: { openId?: string }) {
-  const { d } = useData()
+  const { d, refresh, toast, markSaved } = useData()
   const db = useDb()
   const [q, setQ] = useState('')
   const dq = useDebounced(q)
@@ -45,7 +47,6 @@ export function Contacts({ openId }: { openId?: string }) {
   const [f, setF] = useState<AudienceFilter>({})
   const [sort, setSort] = useState('recent')
   const [page, setPage] = useState(1)
-  const [sel, setSel] = useState<Set<string>>(new Set())
   const [modal, setModal] = useState<null | 'add' | 'import' | 'segment'>(null)
   const [open, setOpen] = useState<string | undefined>(openId)
   const [segName, setSegName] = useState('')
@@ -73,16 +74,30 @@ export function Contacts({ openId }: { openId?: string }) {
   const pages = Math.max(1, Math.ceil(list.length / PAGE))
   const view = list.slice((Math.min(page, pages) - 1) * PAGE, Math.min(page, pages) * PAGE)
   const counts = (l: string) => d.contacts.filter((c) => c.lifecycle === l).length
-  const allSelected = view.length > 0 && view.every((c) => sel.has(c.id))
-  const toggle = (id: string) => setSel((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n })
+  const sel = useSelection(list.map((c) => c.id))
+  const picked = () => d.contacts.filter((c) => sel.has(c.id))
 
-  async function bulk(patch: R | ((c: R) => R), ok: string) {
-    for (const id of sel) {
-      const c = d.contacts.find((x) => x.id === id)!
-      await db.update('contacts', { id }, typeof patch === 'function' ? patch(c) : patch)
-    }
-    setSel(new Set())
-    db.update('contacts', { id: [...sel][0] }, {}, ok)
+  /** same change for every selected contact (one request per tag/lifecycle value, not one per person) */
+  async function bulkTag(add: boolean) {
+    const t = window.prompt(add ? 'Tag to add to the selected contacts:' : 'Tag to remove from the selected contacts:')?.trim().toLowerCase()
+    if (!t) return
+    const rows = picked().filter((c) => (add ? !(c.tags ?? []).includes(t) : (c.tags ?? []).includes(t)))
+    for (let i = 0; i < rows.length; i += 10)
+      await Promise.all(rows.slice(i, i + 10).map((c) => supabase!.from('contacts').update({ tags: add ? [...(c.tags ?? []), t] : (c.tags ?? []).filter((x: string) => x !== t) }).eq('id', c.id)))
+    await refresh('contacts'); markSaved(); toast(`✓ Tag “${t}” ${add ? 'added to' : 'removed from'} ${rows.length} contact${rows.length === 1 ? '' : 's'}`)
+  }
+  async function bulkDelete() {
+    if (!confirmN('Permanently delete', sel.count, 'contact', 'Their timeline, deals and tasks are deleted too. Bookings and inbox messages are kept.')) return
+    const r = await db.removeMany('contacts', sel.ids, `${sel.count} contact${sel.count === 1 ? '' : 's'} deleted`, ['deals', 'tasks'])
+    if (r.ok) sel.clear()
+  }
+  async function bulkTask() {
+    const title = window.prompt(`Follow-up task for ${sel.count} contact${sel.count === 1 ? '' : 's'} (due tomorrow):`, 'Follow up')?.trim()
+    if (!title) return
+    const due = new Date(Date.now() + 86_400_000).toISOString()
+    const { error } = await supabase!.from('tasks').insert(picked().map((c) => ({ title: `${title} — ${c.name}`, type: 'follow-up', priority: 'normal', due_at: due, contact_id: c.id })))
+    if (error) return toast(error.message, 'err')
+    await refresh('tasks'); markSaved(); toast(`✓ ${sel.count} task${sel.count === 1 ? '' : 's'} created`)
   }
 
   return (
@@ -113,28 +128,30 @@ export function Contacts({ openId }: { openId?: string }) {
         {savedSeg && <button className="ad-btn sm danger" onClick={async () => { await db.remove('segments', { id: savedSeg.id }, 'Segment removed'); setSeg('all') }}>Delete segment</button>}
       </div>
 
-      {sel.size > 0 && (
-        <div className="ad-card" style={{ padding: '10px 14px', marginBottom: 12, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-          <b>{sel.size} selected</b>
-          <select onChange={(e) => e.target.value && bulk({ lifecycle: e.target.value }, 'Lifecycle updated') } value=""><option value="">Set lifecycle…</option>{LIFECYCLES.map((l) => <option key={l}>{l}</option>)}</select>
-          <button className="ad-btn sm" onClick={() => { const t = window.prompt('Tag to add to the selected contacts:'); if (t) bulk((c) => ({ tags: [...new Set([...(c.tags ?? []), t.trim().toLowerCase()])] }), 'Tag added') }}>+ Tag</button>
-          <button className="ad-btn sm" onClick={() => bulk({ marketing_opt_in: false }, 'Opted out of marketing')}>Opt out of marketing</button>
-          <button className="ad-btn sm" onClick={() => setSel(new Set())}>Clear</button>
-        </div>
-      )}
+      <BulkBar s={sel} noun="contact">
+        <BulkSelect label="Set stage" options={LIFECYCLES.map((l) => ({ value: l, label: l[0].toUpperCase() + l.slice(1) }))} onPick={(v) => db.updateMany('contacts', sel.ids, { lifecycle: v }, `${sel.count} set to ${v}`)} />
+        <BulkBtn onClick={() => bulkTag(true)}>+ Tag</BulkBtn>
+        <BulkBtn onClick={() => bulkTag(false)}>− Tag</BulkBtn>
+        <BulkSelect label="Source" options={SOURCES.map((x) => ({ value: x, label: x }))} onPick={(v) => db.updateMany('contacts', sel.ids, { source: v }, `Source set to ${v}`)} />
+        <BulkBtn onClick={() => db.updateMany('contacts', sel.ids, { marketing_opt_in: true, do_not_contact: false }, 'Marketing emails allowed')}>Allow marketing</BulkBtn>
+        <BulkBtn onClick={() => db.updateMany('contacts', sel.ids, { marketing_opt_in: false }, 'Opted out of marketing')}>Opt out</BulkBtn>
+        <BulkBtn onClick={bulkTask}>+ Task</BulkBtn>
+        <BulkBtn onClick={() => downloadCsv('contacts-selected', picked().map((c) => ({ name: c.name, email: c.email, phone: c.phone, lifecycle: c.lifecycle, source: c.source, tags: c.tags, city: c.city, birthday: c.birthday })))}>Export CSV</BulkBtn>
+        <BulkBtn danger onClick={bulkDelete}>Delete</BulkBtn>
+      </BulkBar>
 
       <div className="ad-tablewrap">
         <table>
           <thead><tr>
-            <th style={{ width: 36 }}><input type="checkbox" checked={allSelected} onChange={() => setSel(allSelected ? new Set() : new Set(view.map((c) => c.id)))} aria-label="Select all" /></th>
+            <th className="sel"><SelectAllBox s={sel} view={view.map((c) => c.id)} /></th>
             <th>Contact</th><th>Stage</th><th>Source</th><th>Tags</th><th>Score</th><th className="num">Bookings</th><th className="num">Value</th><th>Last activity</th>
           </tr></thead>
           <tbody>
             {view.map((c) => {
               const s = stats.get(c.id)!
               return (
-                <tr key={c.id} className="click" onClick={() => setOpen(c.id)}>
-                  <td onClick={(e) => e.stopPropagation()}><input type="checkbox" checked={sel.has(c.id)} onChange={() => toggle(c.id)} aria-label={`Select ${c.name}`} /></td>
+                <tr key={c.id} className={'click' + (sel.has(c.id) ? ' picked' : '')} onClick={() => setOpen(c.id)}>
+                  <td className="sel"><RowBox s={sel} id={c.id} label={c.name} /></td>
                   <td><div className="ad-who"><span className="ad-avatar">{initials(c.name)}</span><div><strong>{c.name}</strong><span className="ad-muted" style={{ fontSize: 12 }}>{c.email ?? c.phone ?? ''}</span></div></div></td>
                   <td><Badge>{c.lifecycle}</Badge></td>
                   <td className="ad-muted">{c.source}</td>

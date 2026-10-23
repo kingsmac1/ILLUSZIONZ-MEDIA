@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { pages } from '../../seo'
 import { useData, useDb, type R } from '../data'
+import { BulkBar, BulkBtn, RowBox, SelectAllBox, confirmN, useSelection } from '../bulk'
 import { Badge, Field, Modal, PageHead } from '../ui'
 import { Counter, ImageField } from './shared'
 
@@ -10,6 +11,15 @@ export function SeoCms() {
   const [edit, setEdit] = useState<string | null>(null)
   const [f, setF] = useState<R>({})
   const list = Object.values(pages)
+  const sel = useSelection(list.map((p) => p.path))
+  const setNoindex = (on: boolean) => db.upsert('page_seo', sel.ids.map((path) => { const o = d.page_seo.find((x) => x.path === path); return { path, title: o?.title ?? '', description: o?.description ?? '', og_image: o?.og_image ?? '', noindex: on, updated_at: new Date().toISOString() } }), 'path', on ? `${sel.count} hidden from search engines` : `${sel.count} visible to search engines`)
+  async function resetSel() {
+    const have = sel.ids.filter((path) => d.page_seo.some((x) => x.path === path))
+    if (!have.length) return
+    if (!confirmN('Reset', have.length, 'page', 'Back to the built-in title, description and image.')) return
+    const r = await db.removeMany('page_seo', have, `${have.length} reset to built-in`, [], 'path')
+    if (r.ok) sel.clear()
+  }
   const open = (path: string) => { const row = d.page_seo.find((p) => p.path === path); setEdit(path); setF({ title: '', description: '', og_image: '', noindex: false, ...row }) }
   const set = (k: string, v: unknown) => setF((c) => ({ ...c, [k]: v }))
   const base = edit ? list.find((p) => p.path === edit) : null
@@ -21,12 +31,18 @@ export function SeoCms() {
   return (
     <>
       <PageHead title="Page SEO" sub="Override the Google title, description and share image of any page — applied instantly, no rebuild" />
-      <div className="ad-tablewrap"><table><thead><tr><th>Page</th><th>Title in Google</th><th>Status</th><th /></tr></thead><tbody>
+      <BulkBar s={sel} noun="page">
+        <BulkBtn onClick={() => setNoindex(true)}>Noindex</BulkBtn>
+        <BulkBtn onClick={() => setNoindex(false)}>Allow indexing</BulkBtn>
+        <BulkBtn danger onClick={resetSel}>Reset to built-in</BulkBtn>
+      </BulkBar>
+      <div className="ad-tablewrap"><table><thead><tr><th className="sel"><SelectAllBox s={sel} view={list.map((p) => p.path)} /></th><th>Page</th><th>Title in Google</th><th>Status</th><th /></tr></thead><tbody>
         {list.map((p) => {
           const o = d.page_seo.find((x) => x.path === p.path)
           const changed = o && (o.title || o.description || o.og_image || o.noindex)
           return (
-            <tr key={p.path}>
+            <tr key={p.path} className={sel.has(p.path) ? 'picked' : ''}>
+              <td className="sel"><RowBox s={sel} id={p.path} label={p.path} /></td>
               <td><b>{p.path}</b></td>
               <td style={{ maxWidth: 420 }}>{o?.title || p.title}<span className="sub">{(o?.description || p.description).slice(0, 110)}…</span></td>
               <td>{changed ? <Badge tone="blue">customised</Badge> : <Badge tone="grey">built-in</Badge>} {o?.noindex && <Badge tone="red">noindex</Badge>}</td>

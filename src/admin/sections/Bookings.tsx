@@ -1,7 +1,8 @@
 import { Fragment, useMemo, useState } from 'react'
 import { flows } from '../../booking/catalog'
-import { adminApi } from '../supabase'
+import { adminApi, supabase } from '../supabase'
 import { useData, useDb, type R } from '../data'
+import { BulkBar, BulkBtn, BulkSelect, RowBox, SelectAllBox, confirmN, useSelection } from '../bulk'
 import { Badge, Confirm, Empty, Field, Modal, PageHead, Pager, addDaysIso, downloadCsv, fmtDate, gbp, todayIso, useDebounced, waLink } from '../ui'
 import { ContactDrawer } from '../crm/ContactDrawer'
 import { TaskModal } from '../crm/shared'
@@ -202,6 +203,68 @@ export function Bookings() {
   }, [d.bookings, status, pay, flow, range, dq])
   const pages = Math.max(1, Math.ceil(list.length / PAGE))
   const view = list.slice((Math.min(page, pages) - 1) * PAGE, Math.min(page, pages) * PAGE)
+  const sel = useSelection(list.map((b) => b.id))
+  const db = useDb()
+  const { refresh, toast, markSaved } = useData()
+  const picked = () => d.bookings.filter((b) => sel.has(b.id))
+
+  async function bulkStatus(status: string) {
+    const rows = picked()
+    const emailing = status === 'confirmed' && rows.some((b) => b.source === 'website' && b.email && b.status !== 'confirmed')
+    if (!confirmN(`Mark ${status}`, rows.length, 'booking', emailing ? 'Clients with an email address will receive the “booking confirmed” email within about 10 minutes.' : '')) return
+    const now = new Date().toISOString()
+    const ids = rows.map((b) => b.id)
+    await db.updateMany('bookings', ids, { status }, undefined, ['deals', 'contacts'])
+    if (status === 'confirmed') await db.updateMany('bookings', rows.filter((b) => !b.confirmed_at).map((b) => b.id), { confirmed_at: now })
+    if (status === 'completed') await db.updateMany('bookings', ids, { completed_at: now })
+    const stage = { confirmed: 'booked', completed: 'delivered', cancelled: 'lost', new: 'new' }[status]!
+    await db.updateMany('deals', ids, { stage, updated_at: now, closed_at: ['delivered', 'lost'].includes(stage) ? now : null, lost_reason: status === 'cancelled' ? 'Cancelled booking' : '' }, undefined, [], 'booking_id')
+    if (status === 'completed') {
+      const upgrade = rows.map((b) => d.contacts.find((c) => c.id === b.contact_id)).filter((c) => c && !['client', 'vip'].includes(c.lifecycle)).map((c) => c!.id)
+      if (upgrade.length) await db.updateMany('contacts', upgrade, { lifecycle: 'client' })
+    }
+    toast(`✓ ${rows.length} booking${rows.length === 1 ? '' : 's'} marked ${status}`)
+    sel.clear()
+  }
+  async function bulkPaid(paid: boolean) {
+    const rows = picked()
+    if (!confirmN(paid ? 'Mark as fully paid' : 'Mark as not paid', rows.length, 'booking', paid ? 'A payment for the outstanding balance is recorded on each (it counts in Finance).' : 'Payments recorded against them are removed from Finance.')) return
+    if (paid) {
+      const due = rows.filter((b) => Number(b.total) > Number(b.amount_paid))
+      const pay = due.map((b) => ({ booking_id: b.id, contact_id: b.contact_id, amount: Number(b.total) - Number(b.amount_paid), method: 'Other', note: 'Marked as paid (bulk)' }))
+      if (pay.length) { const { error } = await supabase!.from('payments').insert(pay); if (error) return toast(error.message, 'err') }
+      for (let i = 0; i < rows.length; i += 10)
+        await Promise.all(rows.slice(i, i + 10).map((b) => supabase!.from('bookings').update({ amount_paid: Number(b.total), payment_status: 'Paid' }).eq('id', b.id)))
+      await refresh('bookings', 'payments'); markSaved(); toast(`✓ ${rows.length} booking${rows.length === 1 ? '' : 's'} marked paid`)
+    } else {
+      const ids = rows.map((b) => b.id)
+      await db.removeMany('payments', ids, undefined, [], 'booking_id')
+      await db.updateMany('bookings', ids, { amount_paid: 0, payment_status: 'Not Paid' }, `${rows.length} booking${rows.length === 1 ? '' : 's'} marked not paid`, ['payments'])
+    }
+    sel.clear()
+  }
+  async function bulkDelete() {
+    const rows = picked()
+    if (!confirmN('Permanently delete', rows.length, 'booking', 'Their payments and pipeline deals are deleted too. This cannot be undone.')) return
+    const ids = rows.map((b) => b.id)
+    await db.removeMany('deals', ids, undefined, [], 'booking_id')
+    const r = await db.removeMany('bookings', ids, `${rows.length} booking${rows.length === 1 ? '' : 's'} deleted`, ['deals', 'payments', 'tasks'])
+    if (r.ok) sel.clear()
+  }
+  async function bulkEmail(key: string) {
+    const rows = picked().filter((b) => b.email)
+    if (!rows.length) return toast('None of the selected bookings has an email address', 'err')
+    if (rows.length > 25) return toast('Send at most 25 emails at a time', 'err')
+    if (!confirmN('Email', rows.length, 'client', `Template: ${key.replace(/_/g, ' ')}`)) return
+    let ok = 0
+    for (const b of rows) {
+      const r = await adminApi({ action: 'send_template', key, booking_id: b.id })
+      if (r.ok) ok++
+      else { toast(`${b.name}: ${r.error ?? 'failed'}`, 'err'); break }
+      await new Promise((res) => setTimeout(res, 650))
+    }
+    toast(`✓ ${ok} email${ok === 1 ? '' : 's'} sent`)
+  }
 
   return (
     <>
@@ -215,12 +278,21 @@ export function Bookings() {
         <select value={flow} onChange={(e) => { setFlow(e.target.value); setPage(1) }}><option value="">All services</option>{Object.values(flows).map((x) => <option key={x.id} value={x.id}>{x.title}</option>)}</select>
         <select value={range} onChange={(e) => { setRange(e.target.value); setPage(1) }}><option value="">Any date</option><option value="week">Next 7 days</option><option value="upcoming">Upcoming</option><option value="past">Past sessions</option><option value="unpaid">Balance outstanding</option></select>
       </div>
+      <BulkBar s={sel} noun="booking">
+        <BulkSelect label="Set status" options={STATUSES.map((x) => ({ value: x, label: x[0].toUpperCase() + x.slice(1) }))} onPick={bulkStatus} />
+        <BulkBtn onClick={() => bulkPaid(true)}>Mark paid</BulkBtn>
+        <BulkBtn onClick={() => bulkPaid(false)}>Mark not paid</BulkBtn>
+        <BulkSelect label="Email clients" options={[{ value: 'booking_confirmed', label: 'Booking confirmed' }, { value: 'reminder_24h', label: 'Session reminder' }, { value: 'payment_reminder', label: 'Balance reminder' }, { value: 'thank_you', label: 'Thank-you' }, { value: 'review_request', label: 'Review request' }]} onPick={bulkEmail} />
+        <BulkBtn onClick={() => downloadCsv('bookings-selected', picked().map((b) => ({ ref: b.ref, service: b.kind, packages: b.packages, name: b.name, email: b.email, phone: b.phone, date: b.event_date, time: b.event_time, status: b.status, total: b.total, paid: b.amount_paid, payment: b.payment_status })))}>Export CSV</BulkBtn>
+        <BulkBtn danger onClick={bulkDelete}>Delete</BulkBtn>
+      </BulkBar>
       <div className="ad-tablewrap">
         <table>
-          <thead><tr><th>Ref</th><th>Client</th><th>Service</th><th>Session</th><th>Status</th><th>Payment</th><th className="num">Total</th></tr></thead>
+          <thead><tr><th className="sel"><SelectAllBox s={sel} view={view.map((b) => b.id)} /></th><th>Ref</th><th>Client</th><th>Service</th><th>Session</th><th>Status</th><th>Payment</th><th className="num">Total</th></tr></thead>
           <tbody>
             {view.map((b) => (
-              <tr key={b.id} className="click" onClick={() => setOpen(b.id)}>
+              <tr key={b.id} className={'click' + (sel.has(b.id) ? ' picked' : '')} onClick={() => setOpen(b.id)}>
+                <td className="sel"><RowBox s={sel} id={b.id} label={`booking ${b.ref}`} /></td>
                 <td><b>{b.ref}</b><span className="sub">{fmtDate(b.created_at)}</span></td>
                 <td><b>{b.name}</b><span className="sub">{b.email || b.phone}</span></td>
                 <td>{b.kind.replace(/ booking$/i, '')}<span className="sub">{b.packages}</span></td>

@@ -96,6 +96,27 @@ export function useDb() {
       update: (t: Table, match: R, patch: R, ok?: string, also: Table[] = []) => run(s().from(t).update(patch).match(match).select(), [t, ...also], ok),
       upsert: (t: Table, row: R | R[], onConflict?: string, ok?: string) => run(s().from(t).upsert(row, onConflict ? { onConflict } : undefined).select(), [t], ok),
       remove: (t: Table, match: R, ok?: string, also: Table[] = []) => run(s().from(t).delete().match(match), [t, ...also], ok),
+      /** change many rows at once (ids chunked so the request URL stays short); one refresh, one confirmation */
+      updateMany: async (t: Table, ids: string[], patch: R, ok?: string, also: Table[] = [], key = 'id') => {
+        for (let i = 0; i < ids.length; i += 80) {
+          const { error } = await s().from(t).update(patch).in(key, ids.slice(i, i + 80))
+          if (error) { toast(error.message, 'err'); return { ok: false as const } }
+        }
+        await refresh(t, ...also)
+        markSaved()
+        toast(ok ? `✓ ${ok}` : '✓ Saved')
+        return { ok: true as const }
+      },
+      removeMany: async (t: Table, ids: string[], ok?: string, also: Table[] = [], key = 'id') => {
+        for (let i = 0; i < ids.length; i += 80) {
+          const { error } = await s().from(t).delete().in(key, ids.slice(i, i + 80))
+          if (error) { toast(error.message, 'err'); return { ok: false as const } }
+        }
+        await refresh(t, ...also)
+        markSaved()
+        toast(ok ? `✓ ${ok}` : '✓ Deleted')
+        return { ok: true as const }
+      },
       /** log a timeline entry (no refresh needed — timelines load on demand) */
       log: async (row: R) => {
         const { data } = await supabase!.auth.getUser()

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useData, useDb, type R } from '../data'
+import { BulkBar, BulkBtn, BulkSelect, RowBox, confirmN, useSelection } from '../bulk'
 import { Badge, Empty, Field, Modal, PageHead } from '../ui'
 import { homeTestimonials } from '../../cms/builtin'
 import { ManagePanel } from './shared'
@@ -9,6 +10,7 @@ export function TestimonialsCms() {
   const db = useDb()
   const [edit, setEdit] = useState<R | 'new' | null>(null)
   const [f, setF] = useState<R>({})
+  const sel = useSelection(d.testimonials.map((t) => t.id))
   const open = (t: R | 'new') => { setEdit(t); setF(t === 'new' ? { quote: '', author: '', role: '', active: true } : { ...t }) }
   const set = (k: string, v: unknown) => setF((c) => ({ ...c, [k]: v }))
   async function save() {
@@ -34,10 +36,17 @@ export function TestimonialsCms() {
       <PageHead title="Testimonials" sub="The quotes in the home page slider" actions={<button className="ad-btn primary" onClick={() => open('new')}>+ Add testimonial</button>} />
       <ManagePanel keyName="testimonials" label="testimonials" count={d.testimonials.length} onImport={async () => { await db.insert('testimonials', homeTestimonials.map((t, i) => ({ ...t, sort_order: i + 1 }))) }} />
       {featured.length > 0 && <div className="ad-note" style={{ marginBottom: 14 }}>{featured.length} review{featured.length === 1 ? '' : 's'} you marked as “featured” in the Inbox {featured.length === 1 ? 'is' : 'are'} not in the slider yet. <button className="ad-btn sm" onClick={importFeatured}>Add them</button></div>}
+      <BulkBar s={sel} noun="testimonial">
+        <BulkBtn onClick={() => db.updateMany('testimonials', sel.ids, { active: true }, `${sel.count} shown in the slider`)}>Show</BulkBtn>
+        <BulkBtn onClick={() => db.updateMany('testimonials', sel.ids, { active: false }, `${sel.count} hidden from the slider`)}>Hide</BulkBtn>
+        <BulkBtn danger onClick={async () => { if (confirmN('Delete', sel.count, 'testimonial')) { const r = await db.removeMany('testimonials', sel.ids, `${sel.count} deleted`); if (r.ok) sel.clear() } }}>Delete</BulkBtn>
+      </BulkBar>
+      {d.testimonials.length > 0 && !sel.count && <p style={{ margin: '0 0 10px' }}><button type="button" className="ad-link" onClick={sel.selectAll}>Select all</button></p>}
       <div className="ad-grid c2">
         {d.testimonials.map((t, i) => (
-          <div key={t.id} className="ad-card" style={{ opacity: t.active ? 1 : 0.55 }}>
-            <p style={{ fontFamily: 'Playfair Display, serif', fontSize: 17, lineHeight: 1.6, marginBottom: 12 }}>“{t.quote}”</p>
+          <div key={t.id} className={'ad-card' + (sel.has(t.id) ? ' picked' : '')} style={{ opacity: t.active ? 1 : 0.55, position: 'relative' }}>
+            <span className="ad-pick"><RowBox s={sel} id={t.id} label={`testimonial from ${t.author}`} /></span>
+            <p style={{ fontFamily: 'Playfair Display, serif', fontSize: 17, lineHeight: 1.6, marginBottom: 12, paddingLeft: 34 }}>“{t.quote}”</p>
             <p><b>{t.author}</b> <span className="ad-muted">{t.role}</span> {!t.active && <Badge tone="grey">hidden</Badge>}</p>
             <div className="ad-actions" style={{ marginTop: 12 }}><button className="ad-btn sm" onClick={() => open(t)}>Edit</button><button className="ad-btn sm" disabled={i === 0} onClick={() => move(t, -1)}>↑</button><button className="ad-btn sm" disabled={i === d.testimonials.length - 1} onClick={() => move(t, 1)}>↓</button><button className="ad-btn sm danger" onClick={() => window.confirm('Delete this testimonial?') && db.remove('testimonials', { id: t.id })}>✕</button></div>
           </div>

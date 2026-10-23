@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import type { AudienceFilter } from '../../server/audience'
 import { adminApi, supabase } from '../supabase'
 import { useData, useDb, type R } from '../data'
+import { BulkBar, BulkBtn, RowBox, SelectAllBox, confirmN, useSelection } from '../bulk'
 import { Badge, Empty, Field, Modal, PageHead, Tabs, ago, fmtDate } from '../ui'
 import { LIFECYCLES, SOURCES } from '../crm/shared'
 import { flows } from '../../booking/catalog'
@@ -243,17 +244,33 @@ function CampaignEditor({ campaign, onClose }: { campaign?: R; onClose: () => vo
   )
 }
 
+/** delete rows straight from a table that is not part of the shared dashboard data */
+async function deleteRows(table: string, ids: string[]) {
+  for (let i = 0; i < ids.length; i += 80) {
+    const { error } = await supabase!.from(table).delete().in('id', ids.slice(i, i + 80))
+    if (error) return error.message
+  }
+  return null
+}
+
 function Campaigns() {
   const [list, setList] = useState<R[]>([])
   const [edit, setEdit] = useState<R | 'new' | null>(null)
-  const { refresh } = useData()
+  const { refresh, toast } = useData()
+  const sel = useSelection(list.map((c) => c.id))
   const load = () => supabase!.from('email_campaigns').select('*').order('created_at', { ascending: false }).then(({ data }) => setList(data ?? []))
   useEffect(() => { load() }, [])
   return (
     <>
       <div className="ad-actions" style={{ marginBottom: 14, justifyContent: 'space-between' }}><p className="ad-muted">Send news, offers and mini-session announcements to a segment of your CRM.</p><button className="ad-btn primary" onClick={() => setEdit('new')}>+ New campaign</button></div>
-      <div className="ad-tablewrap"><table><thead><tr><th>Campaign</th><th>Status</th><th className="num">Recipients</th><th className="num">Sent</th><th className="num">Failed</th><th>Created</th></tr></thead><tbody>
-        {list.map((c) => <tr key={c.id} className="click" onClick={() => setEdit(c)}><td><b>{c.name}</b><span className="sub">{c.subject}</span></td><td><Badge>{c.status}</Badge></td><td className="num">{c.recipients}</td><td className="num">{c.sent_count}</td><td className="num">{c.failed_count}</td><td className="ad-muted">{fmtDate(c.created_at)}</td></tr>)}
+      <BulkBar s={sel} noun="campaign"><BulkBtn danger onClick={async () => {
+        if (!confirmN('Delete', sel.count, 'campaign', 'Emails already sent stay in the email log.')) return
+        const err = await deleteRows('email_campaigns', sel.ids)
+        if (err) return toast(err, 'err')
+        toast(`${sel.count} campaign${sel.count === 1 ? '' : 's'} deleted`); sel.clear(); load(); refresh()
+      }}>Delete</BulkBtn></BulkBar>
+      <div className="ad-tablewrap"><table><thead><tr><th className="sel"><SelectAllBox s={sel} view={list.map((c) => c.id)} /></th><th>Campaign</th><th>Status</th><th className="num">Recipients</th><th className="num">Sent</th><th className="num">Failed</th><th>Created</th></tr></thead><tbody>
+        {list.map((c) => <tr key={c.id} className={'click' + (sel.has(c.id) ? ' picked' : '')} onClick={() => setEdit(c)}><td className="sel"><RowBox s={sel} id={c.id} label={c.name} /></td><td><b>{c.name}</b><span className="sub">{c.subject}</span></td><td><Badge>{c.status}</Badge></td><td className="num">{c.recipients}</td><td className="num">{c.sent_count}</td><td className="num">{c.failed_count}</td><td className="ad-muted">{fmtDate(c.created_at)}</td></tr>)}
       </tbody></table>{!list.length && <Empty title="No campaigns yet" />}</div>
       {edit && <CampaignEditor campaign={edit === 'new' ? undefined : edit} onClose={() => { setEdit(null); load(); refresh() }} />}
     </>
@@ -263,16 +280,25 @@ function Campaigns() {
 function Log() {
   const [rows, setRows] = useState<R[]>([])
   const [status, setStatus] = useState('')
+  const { toast } = useData()
+  const sel = useSelection(rows.map((r) => r.id))
+  const [nonce, setNonce] = useState(0)
   useEffect(() => {
     let q = supabase!.from('email_log').select('*').neq('template_key', 'maintenance').neq('template_key', 'lead_task').order('created_at', { ascending: false }).limit(200)
     if (status) q = q.eq('status', status)
     q.then(({ data }) => setRows(data ?? []))
-  }, [status])
+  }, [status, nonce])
   return (
     <>
       <div className="ad-toolbar"><select value={status} onChange={(e) => setStatus(e.target.value)}><option value="">All</option>{['sent', 'failed', 'pending'].map((s) => <option key={s}>{s}</option>)}</select></div>
-      <div className="ad-tablewrap"><table><thead><tr><th>When</th><th>To</th><th>Email</th><th>Status</th></tr></thead><tbody>
-        {rows.map((r) => <tr key={r.id}><td className="ad-muted">{ago(r.created_at)}</td><td>{r.to_email}</td><td><b>{r.template_key || 'email'}</b><span className="sub">{r.subject}</span>{r.error && <span className="sub ad-err">{r.error}</span>}</td><td><Badge>{r.status}</Badge></td></tr>)}
+      <BulkBar s={sel} noun="log entry"><BulkBtn danger onClick={async () => {
+        if (!confirmN('Delete', sel.count, 'log entry')) return
+        const err = await deleteRows('email_log', sel.ids)
+        if (err) return toast(err, 'err')
+        toast(`${sel.count} log entr${sel.count === 1 ? 'y' : 'ies'} deleted`); sel.clear(); setNonce((n) => n + 1)
+      }}>Delete</BulkBtn></BulkBar>
+      <div className="ad-tablewrap"><table><thead><tr><th className="sel"><SelectAllBox s={sel} view={rows.map((r) => r.id)} /></th><th>When</th><th>To</th><th>Email</th><th>Status</th></tr></thead><tbody>
+        {rows.map((r) => <tr key={r.id} className={sel.has(r.id) ? 'picked' : ''}><td className="sel"><RowBox s={sel} id={r.id} label="log entry" /></td><td className="ad-muted">{ago(r.created_at)}</td><td>{r.to_email}</td><td><b>{r.template_key || 'email'}</b><span className="sub">{r.subject}</span>{r.error && <span className="sub ad-err">{r.error}</span>}</td><td><Badge>{r.status}</Badge></td></tr>)}
       </tbody></table>{!rows.length && <Empty title="Nothing sent yet" hint="Every automatic and manual email is logged here." />}</div>
     </>
   )

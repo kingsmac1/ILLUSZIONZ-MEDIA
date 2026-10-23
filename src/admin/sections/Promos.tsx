@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { flows } from '../../booking/catalog'
 import { useData, useDb, type R } from '../data'
+import { BulkBar, BulkBtn, RowBox, SelectAllBox, confirmN, useSelection } from '../bulk'
 import { Badge, Empty, Field, Modal, PageHead, fmtDate, gbp } from '../ui'
 
 export function Promos() {
@@ -17,13 +18,14 @@ export function Promos() {
     const r = edit === 'new' ? await db.insert('promo_codes', row, 'Promo code created') : await db.update('promo_codes', { code: f.code }, row, 'Promo code saved')
     if (r.ok) setEdit(null)
   }
+  const sel = useSelection(d.promo_codes.map((p) => p.code))
   const status = (p: R) => !p.active ? 'paused' : p.expires_on && p.expires_on < new Date().toISOString().slice(0, 10) ? 'expired' : p.max_uses != null && p.used >= p.max_uses ? 'used up' : 'live'
   return (
     <>
       <PageHead title="Promo codes" sub="Clients type these on the last step of any booking form" actions={<button className="ad-btn primary" onClick={() => open('new')}>+ New code</button>} />
-      <div className="ad-tablewrap"><table><thead><tr><th>Code</th><th>Discount</th><th>Applies to</th><th>Valid</th><th className="num">Used</th><th>Status</th><th /></tr></thead><tbody>
+      <div className="ad-tablewrap"><BulkBar s={sel} noun="code"><BulkBtn onClick={() => db.updateMany('promo_codes', sel.ids, { active: true }, `${sel.count} activated`, [], 'code')}>Activate</BulkBtn><BulkBtn onClick={() => db.updateMany('promo_codes', sel.ids, { active: false }, `${sel.count} paused`, [], 'code')}>Pause</BulkBtn><BulkBtn danger onClick={async () => { if (confirmN('Delete', sel.count, 'promo code')) { const r = await db.removeMany('promo_codes', sel.ids, `${sel.count} deleted`, [], 'code'); if (r.ok) sel.clear() } }}>Delete</BulkBtn></BulkBar><table><thead><tr><th className="sel"><SelectAllBox s={sel} view={d.promo_codes.map((p) => p.code)} /></th><th>Code</th><th>Discount</th><th>Applies to</th><th>Valid</th><th className="num">Used</th><th>Status</th><th /></tr></thead><tbody>
         {d.promo_codes.map((p) => (
-          <tr key={p.code}><td><b>{p.code}</b><span className="sub">{p.description}</span></td><td><b>{p.percent_off != null ? `${p.percent_off}% off` : `${gbp(p.amount_off)} off`}</b></td>
+          <tr key={p.code} className={sel.has(p.code) ? 'picked' : ''}><td className="sel"><RowBox s={sel} id={p.code} label={p.code} /></td><td><b>{p.code}</b><span className="sub">{p.description}</span></td><td><b>{p.percent_off != null ? `${p.percent_off}% off` : `${gbp(p.amount_off)} off`}</b></td>
             <td>{p.flows?.length ? p.flows.map((x: string) => flows[x]?.title ?? x).join(', ') : 'Every service'}</td><td className="ad-muted">{p.starts_on ? fmtDate(p.starts_on) : 'now'} → {p.expires_on ? fmtDate(p.expires_on) : 'no end'}</td>
             <td className="num">{p.used}{p.max_uses != null ? ` / ${p.max_uses}` : ''}</td><td><Badge tone={status(p) === 'live' ? 'green' : 'grey'}>{status(p)}</Badge></td>
             <td className="num"><button className="ad-btn sm" onClick={() => open(p)}>Edit</button> <button className="ad-btn sm danger" onClick={() => window.confirm(`Delete ${p.code}?`) && db.remove('promo_codes', { code: p.code }, 'Deleted')}>✕</button></td></tr>

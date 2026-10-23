@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { useData, useDb, type R } from '../data'
+import { BulkBar, BulkBtn, BulkSelect, RowBox, confirmN, useSelection } from '../bulk'
 import { Empty, PageHead, Tabs } from '../ui'
 import { homeGallery, homeHero, weddingGallery } from '../../cms/builtin'
 import { ManagePanel, uploadSiteImage } from './shared'
@@ -18,6 +19,7 @@ export function ImagesCms() {
   const [busy, setBusy] = useState(false)
   const file = useRef<HTMLInputElement>(null)
   const items = d.site_images.filter((i) => i.section === tab)
+  const sel = useSelection(items.map((i) => i.id))
   const nextOrder = () => Math.max(0, ...items.map((i) => i.sort_order)) + 1
 
   async function upload(files: FileList) {
@@ -50,9 +52,15 @@ export function ImagesCms() {
       <PageHead title="Website images" sub="Slideshows and galleries on the home and wedding pages" actions={<><button className="ad-btn" onClick={addUrl}>+ Add by link</button><button className="ad-btn primary" disabled={busy} onClick={() => file.current?.click()}>{busy ? 'Uploading…' : '⬆ Upload images'}</button><input ref={file} type="file" accept="image/*" multiple hidden onChange={(e) => { if (e.target.files?.length) upload(e.target.files); e.target.value = '' }} /></>} />
       <Tabs value={tab} onChange={setTab} tabs={(Object.keys(SETS) as SetKey[]).map((k) => ({ id: k, label: SETS[k].label, count: d.site_images.filter((i) => i.section === k).length }))} />
       <ManagePanel keyName={tab} label={SETS[tab].label} count={items.length} onImport={async () => { await db.insert('site_images', SETS[tab].seed().map((r, i) => ({ ...r, section: tab, sort_order: i + 1 }))) }}><p className="ad-muted" style={{ marginTop: 8 }}>{SETS[tab].note}</p></ManagePanel>
+      <BulkBar s={sel} noun="image">
+        <BulkSelect label="Move to" options={(Object.keys(SETS) as SetKey[]).filter((k) => k !== tab).map((k) => ({ value: k, label: SETS[k].label }))} onPick={async (v) => { const base = Math.max(0, ...d.site_images.filter((i) => i.section === v).map((i) => i.sort_order)); const picked = items.filter((i) => sel.has(i.id)); for (let n = 0; n < picked.length; n++) await db.update('site_images', { id: picked[n].id }, { section: v, sort_order: base + n + 1 }, n === picked.length - 1 ? `${picked.length} moved to ${SETS[v as SetKey].label}` : undefined); sel.clear() }} />
+        <BulkBtn danger onClick={async () => { if (confirmN('Delete', sel.count, 'image')) { const r = await db.removeMany('site_images', sel.ids, `${sel.count} deleted`); if (r.ok) sel.clear() } }}>Delete</BulkBtn>
+      </BulkBar>
+      {items.length > 0 && !sel.count && <p style={{ margin: '0 0 10px' }}><button type="button" className="ad-link" onClick={sel.selectAll}>Select all</button></p>}
       <div className="ad-grid c4">
         {items.map((it, i) => (
-          <div key={it.id} className="ad-card" style={{ padding: 10 }}>
+          <div key={it.id} className={'ad-card' + (sel.has(it.id) ? ' picked' : '')} style={{ padding: 10, position: 'relative' }}>
+            <span className="ad-pick" style={{ top: 18, left: 18 }}><RowBox s={sel} id={it.id} label="image" /></span>
             <img src={it.thumb_url || it.url} alt={it.alt} style={{ width: '100%', aspectRatio: '4/3', objectFit: 'cover', borderRadius: 8, background: '#efeee9' }} loading="lazy" />
             <input type="text" defaultValue={it.alt} placeholder="Alt text (describe the picture)" style={{ marginTop: 8 }} onBlur={(e) => e.target.value !== it.alt && db.update('site_images', { id: it.id }, { alt: e.target.value }, 'Alt text saved')} />
             <div className="ad-actions" style={{ marginTop: 8 }}><button className="ad-btn sm" disabled={i === 0} onClick={() => move(it, -1)}>←</button><button className="ad-btn sm" disabled={i === items.length - 1} onClick={() => move(it, 1)}>→</button><button className="ad-btn sm danger" onClick={() => window.confirm('Remove this image from the set?') && db.remove('site_images', { id: it.id })}>Remove</button></div>

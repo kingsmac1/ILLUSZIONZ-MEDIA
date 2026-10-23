@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useData, useDb, type R } from '../data'
+import { BulkBar, BulkBtn, BulkSelect, RowBox, confirmN, useSelection } from '../bulk'
 import { Badge, Empty, Field, Modal, PageHead } from '../ui'
 import { builtinStore } from '../../cms/builtin'
 import { ImageField, ManagePanel } from './shared'
@@ -43,6 +44,7 @@ export function StoreCms() {
   const { d } = useData()
   const db = useDb()
   const [edit, setEdit] = useState<R | 'new' | null>(null)
+  const sel = useSelection(d.store_products.map((p) => p.id))
   const move = async (p: R, dir: -1 | 1) => {
     const i = d.store_products.findIndex((x) => x.id === p.id)
     const o = d.store_products[i + dir]
@@ -54,9 +56,16 @@ export function StoreCms() {
     <>
       <PageHead title="Store" sub="The products on /store/" actions={<><a className="ad-btn" href="/store/" target="_blank" rel="noreferrer">View page ↗</a><button className="ad-btn primary" onClick={() => setEdit('new')}>+ Add product</button></>} />
       <ManagePanel keyName="store" label="store" count={d.store_products.length} onImport={async () => { await db.insert('store_products', builtinStore.map((p, i) => ({ ...p, sort_order: i + 1 }))) }} />
+      <BulkBar s={sel} noun="product">
+        <BulkBtn onClick={() => db.updateMany('store_products', sel.ids, { active: true }, `${sel.count} shown on the website`)}>Show</BulkBtn>
+        <BulkBtn onClick={() => db.updateMany('store_products', sel.ids, { active: false }, `${sel.count} hidden from the website`)}>Hide</BulkBtn>
+        <BulkBtn danger onClick={async () => { if (confirmN('Delete', sel.count, 'product')) { const r = await db.removeMany('store_products', sel.ids, `${sel.count} deleted`); if (r.ok) sel.clear() } }}>Delete</BulkBtn>
+      </BulkBar>
+      {d.store_products.length > 0 && !sel.count && <p style={{ margin: '0 0 10px' }}><button type="button" className="ad-link" onClick={sel.selectAll}>Select all</button></p>}
       <div className="ad-grid c2">
         {d.store_products.map((p, i) => (
-          <div key={p.id} className="ad-card" style={{ opacity: p.active ? 1 : 0.55 }}>
+          <div key={p.id} className={'ad-card' + (sel.has(p.id) ? ' picked' : '')} style={{ opacity: p.active ? 1 : 0.55, position: 'relative' }}>
+            <span className="ad-pick"><RowBox s={sel} id={p.id} label={p.title} /></span>
             <div style={{ display: 'flex', gap: 14 }}>
               {p.image_url && <img src={p.image_url} alt="" style={{ width: 96, height: 96, borderRadius: 10, objectFit: 'cover', flex: 'none' }} />}
               <div style={{ minWidth: 0, flex: 1 }}>

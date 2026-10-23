@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useData, useDb, type R } from '../data'
+import { BulkBar, BulkBtn, RowBox, SelectAllBox, confirmN, useSelection } from '../bulk'
 import { Badge, Confirm, Empty, Field, Modal, PageHead, Pager, fmtDate, useDebounced } from '../ui'
 import { RichText } from '../builder/RichText'
 import { Counter, ImageField, slugify, uploadSiteImage } from './shared'
@@ -122,6 +123,7 @@ function Editor({ post, onClose }: { post?: R; onClose: () => void }) {
 
 export function Blog() {
   const { d } = useData()
+  const db = useDb()
   const [q, setQ] = useState('')
   const dq = useDebounced(q)
   const [status, setStatus] = useState('')
@@ -132,6 +134,13 @@ export function Blog() {
   const list = useMemo(() => d.blog_posts.filter((p) => (!status || state(p) === status) && (!dq || `${p.title} ${p.category} ${p.tags.join(' ')}`.toLowerCase().includes(dq.toLowerCase()))).sort((a, b) => (b.published_at ?? b.created_at).localeCompare(a.published_at ?? a.created_at)), [d.blog_posts, status, dq])
   const pages = Math.max(1, Math.ceil(list.length / 15))
   const view = list.slice((Math.min(page, pages) - 1) * 15, Math.min(page, pages) * 15)
+  const sel = useSelection(list.map((p) => p.id))
+  async function publish(on: boolean) {
+    const picked = d.blog_posts.filter((p) => sel.has(p.id))
+    const undated = picked.filter((p) => !p.published_at).map((p) => p.id)
+    if (on && undated.length) await db.updateMany('blog_posts', undated, { published_at: new Date().toISOString() })
+    await db.updateMany('blog_posts', sel.ids, { published: on }, on ? `${sel.count} published` : `${sel.count} moved to drafts`)
+  }
   const live = d.blog_posts.filter((p) => state(p) === 'published').length
   return (
     <>
@@ -140,9 +149,17 @@ export function Blog() {
         <input type="search" placeholder="Search posts…" value={q} onChange={(e) => { setQ(e.target.value); setPage(1) }} />
         <select value={status} onChange={(e) => { setStatus(e.target.value); setPage(1) }}><option value="">All</option><option value="published">Published</option><option value="draft">Drafts</option><option value="scheduled">Scheduled</option></select>
       </div>
-      <div className="ad-tablewrap"><table><thead><tr><th>Post</th><th>Category</th><th>Status</th><th>Date</th><th className="num">Words</th></tr></thead><tbody>
+      <BulkBar s={sel} noun="post">
+        <BulkBtn onClick={() => publish(true)}>Publish</BulkBtn>
+        <BulkBtn onClick={() => publish(false)}>Unpublish</BulkBtn>
+        <BulkBtn onClick={() => db.updateMany('blog_posts', sel.ids, { noindex: true }, `${sel.count} hidden from search engines`)}>Noindex</BulkBtn>
+        <BulkBtn onClick={() => db.updateMany('blog_posts', sel.ids, { noindex: false }, `${sel.count} visible to search engines`)}>Allow indexing</BulkBtn>
+        <BulkBtn danger onClick={async () => { if (confirmN('Delete', sel.count, 'post', 'This cannot be undone.')) { const r = await db.removeMany('blog_posts', sel.ids, `${sel.count} post${sel.count === 1 ? '' : 's'} deleted`); if (r.ok) sel.clear() } }}>Delete</BulkBtn>
+      </BulkBar>
+      <div className="ad-tablewrap"><table><thead><tr><th className="sel"><SelectAllBox s={sel} view={view.map((p) => p.id)} /></th><th>Post</th><th>Category</th><th>Status</th><th>Date</th><th className="num">Words</th></tr></thead><tbody>
         {view.map((p) => (
-          <tr key={p.id} className="click" onClick={() => setEdit(p)}>
+          <tr key={p.id} className={'click' + (sel.has(p.id) ? ' picked' : '')} onClick={() => setEdit(p)}>
+            <td className="sel"><RowBox s={sel} id={p.id} label={p.title} /></td>
             <td><div className="ad-who">{p.cover_url ? <img src={p.cover_url} alt="" style={{ width: 54, height: 38, objectFit: 'cover', borderRadius: 6 }} /> : <span className="ad-avatar" style={{ borderRadius: 6 }}>✎</span>}<div><strong>{p.title}</strong><span className="ad-muted" style={{ fontSize: 12 }}>/blog/{p.slug}/</span></div></div></td>
             <td className="ad-muted">{p.category || '—'}</td><td><Badge tone={state(p) === 'published' ? 'green' : state(p) === 'scheduled' ? 'amber' : 'grey'}>{state(p)}</Badge></td>
             <td className="ad-muted">{fmtDate(p.published_at ?? p.created_at)}</td><td className="num">{wordCount(p.content)}</td>

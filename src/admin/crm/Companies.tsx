@@ -3,12 +3,14 @@ import { useData, useDb, type R } from '../data'
 import { Empty, Field, Modal, PageHead, gbp } from '../ui'
 import { ContactDrawer } from './ContactDrawer'
 import { contactStats } from './shared'
+import { BulkBar, BulkBtn, RowBox, confirmN, useSelection } from '../bulk'
 
 export function Companies() {
   const { d } = useData()
   const db = useDb()
   const [edit, setEdit] = useState<R | 'new' | null>(null)
   const [f, setF] = useState<R>({})
+  const sel = useSelection(d.companies.map((c) => c.id))
   const [contact, setContact] = useState<string | null>(null)
   const open = (c: R | 'new') => { setEdit(c); setF(c === 'new' ? { name: '', website: '', industry: '', phone: '', email: '', address: '', notes: '' } : c) }
   const set = (k: string, v: string) => setF((c) => ({ ...c, [k]: v }))
@@ -21,13 +23,18 @@ export function Companies() {
   return (
     <>
       <PageHead title="Companies" sub="Brands, venues, planners and agencies you work with" actions={<button className="ad-btn primary" onClick={() => open('new')}>+ Add company</button>} />
+      <BulkBar s={sel} noun="company">
+        <BulkBtn danger onClick={async () => { if (confirmN('Delete', sel.count, 'company', 'Their contacts are kept.')) { const r = await db.removeMany('companies', sel.ids, `${sel.count} compan${sel.count === 1 ? 'y' : 'ies'} deleted`, ['contacts']); if (r.ok) sel.clear() } }}>Delete</BulkBtn>
+      </BulkBar>
+      {d.companies.length > 0 && !sel.count && <p style={{ margin: '0 0 10px' }}><button type="button" className="ad-link" onClick={sel.selectAll}>Select all</button></p>}
       <div className="ad-grid c3">
         {d.companies.map((c) => {
           const people = d.contacts.filter((p) => p.company_id === c.id)
           const value = people.reduce((s, p) => s + contactStats(p, d.bookings).spent, 0)
           return (
-            <div key={c.id} className="ad-card">
-              <h3>{c.name}<button className="ad-btn sm" onClick={() => open(c)}>Edit</button></h3>
+            <div key={c.id} className={'ad-card' + (sel.has(c.id) ? ' picked' : '')} style={{ position: 'relative' }}>
+              <span className="ad-pick"><RowBox s={sel} id={c.id} label={c.name} /></span>
+              <h3 style={{ paddingLeft: 34 }}>{c.name}<button className="ad-btn sm" onClick={() => open(c)}>Edit</button></h3>
               <p className="ad-muted">{c.industry || 'No industry'}{c.website ? ` · ${c.website}` : ''}</p>
               <p style={{ margin: '10px 0' }}><b>{gbp(value)}</b> <span className="ad-muted">from {people.length} contact{people.length === 1 ? '' : 's'}</span></p>
               <div className="ad-tags">{people.map((p) => <a key={p.id} className="ad-tag" href="#" onClick={(e) => { e.preventDefault(); setContact(p.id) }}>{p.name}</a>)}</div>

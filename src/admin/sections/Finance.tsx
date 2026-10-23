@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useData, useDb, type R } from '../data'
+import { BulkBar, BulkBtn, BulkSelect, RowBox, SelectAllBox, confirmN, useSelection } from '../bulk'
 import { Bars, Columns, Empty, Field, Modal, PageHead, Stat, Tabs, downloadCsv, fmtDate, gbp, todayIso } from '../ui'
 
 type Kind = 'expense' | 'income'
@@ -58,6 +59,25 @@ export function Finance() {
   const byCat = new Map<string, number>()
   exp.forEach((e) => byCat.set(e.category, (byCat.get(e.category) ?? 0) + Number(e.amount)))
   const bookingById = new Map(d.bookings.map((b) => [b.id, b]))
+  const selPay = useSelection(pay.map((p) => p.id))
+  const selExp = useSelection(exp.map((e) => e.id))
+  const selInc = useSelection(inc.map((e) => e.id))
+  async function delPayments() {
+    const ids = selPay.ids
+    if (!confirmN('Remove', ids.length, 'payment', 'Each booking’s paid amount is reduced to match.')) return
+    const gone = d.payments.filter((p) => ids.includes(p.id))
+    const r = await db.removeMany('payments', ids, `${ids.length} payment${ids.length === 1 ? '' : 's'} removed`, ['bookings'])
+    if (!r.ok) return
+    const perBooking = new Map<string, number>()
+    gone.forEach((p) => perBooking.set(p.booking_id, (perBooking.get(p.booking_id) ?? 0) + Number(p.amount)))
+    for (const [bid, amt] of perBooking) {
+      const b = bookingById.get(bid)
+      if (!b) continue
+      const paid = Math.max(0, Number(b.amount_paid) - amt)
+      await db.update('bookings', { id: bid }, { amount_paid: paid, payment_status: paid <= 0 ? 'Not Paid' : paid >= Number(b.total) ? 'Paid' : 'Deposit Paid' })
+    }
+    selPay.clear()
+  }
   const byService = new Map<string, number>()
   pay.forEach((p) => { const k = (bookingById.get(p.booking_id)?.kind ?? 'Other').replace(/ booking$/i, ''); byService.set(k, (byService.get(k) ?? 0) + Number(p.amount)) })
   const outstanding = d.bookings.filter((b) => b.status !== 'cancelled' && b.status !== 'new' && Number(b.total) > Number(b.amount_paid))
@@ -93,22 +113,22 @@ export function Finance() {
       )}
 
       {tab === 'payments' && (
-        <div className="ad-tablewrap"><table><thead><tr><th>Date</th><th>Client</th><th>Service</th><th>Method</th><th>Note</th><th className="num">Amount</th></tr></thead><tbody>
-          {pay.map((p) => { const b = bookingById.get(p.booking_id); return <tr key={p.id}><td>{fmtDate(p.paid_at)}</td><td>{b?.name ?? '—'}</td><td>{b?.kind.replace(/ booking$/i, '')}</td><td>{p.method}</td><td className="ad-muted">{p.note}</td><td className="num"><b>{gbp(p.amount)}</b></td></tr> })}
+        <div className="ad-tablewrap"><BulkBar s={selPay} noun="payment"><BulkBtn onClick={() => downloadCsv('payments', pay.filter((p) => selPay.has(p.id)).map((p) => ({ date: p.paid_at, client: bookingById.get(p.booking_id)?.name, method: p.method, amount: p.amount, note: p.note })))}>Export CSV</BulkBtn><BulkBtn danger onClick={delPayments}>Remove</BulkBtn></BulkBar><table><thead><tr><th className="sel"><SelectAllBox s={selPay} view={pay.map((p) => p.id)} /></th><th>Date</th><th>Client</th><th>Service</th><th>Method</th><th>Note</th><th className="num">Amount</th></tr></thead><tbody>
+          {pay.map((p) => { const b = bookingById.get(p.booking_id); return <tr key={p.id} className={selPay.has(p.id) ? 'picked' : ''}><td className="sel"><RowBox s={selPay} id={p.id} label="payment" /></td><td>{fmtDate(p.paid_at)}</td><td>{b?.name ?? '—'}</td><td>{b?.kind.replace(/ booking$/i, '')}</td><td>{p.method}</td><td className="ad-muted">{p.note}</td><td className="num"><b>{gbp(p.amount)}</b></td></tr> })}
         </tbody></table>{!pay.length && <Empty title="No payments in this period" hint="Record payments from a booking's detail view." />}
         {pay.length > 0 && <div style={{ padding: 12, textAlign: 'right' }}><button className="ad-btn sm" onClick={() => downloadCsv('payments', pay.map((p) => ({ date: p.paid_at, client: bookingById.get(p.booking_id)?.name, method: p.method, amount: p.amount, note: p.note })))}>Export CSV</button></div>}</div>
       )}
 
       {tab === 'expenses' && (
-        <div className="ad-tablewrap"><table><thead><tr><th>Date</th><th>Category</th><th>Vendor</th><th>Note</th><th className="num">Amount</th><th /></tr></thead><tbody>
-          {exp.map((e) => <tr key={e.id}><td>{fmtDate(e.spent_on)}</td><td>{e.category}</td><td>{e.vendor}</td><td className="ad-muted">{e.note}</td><td className="num"><b>{gbp(e.amount)}</b></td><td className="num"><button className="ad-btn sm" onClick={() => setEdit({ kind: 'expense', row: e })}>Edit</button> <button className="ad-btn sm danger" onClick={() => window.confirm('Delete this expense?') && db.remove('expenses', { id: e.id })}>✕</button></td></tr>)}
+        <div className="ad-tablewrap"><BulkBar s={selExp} noun="expense"><BulkSelect label="Category" options={d.expense_categories.map((c) => ({ value: c.name, label: c.name }))} onPick={(v) => db.updateMany('expenses', selExp.ids, { category: v }, `Category set to ${v}`)} /><BulkBtn onClick={() => downloadCsv('expenses', exp.filter((e) => selExp.has(e.id)).map((e) => ({ date: e.spent_on, category: e.category, vendor: e.vendor, amount: e.amount, note: e.note })))}>Export CSV</BulkBtn><BulkBtn danger onClick={async () => { if (confirmN('Delete', selExp.count, 'expense')) { const r = await db.removeMany('expenses', selExp.ids, `${selExp.count} expenses deleted`); if (r.ok) selExp.clear() } }}>Delete</BulkBtn></BulkBar><table><thead><tr><th className="sel"><SelectAllBox s={selExp} view={exp.map((e) => e.id)} /></th><th>Date</th><th>Category</th><th>Vendor</th><th>Note</th><th className="num">Amount</th><th /></tr></thead><tbody>
+          {exp.map((e) => <tr key={e.id} className={selExp.has(e.id) ? 'picked' : ''}><td className="sel"><RowBox s={selExp} id={e.id} label="expense" /></td><td>{fmtDate(e.spent_on)}</td><td>{e.category}</td><td>{e.vendor}</td><td className="ad-muted">{e.note}</td><td className="num"><b>{gbp(e.amount)}</b></td><td className="num"><button className="ad-btn sm" onClick={() => setEdit({ kind: 'expense', row: e })}>Edit</button> <button className="ad-btn sm danger" onClick={() => window.confirm('Delete this expense?') && db.remove('expenses', { id: e.id })}>✕</button></td></tr>)}
         </tbody></table>{!exp.length && <Empty title="No expenses in this period" />}
         {exp.length > 0 && <div style={{ padding: 12, textAlign: 'right' }}><button className="ad-btn sm" onClick={() => downloadCsv('expenses', exp.map((e) => ({ date: e.spent_on, category: e.category, vendor: e.vendor, amount: e.amount, note: e.note })))}>Export CSV</button></div>}</div>
       )}
 
       {tab === 'income' && (
-        <div className="ad-tablewrap"><table><thead><tr><th>Date</th><th>Source</th><th>Note</th><th className="num">Amount</th><th /></tr></thead><tbody>
-          {inc.map((e) => <tr key={e.id}><td>{fmtDate(e.received_on)}</td><td>{e.source}</td><td className="ad-muted">{e.note}</td><td className="num"><b>{gbp(e.amount)}</b></td><td className="num"><button className="ad-btn sm" onClick={() => setEdit({ kind: 'income', row: e })}>Edit</button> <button className="ad-btn sm danger" onClick={() => window.confirm('Delete this entry?') && db.remove('other_income', { id: e.id })}>✕</button></td></tr>)}
+        <div className="ad-tablewrap"><BulkBar s={selInc} noun="entry"><BulkBtn onClick={() => downloadCsv('other-income', inc.filter((e) => selInc.has(e.id)).map((e) => ({ date: e.received_on, source: e.source, amount: e.amount, note: e.note })))}>Export CSV</BulkBtn><BulkBtn danger onClick={async () => { if (confirmN('Delete', selInc.count, 'entry')) { const r = await db.removeMany('other_income', selInc.ids, `${selInc.count} entries deleted`); if (r.ok) selInc.clear() } }}>Delete</BulkBtn></BulkBar><table><thead><tr><th className="sel"><SelectAllBox s={selInc} view={inc.map((e) => e.id)} /></th><th>Date</th><th>Source</th><th>Note</th><th className="num">Amount</th><th /></tr></thead><tbody>
+          {inc.map((e) => <tr key={e.id} className={selInc.has(e.id) ? 'picked' : ''}><td className="sel"><RowBox s={selInc} id={e.id} label="entry" /></td><td>{fmtDate(e.received_on)}</td><td>{e.source}</td><td className="ad-muted">{e.note}</td><td className="num"><b>{gbp(e.amount)}</b></td><td className="num"><button className="ad-btn sm" onClick={() => setEdit({ kind: 'income', row: e })}>Edit</button> <button className="ad-btn sm danger" onClick={() => window.confirm('Delete this entry?') && db.remove('other_income', { id: e.id })}>✕</button></td></tr>)}
         </tbody></table>{!inc.length && <Empty title="No other income in this period" hint="Track print sales, studio hire, brand collaborations and anything outside bookings." />}</div>
       )}
       {edit && <EntryModal kind={edit.kind} row={edit.row} onClose={() => setEdit(null)} />}

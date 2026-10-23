@@ -244,3 +244,21 @@
 .ad-savebar-dot { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: #e6e5e0; color: #555; font-size: 12px; font-weight: 800; flex: none; }
 .ad-savebar.is-saved .ad-savebar-dot { background: #16a34a; color: #fff; }
 .ad-savebar-text { flex: 1; min-width: 220px; line-height: 1.45; }
+
+/* bulk selection */
+.ad-cb { width: 17px; height: 17px; accent-color: #0b0b0c; cursor: pointer; vertical-align: middle; }
+.ad th.sel, .ad td.sel { width: 38px; padding-right: 0; }
+.ad tbody tr.picked td { background: #f6f5f1; }
+.ad-bulk { position: sticky; top: 8px; z-index: 20; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 14px; margin: 0 0 12px; border-radius: 12px; background: #0b0b0c; color: #fff; box-shadow: 0 14px 30px -18px rgba(0,0,0,.6); }
+.ad-bulk .ad-link { background: none; border: 0; color: #cfd2ff; font-weight: 600; text-decoration: underline; padding: 0; }
+.ad-bulk-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-left: auto; align-items: center; }
+.ad-bulk .ad-btn { background: #fff; color: #0b0b0c; border-color: #fff; }
+.ad-bulk .ad-btn.danger { color: #dc2626; }
+.ad-bulk select.ad-btn { background: #fff; color: #0b0b0c; padding-right: 26px; }
+.ad-pick { position: absolute; top: 12px; left: 12px; z-index: 3; background: #fff; border-radius: 6px; padding: 3px; box-shadow: 0 2px 8px rgba(0,0,0,.25); display: grid; place-items: center; }
+.ad-card.picked { outline: 2px solid #0b0b0c; }
+.ad-pw { position: relative; display: block; }
+.ad-pw input { padding-right: 46px; }
+.ad-pw button { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 36px; height: 36px; display: grid; place-items: center; background: none; border: 0; border-radius: 8px; color: #7a7a82; cursor: pointer; }
+.ad-pw button:hover { color: #0b0b0c; background: #f0efea; }
+.ad-pw svg { width: 20px; height: 20px; }

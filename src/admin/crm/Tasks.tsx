@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useData, useDb } from '../data'
+import { BulkBar, BulkBtn, BulkSelect, RowBox, SelectAllBox, confirmN, useSelection } from '../bulk'
 import { Badge, Empty, PageHead, Tabs, fmtDate } from '../ui'
 import { ContactDrawer } from './ContactDrawer'
 import { ACT_ICON, TaskModal } from './shared'
@@ -22,6 +23,9 @@ export function Tasks() {
     }
   }, [d.tasks])
   const list = groups[tab]
+  const sel = useSelection(list.map((t) => t.id))
+  const plusDays = (n: number) => { const d = new Date(); d.setDate(d.getDate() + n); d.setHours(9, 0, 0, 0); return d.toISOString() }
+  const resched = (v: string) => db.updateMany('tasks', sel.ids, { due_at: v === 'none' ? null : plusDays(Number(v)) }, 'Due date changed')
   const overdue = (t: any) => !t.done && t.due_at && new Date(t.due_at) < new Date(new Date().setHours(0, 0, 0, 0))
 
   return (
@@ -33,12 +37,21 @@ export function Tasks() {
         { id: 'all', label: 'All open', count: groups.all.length },
         { id: 'done', label: 'Completed' },
       ]} />
+      <BulkBar s={sel} noun="task">
+        <BulkBtn onClick={() => db.updateMany('tasks', sel.ids, { done: true, done_at: new Date().toISOString() }, `${sel.count} marked done`)}>Mark done</BulkBtn>
+        <BulkBtn onClick={() => db.updateMany('tasks', sel.ids, { done: false, done_at: null }, `${sel.count} reopened`)}>Reopen</BulkBtn>
+        <BulkSelect label="Priority" options={[{ value: 'high', label: 'High' }, { value: 'normal', label: 'Normal' }, { value: 'low', label: 'Low' }]} onPick={(v) => db.updateMany('tasks', sel.ids, { priority: v }, `Priority set to ${v}`)} />
+        <BulkSelect label="Reschedule" options={[{ value: '0', label: 'Today' }, { value: '1', label: 'Tomorrow' }, { value: '3', label: 'In 3 days' }, { value: '7', label: 'Next week' }, { value: 'none', label: 'No date' }]} onPick={resched} />
+        <BulkBtn danger onClick={async () => { if (confirmN('Delete', sel.count, 'task')) { const r = await db.removeMany('tasks', sel.ids, `${sel.count} task${sel.count === 1 ? '' : 's'} deleted`); if (r.ok) sel.clear() } }}>Delete</BulkBtn>
+      </BulkBar>
       <div className="ad-card" style={{ padding: '4px 20px' }}>
+        {list.length > 0 && <label className="ad-check" style={{ padding: '12px 0 4px', color: '#7a7a82', fontSize: 12 }}><SelectAllBox s={sel} view={list.map((t) => t.id)} />Select all</label>}
         <div className="ad-list">
           {list.map((t) => {
             const c = d.contacts.find((x) => x.id === t.contact_id)
             return (
-              <div key={t.id}>
+              <div key={t.id} style={sel.has(t.id) ? { background: '#f6f5f1' } : undefined}>
+                <RowBox s={sel} id={t.id} label={`task ${t.title}`} />
                 <label className="ad-check" style={{ flex: 1, minWidth: 0 }}>
                   <input type="checkbox" checked={t.done} onChange={async () => { await db.update('tasks', { id: t.id }, { done: !t.done, done_at: t.done ? null : new Date().toISOString() }); if (!t.done && t.contact_id) db.log({ contact_id: t.contact_id, type: 'task', subject: `Task done: ${t.title}`, auto: true }) }} />
                   <span><b style={{ textDecoration: t.done ? 'line-through' : 'none' }}>{ACT_ICON[t.type] ?? '✓'} {t.title}</b>
