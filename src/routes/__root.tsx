@@ -34,6 +34,8 @@ function NotFound() {
   )
 }
 
+import CookieConsent from '../components/CookieConsent'
+
 function RootComponent() {
   const admin = useRouterState({ select: (s) => s.location.pathname.startsWith('/dashboard') })
   return (
@@ -49,6 +51,7 @@ function RootComponent() {
             <Outlet />
           </SiteLayout>
         )}
+        {!admin && <CookieConsent />}
         <Scripts />
       </body>
     </html>
