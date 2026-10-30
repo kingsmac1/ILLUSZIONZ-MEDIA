@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useData } from '../data'
 import { Badge, Bars, Columns, PageHead, Stat, addDaysIso, fmtDate, gbp, todayIso } from '../ui'
 import { BookingDetail } from './Bookings'
+import { SelectionsWaiting } from '../../features/gallery/admin/SelectionsWaiting'
 
 export function Overview() {
   const { d } = useData()
@@ -36,6 +37,7 @@ export function Overview() {
     <>
       <PageHead title="Overview" sub={new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} />
       {needs.length > 0 && <div className="ad-card" style={{ marginBottom: 16, background: '#fffdf0', borderColor: '#f3e7a1' }}><h3>Needs your attention</h3><div className="ad-actions">{needs.map((n) => <a key={n.t} className="ad-btn" href={n.href}>{n.t} →</a>)}</div></div>}
+      <SelectionsWaiting />
       <div className="ad-grid c4" style={{ marginBottom: 16 }}>
         <Stat label="Bookings this month" value={m.thisMonth.length} sub={`${d.bookings.length} all time`} />
         <Stat label="Received this month" value={gbp(m.received)} sub={`Spent ${gbp(m.spent)} · net ${gbp(m.received - m.spent)}`} tone="good" />

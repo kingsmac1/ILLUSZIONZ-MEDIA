@@ -310,10 +310,10 @@ where coalesce(b.email, '') <> ''
 
 -- ---------- Client area: own bookings (safe columns only — internal notes are never exposed) ----------
 create or replace function public.my_bookings()
-returns table (id uuid, ref text, kind text, flow_id text, packages text, event_date date, event_time text, status text,
+returns table (id uuid, ref text, name text, kind text, flow_id text, packages text, event_date date, event_time text, status text,
                total numeric, total_text text, amount_paid numeric, payment_status text, created_at timestamptz)
 language sql stable security definer set search_path = public as $$
-  select b.id, b.ref, b.kind, b.flow_id, b.packages, b.event_date, b.event_time, b.status, b.total, b.total_text, b.amount_paid, b.payment_status, b.created_at
+  select b.id, b.ref, b.name, b.kind, b.flow_id, b.packages, b.event_date, b.event_time, b.status, b.total, b.total_text, b.amount_paid, b.payment_status, b.created_at
   from public.bookings b
   where public.current_email() is not null and lower(b.email) = public.current_email()
   order by coalesce(b.event_date, b.created_at::date) desc;

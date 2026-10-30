@@ -39,6 +39,12 @@ Deno.serve(handle(async (req, body) => {
     return json({ ok: true, access: who.email ? 'wrong_email' : 'signin', gallery: publicInfo, cover, email_hint: maskEmail(g.client_email), signed_in_as: who.email })
   }
 
+  // cards in the account area / dashboard: cover + counts only, and not counted as a visit
+  if (body.cover_only) {
+    const { count } = await service().from('gallery_images').select('id', { count: 'exact', head: true }).eq('gallery_id', g.id).eq('status', 'ready')
+    return json({ ok: true, access: 'full', gallery: { ...publicInfo, status: g.status }, cover, total: count ?? 0 })
+  }
+
   // first look by the client
   if (!who.isAdmin && who.email === g.client_email && !g.first_viewed_at) {
     const patch: Partial<Gallery> = { first_viewed_at: new Date().toISOString() }

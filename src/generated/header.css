@@ -41,3 +41,10 @@
 .hd-12{width:210px}
 .hd-13{max-width:70%;width:56.9%;height:69px}
 }
+
+/* client area link (next to the menu button) */
+.hd-15{display:flex;align-items:center;justify-content:flex-end;gap:18px}
+.hd-account{display:inline-flex;align-items:center;gap:7px;color:#000;text-decoration:none;font-family:Inter,sans-serif;font-size:14px;font-weight:500;white-space:nowrap;transition:color .3s}
+.hd-account:hover{color:rgb(105,114,125)}
+.hd-account:focus-visible{outline:1px auto rgb(0,95,204);outline-offset:2px}
+@media (max-width:767px){.hd-account span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}.hd-15{gap:12px}}

@@ -52,7 +52,7 @@ export type SelectionRow = { gallery_id: string; image_id: string; client_email:
 export type DownloadRow = { id: string; gallery_id: string; image_id: string | null; client_email: string; created_at: string }
 export type ActivityRow = { id: string; client_email: string; booking_id: string | null; gallery_id: string | null; actor: 'client' | 'admin' | 'system'; event: string; meta: Record<string, any>; created_at: string }
 export type ProfileRow = { id: string; email: string; full_name: string; phone: string; role: 'client' | 'admin' }
-export type MyBooking = { id: string; ref: string; kind: string; flow_id: string; packages: string; event_date: string | null; event_time: string | null; status: string; total: number; total_text: string; amount_paid: number; payment_status: string; created_at: string }
+export type MyBooking = { id: string; ref: string; name: string; kind: string; flow_id: string; packages: string; event_date: string | null; event_time: string | null; status: string; total: number; total_text: string; amount_paid: number; payment_status: string; created_at: string }
 
 /** One image as returned by gallery-view-urls (signed URLs). */
 export type ViewImage = {

@@ -16,6 +16,7 @@ import { AdminGrid, type PickInfo } from './AdminGrid'
 import { Uploader } from './Uploader'
 import { defaultTitle, shootName, suggestLimit } from './bookingInfo'
 import { refreshGalleries, useGalleryIndex } from './useGalleryIndex'
+import { SetupNeeded } from './SetupNeeded'
 import './gallery-admin.css'
 
 const clientUrl = (id: string) => `${window.location.origin}/gallery/${id}/`
@@ -122,15 +123,6 @@ export function GalleryManager({ bookingId }: { bookingId: string }) {
       {tab === 'finals' && <FinalsTab booking={booking} gallery={final} proof={proof} ensure={() => ensureGallery('final')} />}
       {tab === 'timeline' && <Timeline bookingId={booking.id} galleryIds={[proof?.id, final?.id].filter(Boolean) as string[]} />}
     </>
-  )
-}
-
-export function SetupNeeded() {
-  return (
-    <div className="gm-setup">
-      <h3>The client gallery is installed in the code, but not switched on yet</h3>
-      <p className="ad-muted" style={{ marginTop: 6 }}>The gallery tables and server functions still have to be added to Supabase. Follow <b>docs/gallery/TODO_FOR_MACAULEY.md</b> (one command), then reload this page.</p>
-    </div>
   )
 }
 

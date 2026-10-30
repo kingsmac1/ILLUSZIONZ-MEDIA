@@ -1,5 +1,6 @@
 import { A } from '../components/A'
 import { useMenu } from '../components/MenuContext'
+import { AccountLink } from '../components/AccountLink'
 import './header.css'
 
 
@@ -46,6 +47,7 @@ export default function HeaderBar() {
         </div>
         <div className="hd-14">
           <div className="hd-15">
+            <AccountLink className="hd-account" />
             <a className="hd-16" href="#" onClick={openMenu} aria-label="Open menu">
               <svg className="hd-17" aria-hidden="true" viewBox="0 0 448 512">
                 <path d="M432 416H16a16 16 0 0 0-16 16v32a16 16 0 0 0 16 16h416a16 16 0 0 0 16-16v-32a16 16 0 0 0-16-16zm0-128H16a16 16 0 0 0-16 16v32a16 16 0 0 0 16 16h416a16 16 0 0 0 16-16v-32a16 16 0 0 0-16-16zm0-128H16a16 16 0 0 0-16 16v32a16 16 0 0 0 16 16h416a16 16 0 0 0 16-16v-32a16 16 0 0 0-16-16zm0-128H16A16 16 0 0 0 0 48v32a16 16 0 0 0 16 16h416a16 16 0 0 0 16-16V48a16 16 0 0 0-16-16z" />

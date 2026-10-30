@@ -23,8 +23,10 @@ import { ImagesCms } from './cms/Images'
 import { BannerCms } from './cms/Banner'
 import { SeoCms } from './cms/Seo'
 import { SaveStatus } from './cms/SaveStatus'
+import { useGalleryIndex } from '../features/gallery/admin/useGalleryIndex'
 import './admin.css'
 
+const GalleriesSection = lazy(() => import('../features/gallery/admin/GalleriesSection').then((m) => ({ default: m.GalleriesSection })))
 const GalleryManager = lazy(() => import('../features/gallery/admin/GalleryManager').then((m) => ({ default: m.GalleryManager })))
 
 const I: Record<string, string> = {
@@ -45,6 +47,7 @@ const I: Record<string, string> = {
   store: 'M3 9l1-5h16l1 5M4 9v11h16V9M9 20v-6h6v6',
   quote: 'M7 7h4v4H7zM13 7h4v4h-4zM7 11c0 3-1 5-3 6M13 11c0 3-1 5-3 6',
   images: 'M3 5h18v14H3zM3 16l5-5 4 4 3-3 6 6M9 9h.01',
+  galleries: 'M7 3h14v14H7zM3 7v14h14M7 13l4-4 3 3 2-2 5 5M12 7h.01',
   banner: 'M3 6h18v8H3zM8 18h8',
   seo: 'M11 4a7 7 0 100 14 7 7 0 000-14M21 21l-5-5',
   settings: 'M12 15a3 3 0 100-6 3 3 0 000 6M19 12a7 7 0 00-.1-1.2l2-1.5-2-3.4-2.3.9a7 7 0 00-2-1.2L14.2 3h-4l-.4 2.6a7 7 0 00-2 1.2l-2.3-.9-2 3.4 2 1.5a7 7 0 000 2.4l-2 1.5 2 3.4 2.3-.9a7 7 0 002 1.2l.4 2.6h4l.4-2.6a7 7 0 002-1.2l2.3.9 2-3.4-2-1.5c.1-.4.1-.8.1-1.2',
@@ -119,10 +122,13 @@ function Shell({ session }: { session: Session }) {
   const unread = d.submissions.filter((s) => s.status === 'new').length
   const newBookings = d.bookings.filter((b) => b.status === 'new').length
   const dueTasks = d.tasks.filter((t) => !t.done && t.due_at && new Date(t.due_at).getTime() < Date.now() + 86_400_000).length
+  const gx = useGalleryIndex()
+  const waitingSelections = gx.galleries.filter((g) => g.kind === 'proof' && g.status === 'submitted').length
   const groups: { title: string; items: Item[] }[] = [
     { title: 'Studio', items: [
       { id: 'overview', label: 'Overview', icon: 'overview' },
       { id: 'bookings', label: 'Bookings', icon: 'bookings', badge: newBookings },
+      { id: 'galleries', label: 'Galleries', icon: 'galleries', badge: waitingSelections },
       { id: 'schedule', label: 'Schedule', icon: 'schedule' },
       { id: 'inbox', label: 'Inbox', icon: 'inbox', badge: unread },
     ] },
@@ -157,6 +163,7 @@ function Shell({ session }: { session: Session }) {
   let page: ReactNode
   switch (current.id) {
     case 'bookings': page = rest[1] === 'gallery' && rest[0] ? <Suspense fallback={<p className="ad-muted">Loading…</p>}><GalleryManager key={rest[0]} bookingId={rest[0]} /></Suspense> : <Bookings />; break
+    case 'galleries': page = <Suspense fallback={<p className="ad-muted">Loading…</p>}><GalleriesSection /></Suspense>; break
     case 'schedule': page = <Schedule />; break
     case 'inbox': page = <Inbox />; break
     case 'crm/contacts': page = <Contacts openId={rest[1]} />; break

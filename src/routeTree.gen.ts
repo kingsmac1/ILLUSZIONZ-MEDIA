@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as R360PhotoBoothRouteImport } from './routes/360-photo-booth'
 import { Route as AboutUsRouteImport } from './routes/about-us'
 import { Route as AcademyRouteImport } from './routes/academy'
+import { Route as AccountRouteImport } from './routes/account'
 import { Route as AgencyRouteImport } from './routes/agency'
 import { Route as CareersRouteImport } from './routes/careers'
 import { Route as ContactRouteImport } from './routes/contact'
@@ -46,6 +47,11 @@ const AboutUsRoute = AboutUsRouteImport.update({
 const AcademyRoute = AcademyRouteImport.update({
   id: '/academy',
   path: '/academy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccountRoute = AccountRouteImport.update({
+  id: '/account',
+  path: '/account',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AgencyRoute = AgencyRouteImport.update({
@@ -124,6 +130,7 @@ export interface FileRoutesByFullPath {
   '/360-photo-booth': typeof R360PhotoBoothRoute
   '/about-us': typeof AboutUsRoute
   '/academy': typeof AcademyRoute
+  '/account': typeof AccountRoute
   '/agency': typeof AgencyRoute
   '/careers': typeof CareersRoute
   '/contact': typeof ContactRoute
@@ -144,6 +151,7 @@ export interface FileRoutesByTo {
   '/360-photo-booth': typeof R360PhotoBoothRoute
   '/about-us': typeof AboutUsRoute
   '/academy': typeof AcademyRoute
+  '/account': typeof AccountRoute
   '/agency': typeof AgencyRoute
   '/careers': typeof CareersRoute
   '/contact': typeof ContactRoute
@@ -165,6 +173,7 @@ export interface FileRoutesById {
   '/360-photo-booth': typeof R360PhotoBoothRoute
   '/about-us': typeof AboutUsRoute
   '/academy': typeof AcademyRoute
+  '/account': typeof AccountRoute
   '/agency': typeof AgencyRoute
   '/careers': typeof CareersRoute
   '/contact': typeof ContactRoute
@@ -187,6 +196,7 @@ export interface FileRouteTypes {
     | '/360-photo-booth'
     | '/about-us'
     | '/academy'
+    | '/account'
     | '/agency'
     | '/careers'
     | '/contact'
@@ -207,6 +217,7 @@ export interface FileRouteTypes {
     | '/360-photo-booth'
     | '/about-us'
     | '/academy'
+    | '/account'
     | '/agency'
     | '/careers'
     | '/contact'
@@ -227,6 +238,7 @@ export interface FileRouteTypes {
     | '/360-photo-booth'
     | '/about-us'
     | '/academy'
+    | '/account'
     | '/agency'
     | '/careers'
     | '/contact'
@@ -248,6 +260,7 @@ export interface RootRouteChildren {
   R360PhotoBoothRoute: typeof R360PhotoBoothRoute
   AboutUsRoute: typeof AboutUsRoute
   AcademyRoute: typeof AcademyRoute
+  AccountRoute: typeof AccountRoute
   AgencyRoute: typeof AgencyRoute
   CareersRoute: typeof CareersRoute
   ContactRoute: typeof ContactRoute
@@ -292,6 +305,13 @@ declare module '@tanstack/react-router' {
       path: '/academy'
       fullPath: '/academy'
       preLoaderRoute: typeof AcademyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/account': {
+      id: '/account'
+      path: '/account'
+      fullPath: '/account'
+      preLoaderRoute: typeof AccountRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/agency': {
@@ -400,6 +420,7 @@ const rootRouteChildren: RootRouteChildren = {
   R360PhotoBoothRoute: R360PhotoBoothRoute,
   AboutUsRoute: AboutUsRoute,
   AcademyRoute: AcademyRoute,
+  AccountRoute: AccountRoute,
   AgencyRoute: AgencyRoute,
   CareersRoute: CareersRoute,
   ContactRoute: ContactRoute,
