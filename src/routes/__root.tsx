@@ -37,7 +37,8 @@ function NotFound() {
 import CookieConsent from '../components/CookieConsent'
 
 function RootComponent() {
-  const admin = useRouterState({ select: (s) => s.location.pathname.startsWith('/dashboard') })
+  // the dashboard and the client gallery render without the site header/footer
+  const admin = useRouterState({ select: (s) => s.location.pathname.startsWith('/dashboard') || s.location.pathname.startsWith('/gallery') })
   return (
     <html lang="en-US">
       <head>

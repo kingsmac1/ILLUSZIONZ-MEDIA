@@ -26,6 +26,7 @@ import { Route as VideographyServicesRouteImport } from './routes/videography-se
 import { Route as WeddingRouteImport } from './routes/wedding'
 import { Route as BlogIndexRouteImport } from './routes/blog.index'
 import { Route as BlogSlugRouteImport } from './routes/blog.$slug'
+import { Route as GalleryGalleryIdRouteImport } from './routes/gallery.$galleryId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -112,6 +113,11 @@ const BlogSlugRoute = BlogSlugRouteImport.update({
   path: '/blog/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GalleryGalleryIdRoute = GalleryGalleryIdRouteImport.update({
+  id: '/gallery/$galleryId',
+  path: '/gallery/$galleryId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -130,6 +136,7 @@ export interface FileRoutesByFullPath {
   '/videography-services': typeof VideographyServicesRoute
   '/wedding': typeof WeddingRoute
   '/blog/$slug': typeof BlogSlugRoute
+  '/gallery/$galleryId': typeof GalleryGalleryIdRoute
   '/blog/': typeof BlogIndexRoute
 }
 export interface FileRoutesByTo {
@@ -149,6 +156,7 @@ export interface FileRoutesByTo {
   '/videography-services': typeof VideographyServicesRoute
   '/wedding': typeof WeddingRoute
   '/blog/$slug': typeof BlogSlugRoute
+  '/gallery/$galleryId': typeof GalleryGalleryIdRoute
   '/blog': typeof BlogIndexRoute
 }
 export interface FileRoutesById {
@@ -169,6 +177,7 @@ export interface FileRoutesById {
   '/videography-services': typeof VideographyServicesRoute
   '/wedding': typeof WeddingRoute
   '/blog/$slug': typeof BlogSlugRoute
+  '/gallery/$galleryId': typeof GalleryGalleryIdRoute
   '/blog/': typeof BlogIndexRoute
 }
 export interface FileRouteTypes {
@@ -190,6 +199,7 @@ export interface FileRouteTypes {
     | '/videography-services'
     | '/wedding'
     | '/blog/$slug'
+    | '/gallery/$galleryId'
     | '/blog/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -209,6 +219,7 @@ export interface FileRouteTypes {
     | '/videography-services'
     | '/wedding'
     | '/blog/$slug'
+    | '/gallery/$galleryId'
     | '/blog'
   id:
     | '__root__'
@@ -228,6 +239,7 @@ export interface FileRouteTypes {
     | '/videography-services'
     | '/wedding'
     | '/blog/$slug'
+    | '/gallery/$galleryId'
     | '/blog/'
   fileRoutesById: FileRoutesById
 }
@@ -248,6 +260,7 @@ export interface RootRouteChildren {
   VideographyServicesRoute: typeof VideographyServicesRoute
   WeddingRoute: typeof WeddingRoute
   BlogSlugRoute: typeof BlogSlugRoute
+  GalleryGalleryIdRoute: typeof GalleryGalleryIdRoute
   BlogIndexRoute: typeof BlogIndexRoute
 }
 
@@ -372,6 +385,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BlogSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/gallery/$galleryId': {
+      id: '/gallery/$galleryId'
+      path: '/gallery/$galleryId'
+      fullPath: '/gallery/$galleryId'
+      preLoaderRoute: typeof GalleryGalleryIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -392,6 +412,7 @@ const rootRouteChildren: RootRouteChildren = {
   VideographyServicesRoute: VideographyServicesRoute,
   WeddingRoute: WeddingRoute,
   BlogSlugRoute: BlogSlugRoute,
+  GalleryGalleryIdRoute: GalleryGalleryIdRoute,
   BlogIndexRoute: BlogIndexRoute,
 }
 export const routeTree = rootRouteImport

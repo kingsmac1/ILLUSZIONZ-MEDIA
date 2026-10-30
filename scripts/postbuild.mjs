@@ -9,6 +9,8 @@ const move = (from, toDir) => {
 }
 move('blog/index.html', '_shell/index')
 move('blog/__post__/index.html', '_shell/post')
+move('gallery/__gallery__/index.html', '_shell/gallery')
+fs.rmSync(`${root}/gallery`, { recursive: true, force: true })
 fs.rmSync(`${root}/blog`, { recursive: true, force: true })
 fs.rmSync(`${root}/blog-shell`, { recursive: true, force: true })
-console.log('postbuild: blog shells ready in _shell/')
+console.log('postbuild: blog + gallery shells ready in _shell/')

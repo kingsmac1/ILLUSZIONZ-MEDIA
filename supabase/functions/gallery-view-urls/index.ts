@@ -55,7 +55,7 @@ Deno.serve(handle(async (req, body) => {
   if (error) throw error
   const images = await Promise.all((rows ?? []).map(async (r) => ({
     id: r.id, filename: r.original_filename, width: r.width, height: r.height, sort_order: r.sort_order, taken_at: r.taken_at,
-    source_proof_image_id: r.source_proof_image_id, status: r.status, bytes: who.isAdmin ? r.bytes : undefined, has_original: !!r.original_key,
+    source_proof_image_id: r.source_proof_image_id, status: r.status, bytes: who.isAdmin || g.kind === 'final' ? r.bytes : undefined, has_original: !!r.original_key,
     thumb: r.thumb_key && !purged ? await signGet(r.thumb_key) : null,
     display: r.display_key && !purged ? await signGet(r.display_key) : null,
   })))

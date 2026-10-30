@@ -2,5 +2,7 @@ User-agent: *
 Allow: /
 Disallow: /dashboard/
 Disallow: /api/
+Disallow: /gallery/
+Disallow: /account/
 
 Sitemap: https://illuszionzmedia.com/sitemap.xml

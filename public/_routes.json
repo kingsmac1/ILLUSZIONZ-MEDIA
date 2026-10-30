@@ -1,7 +1,7 @@
 {
   "version": 1,
   "include": [
-    "/api/*", "/blog", "/blog/*", "/sitemap.xml",
+    "/api/*", "/blog", "/blog/*", "/gallery/*", "/sitemap.xml",
     "/", "/about-us", "/about-us/", "/photography-services", "/photography-services/", "/wedding", "/wedding/",
     "/videography-services", "/videography-services/", "/360-photo-booth", "/360-photo-booth/", "/academy", "/academy/",
     "/agency", "/agency/", "/careers", "/careers/", "/store", "/store/", "/contact", "/contact/", "/form", "/form/",

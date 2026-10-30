@@ -14,3 +14,12 @@
   X-Robots-Tag: noindex
 /_shell/*
   X-Robots-Tag: noindex, nofollow
+/gallery/*
+  X-Robots-Tag: noindex, nofollow
+  Cache-Control: no-store
+  Referrer-Policy: same-origin
+/account/*
+  X-Robots-Tag: noindex, nofollow
+  Cache-Control: no-store
+/account
+  X-Robots-Tag: noindex, nofollow
