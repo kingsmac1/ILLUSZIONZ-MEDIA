@@ -42,7 +42,7 @@ When the client presses **Submit selection**:
 ## Dashboard → Galleries
 Every client, with all their galleries grouped together: status at a glance (**Sent, Viewed, Selecting (12/40), Submitted, Delivered**),
 counts, storage used and last activity. Filters for status, shoot type and date, plus **Selections waiting** for what needs editing.
-The storage meter shows how much of the free 10 GB you use. The **Overview** page also lists "Selections waiting for you".
+The "Storage used" card shows how much space your galleries take up. The **Overview** page also lists "Selections waiting for you".
 
 ## The client's side
 - **Gallery page**: full-screen cover, then all photos in a clean grid. ♥ to pick, a note on any photo, a counter like "23 / 40",

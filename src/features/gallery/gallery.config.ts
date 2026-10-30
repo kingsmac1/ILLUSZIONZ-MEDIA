@@ -45,8 +45,6 @@ export const galleryConfig = {
 
   /** watermarked previews are deleted this many days after finals are delivered (keep in sync with the Edge Function) */
   purgeDays: 30,
-  /** storage meter on Dashboard → Galleries (R2: first 10 GB free, then about $0.015 per GB per month) */
-  storageBudgetGb: 10,
 
   /** "Download all" builds zips in the browser in parts of this size */
   zipPart: { maxFiles: 100, maxBytes: 2 * 1024 ** 3 },

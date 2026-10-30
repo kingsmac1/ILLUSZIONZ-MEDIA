@@ -2,7 +2,6 @@
 import { useMemo, useState } from 'react'
 import { useData } from '../../../admin/data'
 import { Badge, Empty, PageHead, Stat, ago, initials, useDebounced } from '../../../admin/ui'
-import { galleryConfig } from '../gallery.config'
 import { STATUS_TONE, fmtBytes, fmtDay, statusLabel } from '../status'
 import type { GalleryRow, GalleryStatus } from '../types'
 import { useCover } from '../useCover'
@@ -43,8 +42,6 @@ export function GalleriesSection() {
 
   if (idx.missing) return <><PageHead title="Galleries" /><SetupNeeded /></>
   const total = [...idx.stats.values()].reduce((s, x) => s + x.bytes, 0)
-  const budget = galleryConfig.storageBudgetGb * 1024 ** 3
-  const pct = Math.min(100, (total / budget) * 100)
   const waiting = idx.galleries.filter((g) => g.kind === 'proof' && g.status === 'submitted').length
   const shoots = [...new Set(idx.galleries.map(kindOf).filter(Boolean))].sort()
 
@@ -52,12 +49,7 @@ export function GalleriesSection() {
     <>
       <PageHead title="Galleries" sub={(() => { const n = new Set(idx.galleries.map((g) => g.client_email)).size; return `${idx.galleries.length} galler${idx.galleries.length === 1 ? 'y' : 'ies'} · ${n} client${n === 1 ? '' : 's'}` })()} actions={<a className="ad-btn" href="#/bookings">Start one from a booking</a>} />
       <div className="ad-grid c3" style={{ marginBottom: 16 }}>
-        <div className="ad-stat gx-meter">
-          <span>Storage used</span><small>{pct.toFixed(0)}%</small>
-          <strong>{fmtBytes(total)} <small style={{ fontSize: 13, fontWeight: 500 }}>of {galleryConfig.storageBudgetGb} GB</small></strong>
-          <div className="gm-progress" role="progressbar" aria-valuenow={Math.round(pct)} aria-valuemin={0} aria-valuemax={100}><i className={pct > 95 ? 'full' : pct > 75 ? 'warn' : ''} style={{ width: `${pct}%` }} /></div>
-          <small style={{ gridColumn: '1/-1' }}>{total > budget ? `About $${(((total - budget) / 1024 ** 3) * 0.015).toFixed(2)}/month over the free 10 GB` : 'R2: first 10 GB free, then ≈ $0.015 per GB per month'}</small>
-        </div>
+        <Stat label="Storage used" value={fmtBytes(total)} />
         <Stat label="Selections waiting for you" value={waiting} sub={waiting ? <a href="#" onClick={(e) => { e.preventDefault(); setStatus('waiting') }}>Show them</a> : 'All caught up'} tone={waiting ? 'warn' : ''} />
         <Stat label="Delivered" value={idx.galleries.filter((g) => g.kind === 'final' && g.status === 'delivered').length} sub="final galleries" tone="good" />
       </div>
