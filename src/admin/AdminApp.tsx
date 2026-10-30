@@ -23,6 +23,7 @@ import { ImagesCms } from './cms/Images'
 import { BannerCms } from './cms/Banner'
 import { SeoCms } from './cms/Seo'
 import { SaveStatus } from './cms/SaveStatus'
+import { Preloader, useReleasePreloader } from '../components/Preloader'
 import { useGalleryIndex } from '../features/gallery/admin/useGalleryIndex'
 import './admin.css'
 
@@ -211,13 +212,14 @@ function Shell({ session }: { session: Session }) {
       </aside>
       <main className="ad-main">
         {error && <div className="ad-note" style={{ marginBottom: 16 }}>Could not load some data: {error}. Did you run <b>supabase/schema.sql</b> and add your email to <b>admin_users</b>?</div>}
-        {loading ? <p className="ad-muted">Loading…</p> : <>{current.id.startsWith('cms/') && <SaveStatus liveHref={LIVE[current.id] ?? '/'} />}{page}</>}
+        {loading ? <Preloader /> : <>{current.id.startsWith('cms/') && <SaveStatus liveHref={LIVE[current.id] ?? '/'} />}{page}</>}
       </main>
     </div>
   )
 }
 
 export default function AdminApp() {
+  useReleasePreloader() // from here the dashboard shows its own copy of the preloader while it loads
   const [session, setSession] = useState<Session | null | undefined>(undefined)
   const [admin, setAdmin] = useState<boolean | undefined>(undefined)
   useEffect(() => {
@@ -242,9 +244,9 @@ export default function AdminApp() {
         <p className="ad-muted" style={{ marginTop: 10 }}>Set <b>VITE_SUPABASE_URL</b> and <b>VITE_SUPABASE_ANON_KEY</b> (see README → Dashboard), then rebuild.</p>
       </div></div>
     )
-  if (session === undefined) return <div className="ad ad-login" />
+  if (session === undefined) return <Preloader />
   if (!session) return <Login />
-  if (!admin) return <div className="ad ad-login" />
+  if (!admin) return <Preloader />
   return (
     <DataProvider>
       <Shell session={session} />

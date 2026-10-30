@@ -178,6 +178,8 @@ for (const vp of [{ width: 375, height: 812 }, { width: 1440, height: 900 }]) {
   await page.locator('.cg-heart').nth(2).click({ force: true })
   await page.waitForTimeout(300)
   ok(`a heart saves through gallery-pick with the link key (${vp.width})`, picksSent.length === 1 && picksSent[0].key === KEY && picksSent[0].action === 'add')
+  ok(`a "Save to my account" band is shown to link visitors (${vp.width})`, await page.isVisible('.cg-save-band button:has-text("Save to my account")'))
+  await shot(page, `2b-save-band-${vp.width}`)
   ok(`no save prompt straight away (${vp.width})`, !(await page.isVisible('text=Keep your photos in one place')))
   await page.waitForSelector('text=Keep your photos in one place', { timeout: 9000 }).then(() => ok(`save prompt appears after a few seconds (${vp.width})`, true), () => ok(`save prompt appears after a few seconds (${vp.width})`, false))
   await shot(page, `2b-save-prompt-${vp.width}`)

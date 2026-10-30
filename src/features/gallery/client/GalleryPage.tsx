@@ -18,6 +18,7 @@ import type { ViewImage, ViewResponse } from '../types'
 import { downloadOne, downloadZipPart, planParts } from './downloads'
 import { usePicks } from './usePicks'
 import { galleryHref } from './links'
+import { Preloader, useReleasePreloader } from '../../../components/Preloader'
 import { Lightbox } from './Lightbox'
 import { SubmitSheet, NoteSheet, SuccessScreen, SaveSheet } from './Sheets'
 import { DownloadIcon, Heart } from './icons'
@@ -58,6 +59,7 @@ function useGalleryKey(id: string) {
 export default function GalleryPage({ id }: { id: string }) {
   const session = useSession()
   const key = useGalleryKey(id)
+  useReleasePreloader() // the page's own loader (same look) takes over from the boot copy
   const [data, setData] = useState<ViewResponse | null>(null)
   const [error, setError] = useState('')
   const uid = session?.user.id ?? null
@@ -78,7 +80,7 @@ export default function GalleryPage({ id }: { id: string }) {
   useEffect(() => { if (session !== undefined) load() }, [session === undefined, uid]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (error) return <Message title="We couldn’t open this gallery" text={error} action={<button className="cg-btn solid" onClick={load}>Try again</button>} />
-  if (!data || session === undefined) return <div className="cg cg-loading" aria-busy="true"><img src={galleryConfig.logoLight} alt={galleryConfig.brandName} /></div>
+  if (!data || session === undefined) return <Preloader />
   if (data.access !== 'full') return <CoverGate data={data} onSignedIn={load} />
   return <GalleryView key={data.gallery.id} data={data} linkKey={key} reload={load} />
 }
@@ -225,6 +227,13 @@ function GalleryView({ data, linkKey, reload }: { data: ViewResponse; linkKey: s
         {proof && finals && status !== 'archived' && <p className="cg-banner strong">Your final photos are ready. <a href={galleryHref(finals.id, finals.key)}>Open and download them</a></p>}
         {!proof && proofsOf && <p className="cg-banner">These are your edited photos in full resolution, without a watermark.</p>}
         {g.previews_purge_at && proof && status !== 'archived' && <p className="cg-banner muted">Previews are available until {fmtDay(g.previews_purge_at)}.</p>}
+        {canSave && (
+          <div className="cg-save-band">
+            <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" aria-hidden="true"><path d="M6 3h12v18l-6-4.5L6 21z" /></svg>
+            <p><b>Save this gallery to your account</b><span>Free. Keep all your shoots in one place and open them any time, on any device.</span></p>
+            <button className="cg-btn solid" onClick={() => setSaveOpen(true)}>Save to my account</button>
+          </div>
+        )}
         {g.message_to_client && <blockquote className="cg-message-text">{g.message_to_client}</blockquote>}
         {proof && !locked && limit && count < limit && count === 0 && <p className="cg-help">Tap the heart on your {limit} favourite photos. Your picks save as you go, so you can come back any time.{g.allow_extra_selections && g.extra_price_note ? ` ${g.extra_price_note}` : ''}</p>}
 
@@ -282,7 +291,7 @@ function GalleryView({ data, linkKey, reload }: { data: ViewResponse; linkKey: s
         <img src={galleryConfig.logoDark} alt={galleryConfig.brandName} />
         <p>Questions? <a href={`https://wa.me/${galleryConfig.ownerWhatsapp}`} target="_blank" rel="noreferrer">WhatsApp us</a> or email <a href={`mailto:${galleryConfig.ownerEmail}`}>{galleryConfig.ownerEmail}</a>.</p>
         {canSave
-          ? <p><button className="cg-link" onClick={() => setSaveOpen(true)}>Save this gallery to your account</button> to keep all your shoots in one place.</p>
+          ? <p className="cg-foot-save"><button className="cg-btn solid" onClick={() => setSaveOpen(true)}>Save this gallery to my account</button><span>Keep all your shoots in one place.</span></p>
           : <p><a href="/account/">Your account</a>: all your shoots in one place.</p>}
       </footer>
 

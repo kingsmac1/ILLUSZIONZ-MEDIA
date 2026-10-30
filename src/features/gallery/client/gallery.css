@@ -6,9 +6,6 @@
 .cg-brand.small img { height: 22px; }
 
 /* loading + messages */
-.cg-loading { display: grid; place-items: center; background: #000; }
-.cg-loading img { height: 40px; opacity: .8; animation: cg-breathe 1.6s ease-in-out infinite; }
-@keyframes cg-breathe { 50% { opacity: .35; } }
 .cg-message { background: #000; color: #fff; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 16px; padding: 48px max(24px, 8vw); }
 .cg-message h1 { font: 400 clamp(32px, 5vw, 56px)/1.1 var(--cg-serif); margin: 24px 0 0; max-width: 18ch; }
 .cg-message p { color: rgba(255,255,255,.75); max-width: 52ch; line-height: 1.6; margin: 0; }
@@ -151,3 +148,18 @@
 .cg-save-auth .cg-auth { max-width: none; }
 @media (max-width: 480px) { .cg-save-actions .cg-btn { flex: 1 1 100%; } .cg-save-later { margin: 0 auto; } }
 .cg-foot .cg-link { color: inherit; }
+
+/* save-to-account band (visitors who came in by the link and aren't signed in) */
+.cg-save-band { display: flex; align-items: center; gap: 16px; margin: 0 auto 28px; max-width: 980px; padding: 18px 20px; border-radius: 18px; background: #000; color: #fff; }
+.cg-save-band svg { flex: none; }
+.cg-save-band p { flex: 1; margin: 0; display: flex; flex-direction: column; gap: 3px; line-height: 1.45; }
+.cg-save-band b { font: 500 19px/1.3 var(--cg-serif); }
+.cg-save-band span { font-size: 14px; color: rgba(255,255,255,.75); }
+.cg-save-band .cg-btn.solid { background: #fff; color: #000; flex: none; }
+.cg-save-band .cg-btn.solid:hover { background: #e9e9e6; }
+@media (max-width: 600px) {
+  .cg-save-band { flex-wrap: wrap; padding: 18px; gap: 12px; }
+  .cg-save-band svg { display: none; }
+  .cg-save-band .cg-btn { width: 100%; }
+}
+.cg-foot-save { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin: 10px 0 0; }

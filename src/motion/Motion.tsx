@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect } from 'react'
+import { releasePreloader } from '../components/Preloader'
 import { useRouterState } from '@tanstack/react-router'
 import { CARD, EXCLUDE, HEADINGS, IMAGES, TEXT } from './targets'
 import './motion.css'
@@ -176,7 +177,10 @@ export function Motion() {
 
   /* ───────── per page: ordered reveals, parallax, counters ───────── */
   useEffect(() => {
-    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      hydrated().then(releasePreloader)
+      return
+    }
     let ctx: { revert: () => void } | undefined
     let dead = false
     const release = () => document.documentElement.classList.remove('motion-pre')
@@ -296,6 +300,7 @@ export function Motion() {
         })
 
         release()
+        releasePreloader() // the brand preloader fades out as the entrance starts
         const refresh = () => ScrollTrigger.refresh()
         const t1 = setTimeout(refresh, 900)
         const t2 = setTimeout(refresh, 2600)
@@ -305,6 +310,7 @@ export function Motion() {
       } catch (err) {
         console.error('motion setup failed', err)
         release()
+        releasePreloader()
       }
     })()
     return () => {

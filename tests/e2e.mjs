@@ -9,6 +9,16 @@ const ok = (name, pass, info = '') => { results.push({ name, pass }); console.lo
 
 const browser = await chromium.launch()
 const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } })
+// every full page load starts behind the brand preloader: wait for it to lift (≤ 4 s) like a visitor would
+ctx.on('page', (p) => {
+  const goto = p.goto.bind(p)
+  p.goto = async (...args) => {
+    const res = await goto(...args)
+    await p.waitForFunction(() => document.documentElement.classList.contains('ilz-ready'), null, { timeout: 6000 }).catch(() => {})
+    await p.waitForTimeout(550)
+    return res
+  }
+})
 const page = await ctx.newPage()
 const errors = []
 page.on('pageerror', (e) => errors.push(e.message))

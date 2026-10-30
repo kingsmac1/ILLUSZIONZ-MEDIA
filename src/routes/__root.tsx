@@ -5,6 +5,7 @@ import appCss from '../styles.css?url'
 import { SiteLayout } from '../components/SiteLayout'
 import { jsonLd } from '../seo'
 import { motionPreCss, motionPreScript } from '../motion/targets'
+import { Preloader, preloaderFailsafe } from '../components/Preloader'
 
 export const Route = createRootRoute({
   head: () => ({
@@ -18,7 +19,7 @@ export const Route = createRootRoute({
       { rel: 'apple-touch-icon', href: '/apple-touch-icon.png', sizes: '180x180' },
     ],
     styles: [{ children: motionPreCss }],
-    scripts: [{ children: motionPreScript }, { type: 'application/ld+json', children: JSON.stringify(jsonLd) }],
+    scripts: [{ children: motionPreScript }, { children: preloaderFailsafe }, { type: 'application/ld+json', children: JSON.stringify(jsonLd) }],
   }),
   component: RootComponent,
   notFoundComponent: NotFound,
@@ -43,8 +44,10 @@ function RootComponent() {
     <html lang="en-US">
       <head>
         <HeadContent />
+        <noscript><style>{'.ilz-pl-boot{display:none}'}</style></noscript>
       </head>
       <body>
+        <Preloader boot />
         {admin ? (
           <Outlet />
         ) : (
