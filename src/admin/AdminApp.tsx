@@ -210,12 +210,22 @@ function Shell({ session }: { session: Session }) {
 
 export default function AdminApp() {
   const [session, setSession] = useState<Session | null | undefined>(undefined)
+  const [admin, setAdmin] = useState<boolean | undefined>(undefined)
   useEffect(() => {
     if (!supabase) return
     supabase.auth.getSession().then(({ data }) => setSession(data.session))
     const { data } = supabase.auth.onAuthStateChange((_e, s) => setSession(s))
     return () => data.subscription.unsubscribe()
   }, [])
+  // clients share the same sign-in; anyone who is not a studio admin is sent to their client area
+  const uid = session?.user.id
+  useEffect(() => {
+    if (!uid) return setAdmin(undefined)
+    supabase!.rpc('is_admin').then(({ data, error }) => {
+      if (!error && data === false) window.location.replace('/account/')
+      else setAdmin(true)
+    })
+  }, [uid])
   if (!configured)
     return (
       <div className="ad ad-login"><div style={{ background: '#fff', borderRadius: 18, padding: 32, maxWidth: 520 }}>
@@ -225,6 +235,7 @@ export default function AdminApp() {
     )
   if (session === undefined) return <div className="ad ad-login" />
   if (!session) return <Login />
+  if (!admin) return <div className="ad ad-login" />
   return (
     <DataProvider>
       <Shell session={session} />

@@ -1,0 +1,22 @@
+# Minimal Supabase CLI config for deploying the gallery Edge Functions (the database itself is managed in the dashboard
+# + supabase/migrations). Every gallery function keeps JWT verification on.
+project_id = "illuszionz-media"
+
+[functions.gallery-upload-urls]
+verify_jwt = true
+[functions.gallery-confirm-uploads]
+verify_jwt = true
+[functions.gallery-view-urls]
+verify_jwt = true
+[functions.gallery-download-url]
+verify_jwt = true
+[functions.gallery-send]
+verify_jwt = true
+[functions.gallery-submit-selection]
+verify_jwt = true
+[functions.gallery-unlock-selection]
+verify_jwt = true
+[functions.gallery-delete]
+verify_jwt = true
+[functions.gallery-purge-previews]
+verify_jwt = true
