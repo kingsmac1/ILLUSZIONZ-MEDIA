@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
+import { lazy, Suspense, useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { adminApi, configured, supabase } from './supabase'
 import { DataProvider, useData } from './data'
@@ -24,6 +24,8 @@ import { BannerCms } from './cms/Banner'
 import { SeoCms } from './cms/Seo'
 import { SaveStatus } from './cms/SaveStatus'
 import './admin.css'
+
+const GalleryManager = lazy(() => import('../features/gallery/admin/GalleryManager').then((m) => ({ default: m.GalleryManager })))
 
 const I: Record<string, string> = {
   overview: 'M3 12l9-9 9 9M5 10v10h14V10',
@@ -154,7 +156,7 @@ function Shell({ session }: { session: Session }) {
 
   let page: ReactNode
   switch (current.id) {
-    case 'bookings': page = <Bookings />; break
+    case 'bookings': page = rest[1] === 'gallery' && rest[0] ? <Suspense fallback={<p className="ad-muted">Loading…</p>}><GalleryManager key={rest[0]} bookingId={rest[0]} /></Suspense> : <Bookings />; break
     case 'schedule': page = <Schedule />; break
     case 'inbox': page = <Inbox />; break
     case 'crm/contacts': page = <Contacts openId={rest[1]} />; break

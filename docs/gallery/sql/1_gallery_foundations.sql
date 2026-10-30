@@ -333,6 +333,35 @@ $$;
 revoke all on function public.gallery_storage_by_client() from public, anon;
 grant execute on function public.gallery_storage_by_client() to authenticated;
 
+-- one row per gallery: counts for the dashboard lists (admins only)
+create or replace function public.gallery_stats()
+returns table (gallery_id uuid, images_ready bigint, images_failed bigint, bytes bigint, picks bigint, notes bigint, last_activity timestamptz)
+language sql stable security definer set search_path = public as $$
+  select g.id,
+    (select count(*) from public.gallery_images i where i.gallery_id = g.id and i.status = 'ready'),
+    (select count(*) from public.gallery_images i where i.gallery_id = g.id and i.status = 'failed'),
+    (select coalesce(sum(i.bytes), 0)::bigint from public.gallery_images i where i.gallery_id = g.id),
+    (select count(*) from public.gallery_selections s where s.gallery_id = g.id),
+    (select count(*) from public.gallery_selections s where s.gallery_id = g.id and coalesce(s.note, '') <> ''),
+    greatest(g.updated_at, (select max(a.created_at) from public.activity_log a where a.gallery_id = g.id))
+  from public.galleries g
+  where public.is_admin();
+$$;
+revoke all on function public.gallery_stats() from public, anon;
+grant execute on function public.gallery_stats() to authenticated;
+
+-- reorder a gallery in one call (drag & drop / "sort by filename" in the dashboard)
+create or replace function public.gallery_reorder(gid uuid, ids uuid[]) returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  if not public.is_admin() then raise exception 'Not allowed' using errcode = '42501'; end if;
+  update public.gallery_images i set sort_order = o.ord - 1
+  from unnest(ids) with ordinality as o(id, ord)
+  where i.id = o.id and i.gallery_id = gid;
+end $$;
+revoke all on function public.gallery_reorder(uuid, uuid[]) from public, anon;
+grant execute on function public.gallery_reorder(uuid, uuid[]) to authenticated;
+
 -- table privileges (RLS still applies)
 grant select, insert, update, delete on public.profiles, public.galleries, public.gallery_images, public.gallery_selections, public.gallery_downloads, public.activity_log to authenticated;
 grant all on public.profiles, public.galleries, public.gallery_images, public.gallery_selections, public.gallery_downloads, public.activity_log to service_role;

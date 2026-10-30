@@ -6,6 +6,8 @@ import { BulkBar, BulkBtn, BulkSelect, RowBox, SelectAllBox, confirmN, useSelect
 import { Badge, Confirm, Empty, Field, Modal, PageHead, Pager, addDaysIso, downloadCsv, fmtDate, gbp, todayIso, useDebounced, waLink } from '../ui'
 import { ContactDrawer } from '../crm/ContactDrawer'
 import { TaskModal } from '../crm/shared'
+import { byBooking, useGalleryIndex } from '../../features/gallery/admin/useGalleryIndex'
+import { STATUS_TONE, statusLabel } from '../../features/gallery/status'
 
 const PAGE = 20
 const STATUSES = ['new', 'confirmed', 'completed', 'cancelled']
@@ -139,6 +141,7 @@ export function BookingDetail({ id, onClose }: { id: string; onClose: () => void
         {b.phone && <a className="ad-btn sm" target="_blank" rel="noreferrer" href={waLink(b.phone, `Hi ${b.name.split(' ')[0]}, this is Illuszionz Media about your ${b.kind.toLowerCase()} (${b.ref}).`)}>WhatsApp</a>}
         {b.contact_id && <button className="ad-btn sm" onClick={() => setContact(true)}>Open in CRM</button>}
         <button className="ad-btn sm" onClick={() => setTask(true)}>+ Task</button>
+        <a className="ad-btn sm" href={`#/bookings/${b.id}/gallery`} onClick={onClose}>Gallery</a>
       </div>
       <div className="ad-grid c3" style={{ marginBottom: 18 }}>
         <div className="ad-stat"><span>Total</span><strong>{b.total ? gbp(b.total) : b.total_text || 'Quoted'}</strong>{b.discount > 0 && <small>incl. {gbp(b.discount)} off ({b.promo_code})</small>}</div>
@@ -204,6 +207,8 @@ export function Bookings() {
   const pages = Math.max(1, Math.ceil(list.length / PAGE))
   const view = list.slice((Math.min(page, pages) - 1) * PAGE, Math.min(page, pages) * PAGE)
   const sel = useSelection(list.map((b) => b.id))
+  const gx = useGalleryIndex()
+  const galleriesOf = useMemo(() => byBooking(gx.galleries), [gx.galleries])
   const db = useDb()
   const { refresh, toast, markSaved } = useData()
   const picked = () => d.bookings.filter((b) => sel.has(b.id))
@@ -288,7 +293,7 @@ export function Bookings() {
       </BulkBar>
       <div className="ad-tablewrap">
         <table>
-          <thead><tr><th className="sel"><SelectAllBox s={sel} view={view.map((b) => b.id)} /></th><th>Ref</th><th>Client</th><th>Service</th><th>Session</th><th>Status</th><th>Payment</th><th className="num">Total</th></tr></thead>
+          <thead><tr><th className="sel"><SelectAllBox s={sel} view={view.map((b) => b.id)} /></th><th>Ref</th><th>Client</th><th>Service</th><th>Session</th><th>Status</th><th>Payment</th><th className="num">Total</th><th>Gallery</th></tr></thead>
           <tbody>
             {view.map((b) => (
               <tr key={b.id} className={'click' + (sel.has(b.id) ? ' picked' : '')} onClick={() => setOpen(b.id)}>
@@ -300,6 +305,17 @@ export function Bookings() {
                 <td><Badge>{b.status}</Badge></td>
                 <td><Badge>{b.payment_status}</Badge></td>
                 <td className="num"><b>{b.total ? gbp(b.total) : '—'}</b>{Number(b.total) > Number(b.amount_paid) && b.status !== 'cancelled' && Number(b.amount_paid) > 0 && <span className="sub">due {gbp(Number(b.total) - Number(b.amount_paid))}</span>}</td>
+                <td onClick={(e) => e.stopPropagation()}>{(() => {
+                  const gs = galleriesOf.get(b.id)
+                  const g = gs?.final?.status === 'delivered' ? gs.final : gs?.proof ?? gs?.final
+                  return (
+                    <a className="ad-btn sm" href={`#/bookings/${b.id}/gallery`} title="Open the client gallery for this booking" style={{ gap: 6 }}>
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M3 5h18v14H3zM3 16l5-5 4 4 3-3 6 6M9 9h.01" /></svg>
+                      Gallery
+                      {g && <Badge tone={STATUS_TONE[g.status]}>{statusLabel(g.kind, g.status, gx.stats.get(g.id)?.picks, g.selection_limit)}</Badge>}
+                    </a>
+                  )
+                })()}</td>
               </tr>
             ))}
           </tbody>
