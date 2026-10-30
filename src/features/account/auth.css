@@ -36,7 +36,7 @@
 .cg-auth form { display: flex; flex-direction: column; }
 .cg-auth label { font-size: 14px; font-weight: 600; margin-bottom: 8px; }
 .cg-auth input {
-  flex: 1; min-width: 0; height: 48px; padding: 0 16px; border-radius: 999px; border: 1px solid #cfcfcb; background: #fff; color: #000;
+  flex: 1 1 auto; min-width: 0; height: 48px; min-height: 48px; padding: 0 16px; border-radius: 999px; border: 1px solid #cfcfcb; background: #fff; color: #000;
   font: 400 16px var(--cg-sans); outline: none;
 }
 .cg-auth input:focus { border-color: #000; box-shadow: 0 0 0 3px rgba(200,16,46,.18); }

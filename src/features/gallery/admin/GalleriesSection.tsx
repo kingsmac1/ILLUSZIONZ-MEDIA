@@ -50,7 +50,7 @@ export function GalleriesSection() {
 
   return (
     <>
-      <PageHead title="Galleries" sub={`${idx.galleries.length} galleries · ${new Set(idx.galleries.map((g) => g.client_email)).size} clients`} actions={<a className="ad-btn" href="#/bookings">Start one from a booking</a>} />
+      <PageHead title="Galleries" sub={(() => { const n = new Set(idx.galleries.map((g) => g.client_email)).size; return `${idx.galleries.length} galler${idx.galleries.length === 1 ? 'y' : 'ies'} · ${n} client${n === 1 ? '' : 's'}` })()} actions={<a className="ad-btn" href="#/bookings">Start one from a booking</a>} />
       <div className="ad-grid c3" style={{ marginBottom: 16 }}>
         <div className="ad-stat gx-meter">
           <span>Storage used</span><small>{pct.toFixed(0)}%</small>
@@ -95,8 +95,8 @@ function Card({ g, s, shoot }: { g: GalleryRow; s?: GalleryStats; shoot: string 
       <span className="body">
         <b title={g.title}>{g.title}</b>
         <span><Badge tone={STATUS_TONE[g.status]}>{statusLabel(g.kind, g.status, s?.picks, g.selection_limit)}</Badge></span>
-        <small>{s?.images_ready ?? 0} photos{g.kind === 'proof' && s?.picks ? ` · ${s.picks} picked` : ''}{s?.notes ? ` · ${s.notes} notes` : ''}{s?.images_failed ? ` · ${s.images_failed} failed` : ''} · {fmtBytes(s?.bytes ?? 0)}</small>
-        <small>{shoot ? `${shoot} · ` : ''}{g.first_viewed_at ? `viewed ${fmtDay(g.first_viewed_at)}` : g.sent_at ? 'not opened yet' : 'not sent'} · last activity {ago(s?.last_activity ?? g.updated_at)}</small>
+        <small>{s?.images_ready ?? 0} photos{g.kind === 'proof' && s?.picks ? ` · ${s.picks} picked` : ''}{s?.notes ? ` · ${s.notes} note${s.notes === 1 ? '' : 's'}` : ''}{s?.images_failed ? ` · ${s.images_failed} failed` : ''} · {fmtBytes(s?.bytes ?? 0)}</small>
+        <small>{shoot ? `${shoot} · ` : ''}{g.kind === 'final' ? (g.delivered_at ? `delivered ${fmtDay(g.delivered_at)}` : 'not delivered') : g.first_viewed_at ? `viewed ${fmtDay(g.first_viewed_at)}` : g.sent_at ? 'not opened yet' : 'not sent'} · last activity {ago(s?.last_activity ?? g.updated_at)}</small>
       </span>
     </a>
   )

@@ -1,19 +1,30 @@
 /** Bottom sheets / dialogs of the client gallery: note editor, submit review, success + WhatsApp hand-off. */
 import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import type { ViewImage } from '../types'
 
-function Sheet({ title, onClose, children, wide }: { title: string; onClose: () => void; children: ReactNode; wide?: boolean }) {
+/**
+ * `inside`: render into this element instead of the page — used over the lightbox, which makes everything outside itself
+ * inert. Keys and pointer events stop here so typing ← → in a note doesn't change the photo.
+ */
+function Sheet({ title, onClose, children, wide, inside }: { title: string; onClose: () => void; children: ReactNode; wide?: boolean; inside?: Element | null }) {
   const box = useRef<HTMLDivElement>(null)
   useEffect(() => {
     const prev = document.activeElement as HTMLElement | null
     box.current?.querySelector<HTMLElement>('textarea, button.cg-btn, [autofocus]')?.focus()
-    const k = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
-    window.addEventListener('keydown', k)
+    const overflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
-    return () => { window.removeEventListener('keydown', k); document.body.style.overflow = ''; prev?.focus?.() }
-  }, [onClose])
-  return (
-    <div className="cg-sheet-wrap" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+    return () => { document.body.style.overflow = overflow; prev?.focus?.() }
+  }, [])
+  const ui = (
+    <div
+      className="cg-sheet-wrap cg"
+      onMouseDown={(e) => e.target === e.currentTarget && onClose()}
+      onKeyDown={(e) => { e.stopPropagation(); if (e.key === 'Escape') onClose() }}
+      onPointerDown={(e) => e.stopPropagation()}
+      onTouchStart={(e) => e.stopPropagation()}
+      onWheel={(e) => e.stopPropagation()}
+    >
       <div className={'cg-sheet' + (wide ? ' wide' : '')} role="dialog" aria-modal="true" aria-label={title} ref={box}>
         <div className="cg-sheet-h">
           <h2>{title}</h2>
@@ -23,12 +34,13 @@ function Sheet({ title, onClose, children, wide }: { title: string; onClose: () 
       </div>
     </div>
   )
+  return inside ? createPortal(ui, inside) : ui
 }
 
-export function NoteSheet({ filename, initial, readOnly, onClose, onSave }: { filename: string; initial: string; readOnly: boolean; onClose: () => void; onSave: (t: string) => void }) {
+export function NoteSheet({ filename, initial, readOnly, onClose, onSave, inside }: { filename: string; initial: string; readOnly: boolean; onClose: () => void; onSave: (t: string) => void; inside?: Element | null }) {
   const [t, setT] = useState(initial)
   return (
-    <Sheet title={readOnly ? 'Your note' : 'Note for the editor'} onClose={onClose}>
+    <Sheet title={readOnly ? 'Your note' : 'Note for the editor'} onClose={onClose} inside={inside}>
       <p className="cg-sheet-sub">{filename}</p>
       <textarea rows={4} value={t} readOnly={readOnly} maxLength={1000} onChange={(e) => setT(e.target.value)} placeholder="e.g. Please remove the person in the background, or make this one black & white." />
       {!readOnly && (

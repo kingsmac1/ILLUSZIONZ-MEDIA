@@ -29,7 +29,7 @@ for (const p of PAGES) {
     if (h && h.startsWith('/') && !h.startsWith('/images/')) internal.add(h.split('#')[0].split('?')[0])
   }
 }
-for (const h of internal) ok(`internal link ${h || '/'} resolves`, h === '' || (PAGES.includes(h.endsWith('/') ? h : h + '/') || h === '/blog/'))
+for (const h of internal) ok(`internal link ${h || '/'} resolves`, h === '' || (PAGES.includes(h.endsWith('/') ? h : h + '/') || h === '/blog/' || h === '/account/'))
 
 /* 2 ─ full-screen menu */
 await page.goto(BASE + '/', { waitUntil: 'networkidle' })

@@ -174,7 +174,7 @@ function GalleryView({ data, email, reload }: { data: ViewResponse; email: strin
                 <button aria-pressed={filter === 'picked'} onClick={() => setFilter('picked')}>Picked</button>
               </div>
               <span className="cg-count" aria-live="polite"><b>{count}</b>{limit ? <> / {limit}</> : null}<span className="cg-count-l"> picked</span></span>
-              {!locked && <button className="cg-btn solid red" disabled={!count} onClick={() => setReview(true)}>Submit<span className="cg-hide-s"> selection</span></button>}
+              {!locked && <button className="cg-btn solid red" disabled={!count} onClick={() => setReview(true)}><span className="cg-hide-s">Submit selection</span><span className="cg-show-s">Submit</span></button>}
             </>
           ) : (
             <DownloadAll galleryId={g.id} title={g.title} images={images} onError={say} />
@@ -183,7 +183,7 @@ function GalleryView({ data, email, reload }: { data: ViewResponse; email: strin
         {proof && <div className="cg-bar-line" style={{ transform: `scaleX(${limit ? Math.min(1, count / limit) : count ? 1 : 0})` }} aria-hidden="true" />}
       </div>
 
-      <main className="cg-main">
+      <main className="cg-main" data-no-motion>
         {data.is_admin && <p className="cg-banner">Studio preview — this is what the client sees. Hearts are read-only for you.</p>}
         {proof && status === 'submitted' && <p className="cg-banner">Selection submitted on {fmtDay(submittedAt)}. We’re editing your photos ✨ {count ? `(${count} picked)` : ''}</p>}
         {proof && status === 'archived' && <p className="cg-banner">The previews were removed after your final photos were delivered.{finals ? <> <a href={`/gallery/${finals.id}/`}>Open your final photos</a></> : null}</p>}
@@ -199,19 +199,20 @@ function GalleryView({ data, email, reload }: { data: ViewResponse; email: strin
             spacing={4}
             targetRowHeight={(w) => (w < 600 ? 150 : w < 1000 ? 220 : 300)}
             rowConstraints={{ singleRowMaxHeight: 420 }}
-            onClick={({ index }) => setOpen(images.indexOf(photos[index].img))}
             render={{
               image: (props, { photo, width }) => (
-                <img
-                  {...props}
-                  src={photo.img.thumb ?? ''}
-                  srcSet={photo.img.display ? `${photo.img.thumb} ${photo.tw}w, ${photo.img.display} ${photo.dw}w` : undefined}
-                  sizes={`${Math.ceil(width)}px`}
-                  loading="lazy" decoding="async" draggable={false}
-                  className={(props.className ?? '') + ' cg-img'}
-                  onLoad={(e) => e.currentTarget.classList.add('in')}
-                  onContextMenu={proof ? (e) => e.preventDefault() : undefined}
-                />
+                <button type="button" className="cg-open" aria-label={`Open ${photo.img.filename}`} onClick={() => setOpen(images.indexOf(photo.img))}>
+                  <img
+                    {...props}
+                    src={photo.img.thumb ?? ''}
+                    srcSet={photo.img.display ? `${photo.img.thumb} ${photo.tw}w, ${photo.img.display} ${photo.dw}w` : undefined}
+                    sizes={`${Math.ceil(width)}px`}
+                    loading="lazy" decoding="async" draggable={false}
+                    className={(props.className ?? '') + ' cg-img'}
+                    onLoad={(e) => e.currentTarget.classList.add('in')}
+                    onContextMenu={proof ? (e) => e.preventDefault() : undefined}
+                  />
+                </button>
               ),
               extras: (_, { photo }) => (
                 <>
@@ -266,6 +267,7 @@ function GalleryView({ data, email, reload }: { data: ViewResponse; email: strin
           filename={images.find((i) => i.id === noteFor)?.filename ?? ''}
           initial={picks.get(noteFor) ?? ''}
           readOnly={locked}
+          inside={open !== null ? document.querySelector('.yarl__root') : null}
           onClose={() => setNoteFor(null)}
           onSave={async (t) => { if (await setNote(noteFor, t)) setNoteFor(null) }}
         />

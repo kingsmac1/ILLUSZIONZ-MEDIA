@@ -36,3 +36,31 @@ Each item: what was decided, and why. Change any of them later if you prefer oth
 16. **Finals ↔ picks matching** uses the filename stem, ignoring suffixes like `-edit`, `_final`, ` copy 2`.
 17. **Default order is camera order** (natural filename sort: `DSC_2` before `DSC_10`).
 
+## Screens & design
+18. **The client gallery is a standalone page** (no site header/footer, like Pixieset): full-screen cover, black top bar, white "contact sheet"
+    grid. The only colour besides black and white is a darkroom-safelight red, used just for picks (hearts, picked frames and the progress
+    line under the bar that fills as they pick). Titles use the site's Playfair Display; everything else uses Inter.
+19. **`/account/` sits inside the normal site** (header + footer), with a person icon next to the menu button ("Sign in" / "My Account").
+    The icon only checks whether a sign-in is stored, so public pages don't load any extra code.
+20. **The gallery opts out of the site's scroll-reveal animation** (it would hide the photos for 2.6 s on every visit). The only motion is the
+    cover title settling in, which is off for visitors who prefer reduced motion.
+21. **"Download all" builds zips in the browser**, in parts of up to 100 photos / 2 GB (smaller parts on phones). Each part is started by its
+    own tap, because browsers only allow a save dialog right after a click. On Chrome/Edge desktop the zip streams straight to disk.
+22. **Notes require a pick**: writing a note on a photo also picks it (a note on an unpicked photo would never reach the editor).
+23. **Grid images load the 600 px thumbnail or the 2048 px preview**, whichever fits the screen (`srcset`), and fade in when loaded.
+
+## What could not be done from here
+24. **Nothing was changed in the live Supabase project.** Applying the database migration was blocked as a "production deploy" that needs
+    your explicit OK, and deploying functions, setting secrets and changing sign-in settings fall under the same rule. Everything is packaged
+    in `npm run gallery:go-live` (see TODO_FOR_MACAULEY.md).
+25. **R2 CORS could not be set**: neither the R2 keys nor the Cloudflare API token have permission to change bucket settings. The JSON to paste
+    is in `docs/gallery/r2-cors.json`.
+26. **No Resend key was available locally**, so emails and custom SMTP for sign-in codes are switched on by adding `RESEND_API_KEY` +
+    `EMAIL_FROM` to `.env.local` before running the go-live script.
+27. **How it was tested instead:** the database migration and every security rule ran on a real Postgres engine (PGlite) with Supabase's auth
+    stubbed (46 checks: admins vs clients vs a wrong email vs an unconfirmed email, picks, limits, locking, reordering). The R2 signing code did a
+    real upload / download / delete round-trip against your bucket (one tiny test file, deleted). The functions were type-checked with Deno.
+    The screens were driven in a fresh browser with Supabase/R2 mocked (`npm run test:gallery`, 58 checks at 375 px and desktop), including the
+    real watermark worker: uploaded previews were checked to be JPEGs ≤ 2048 px with a visible watermark, and no original is ever uploaded for proofs.
+    The existing site tests still pass (71/71).
+28. **R2 doesn't enforce the Content-Type on presigned uploads.** Harmless here (only admins get upload links, and they expire after 2 h).

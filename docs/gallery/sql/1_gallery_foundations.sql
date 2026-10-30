@@ -279,7 +279,7 @@ end $$;
 drop trigger if exists gallery_selection_rules on public.gallery_selections;
 create trigger gallery_selection_rules before insert or update on public.gallery_selections for each row execute function public.gallery_selection_rules();
 
-create or replace function public.touch_updated_at() returns trigger language plpgsql as $$
+create or replace function public.touch_updated_at() returns trigger language plpgsql set search_path = public as $$
 begin new.updated_at := now(); return new; end $$;
 drop trigger if exists galleries_touch on public.galleries;
 create trigger galleries_touch before update on public.galleries for each row execute function public.touch_updated_at();

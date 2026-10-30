@@ -12,7 +12,9 @@
     "fake-supabase": "node tests/fake-supabase.mjs",
     "test:cms": "node tests/cms-e2e.mjs",
     "postbuild": "node scripts/postbuild.mjs",
-    "test:motion": "node tests/motion-e2e.mjs"
+    "test:motion": "node tests/motion-e2e.mjs",
+    "test:gallery": "node tests/gallery-e2e.mjs",
+    "gallery:go-live": "bash scripts/gallery-go-live.sh"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.118.0",
