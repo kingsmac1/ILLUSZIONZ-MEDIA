@@ -1,7 +1,8 @@
-/** Bottom sheets / dialogs of the client gallery: note editor, submit review, success + WhatsApp hand-off. */
+/** Bottom sheets / dialogs of the client gallery: note editor, submit review, success + WhatsApp hand-off, save-to-account. */
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import type { ViewImage } from '../types'
+import { AuthPanel, type AuthMode } from '../../account/AuthPanel'
 
 /**
  * `inside`: render into this element instead of the page — used over the lightbox, which makes everything outside itself
@@ -112,5 +113,41 @@ export function SuccessScreen({ count, whatsappUrl, onClose }: { count: number; 
         </div>
       </div>
     </div>
+  )
+}
+
+/**
+ * "Keep your photos": nudges a visitor who came in by the emailed link to create an account (or sign in), so this gallery
+ * and every later one stay in their client area. Never required — "Not now" just closes it.
+ */
+export function SaveSheet({ email, kind, onClose, onSignedIn }: { email: string; kind: 'proof' | 'final'; onClose: () => void; onSignedIn: () => void }) {
+  const [mode, setMode] = useState<AuthMode | null>(null)
+  return (
+    <Sheet title={mode ? (mode === 'signup' ? 'Create your account' : 'Sign in') : 'Keep your photos in one place'} onClose={onClose}>
+      {!mode ? (
+        <>
+          <p className="cg-sheet-sub">
+            {kind === 'final'
+              ? 'Create a free account and your final photos stay in your client area, ready to download again any time, on any device. No need to keep this email.'
+              : 'Create a free account and this gallery, your picks, and your final photos when they’re ready stay in your client area. Open them any time, on any device. No need to keep this email.'}
+          </p>
+          <div className="cg-save-actions">
+            <button className="cg-btn solid" onClick={() => setMode('signup')}>Create account</button>
+            <button className="cg-btn line" onClick={() => setMode('signin')}>I have an account</button>
+            <button className="cg-link cg-save-later" onClick={onClose}>Not now</button>
+          </div>
+        </>
+      ) : (
+        <div className="cg-save-auth">
+          <AuthPanel
+            key={mode}
+            defaultMode={mode}
+            defaultEmail={email}
+            onSignedIn={onSignedIn}
+            note={email ? <>Use <b>{email}</b>, the address this gallery was sent to, so it’s added to your account automatically.</> : undefined}
+          />
+        </div>
+      )}
+    </Sheet>
   )
 }

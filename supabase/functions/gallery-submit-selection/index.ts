@@ -3,17 +3,17 @@
  * Lightroom filter, emails the client a confirmation, logs it, and returns the WhatsApp message for the hand-off.
  */
 import { handle, HttpError, isUuid, json } from '../_shared/http.ts'
-import { loadGallery, logActivity, requireUser, service } from '../_shared/auth.ts'
+import { caller, canAct, loadGallery, logActivity, service } from '../_shared/auth.ts'
 import { mailConfig, sendEmail } from '../_shared/email.ts'
 import { selectionConfirmation, selectionReceived } from '../_shared/email-templates.ts'
 import { adminLink, clientLink, OPEN_FOR_PICKS } from '../_shared/gallery.ts'
 import { byFilename, lightroomFilter } from '../_shared/filenames.ts'
 
 Deno.serve(handle(async (req, body) => {
-  const who = await requireUser(req)
+  const who = await caller(req)
   if (!isUuid(body.gallery_id)) throw new HttpError('Missing gallery.')
   const g = await loadGallery(body.gallery_id)
-  if (who.email !== g.client_email) throw new HttpError('This gallery belongs to another account.', 403)
+  if (!canAct(who, g, body.key)) throw new HttpError('Open this gallery from the link in your email to submit.', 403)
   if (g.kind !== 'proof') throw new HttpError('There is nothing to select in this gallery.')
   if (g.status === 'submitted') throw new HttpError('Your selection was already submitted.', 409)
   if (!OPEN_FOR_PICKS.includes(g.status)) throw new HttpError('This gallery is closed for selection.', 409)

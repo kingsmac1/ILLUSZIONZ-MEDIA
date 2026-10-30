@@ -3,14 +3,15 @@
  * (before or after signing up) shows up here automatically: bookings, galleries, timeline, downloads, profile.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import type { Session } from '@supabase/supabase-js'
+import type { EmailOtpType, Session } from '@supabase/supabase-js'
 import { configured, supabase } from '../../admin/supabase'
 import { isMissingTable } from '../gallery/api'
 import { galleryConfig } from '../gallery/gallery.config'
 import { clientStatus, describeActivity, fmtDay } from '../gallery/status'
 import type { ActivityRow, GalleryRow, MyBooking, ProfileRow } from '../gallery/types'
 import { useCover } from '../gallery/useCover'
-import { AuthPanel } from './AuthPanel'
+import { galleryHref } from '../gallery/client/links'
+import { AuthPanel, NewPasswordPanel, type AuthMode } from './AuthPanel'
 import './account.css'
 
 type Section = 'overview' | 'bookings' | 'galleries' | 'activity' | 'downloads' | 'profile'
@@ -28,8 +29,42 @@ type Data = { profile: ProfileRow | null; bookings: MyBooking[]; galleries: Gall
 
 const shoot = (kind: string) => kind.replace(/ booking$/i, '')
 
+/**
+ * Links in the account emails land here as /account/?token_hash=…&type=email|recovery|email_change (see
+ * scripts/gallery-auth-config.py). We verify the token, which also signs them in, then drop it from the address bar.
+ */
+type LinkResult = null | 'working' | 'confirmed' | 'recovery' | 'password_saved' | 'email_changed' | 'expired'
+function useEmailLink(): [LinkResult, (r: LinkResult) => void] {
+  const [result, setResult] = useState<LinkResult>(() => {
+    if (typeof window === 'undefined') return null
+    const q = new URLSearchParams(window.location.search)
+    if (q.get('token_hash')) return 'working'
+    return /error_code=|error=access_denied/.test(window.location.hash) ? 'expired' : null
+  })
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search)
+    const token_hash = q.get('token_hash')
+    if (result === 'expired') history.replaceState(null, '', window.location.pathname)
+    if (!token_hash || !supabase) return
+    const type = (q.get('type') || 'email') as EmailOtpType
+    history.replaceState(null, '', window.location.pathname)
+    supabase.auth.verifyOtp({ token_hash, type }).then(({ error }) => {
+      if (error) return setResult('expired')
+      setResult(type === 'recovery' ? 'recovery' : type === 'email_change' ? 'email_changed' : 'confirmed')
+    })
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  return [result, setResult]
+}
+
+const BANNERS: Partial<Record<Exclude<LinkResult, null>, string>> = {
+  confirmed: 'Your email is confirmed. Welcome to your client area.',
+  password_saved: 'Your new password is saved.',
+  email_changed: 'Your email address is updated.',
+}
+
 export default function AccountApp() {
   const [session, setSession] = useState<Session | null | undefined>(undefined)
+  const [link, setLink] = useEmailLink()
   useEffect(() => {
     if (!supabase) return setSession(null)
     supabase.auth.getSession().then(({ data }) => setSession(data.session))
@@ -38,24 +73,42 @@ export default function AccountApp() {
   }, [])
 
   if (!configured) return <div className="ca"><div className="ca-wrap"><h1 className="ca-h1">Client area</h1><p>The client area is not connected yet.</p></div></div>
-  if (session === undefined) return <div className="ca"><div className="ca-wrap ca-wait" aria-busy="true" /></div>
+  if (session === undefined || link === 'working') return <div className="ca"><div className="ca-wrap ca-wait" aria-busy="true" /></div>
+  if (link === 'recovery' && session) {
+    return (
+      <div className="ca">
+        <div className="ca-wrap ca-signin">
+          <div>
+            <h1 className="ca-h1">Choose a new password</h1>
+            <p className="ca-lead">You’ll use it with <b>{session.user.email}</b> to sign in from now on.</p>
+          </div>
+          <NewPasswordPanel onDone={() => setLink('password_saved')} />
+        </div>
+      </div>
+    )
+  }
   if (!session) {
+    const q = typeof window === 'undefined' ? null : new URLSearchParams(window.location.search)
+    const mode: AuthMode = q?.get('mode') === 'signup' ? 'signup' : 'signin'
     return (
       <div className="ca">
         <div className="ca-wrap ca-signin">
           <div>
             <h1 className="ca-h1">Your photos, bookings and galleries in one place</h1>
-            <p className="ca-lead">Sign in with the email you booked with. We send you a 6-digit code, so there’s no password to remember. If you’re new, this creates your account and everything booked with that email appears straight away.</p>
+            <p className="ca-lead">Returning? Sign in. New here? Create your account with the email you booked with, and everything booked with that email appears straight away: your bookings, previews and final photos.</p>
           </div>
-          <AuthPanel />
+          <div>
+            {link === 'expired' && <p className="ca-msg err ca-link-msg" role="alert">That link has expired or was already used. Sign in below, or use “Forgot password?” to get a new one.</p>}
+            <AuthPanel defaultMode={mode} defaultEmail={q?.get('email') ?? ''} />
+          </div>
         </div>
       </div>
     )
   }
-  return <Account session={session} />
+  return <Account session={session} banner={link ? BANNERS[link] : undefined} />
 }
 
-function Account({ session }: { session: Session }) {
+function Account({ session, banner }: { session: Session; banner?: string }) {
   const email = (session.user.email ?? '').toLowerCase()
   const [section, setSection] = useState<Section>(() => {
     const h = typeof window === 'undefined' ? '' : window.location.hash.replace('#', '')
@@ -100,6 +153,7 @@ function Account({ session }: { session: Session }) {
           </div>
           {isAdmin && <a className="cg-btn line" href="/dashboard/">Open the studio dashboard</a>}
         </div>
+        {banner && <p className="ca-msg ca-link-msg" role="status">{banner}</p>}
         <nav className="ca-nav" aria-label="Client area">
           {SECTIONS.map((s) => <button key={s.id} aria-current={section === s.id ? 'page' : undefined} onClick={() => go(s.id)}>{s.label}</button>)}
         </nav>
@@ -135,7 +189,7 @@ function Overview({ data, go }: { data: Data; go: (s: Section) => void }) {
       {actions.length > 0 && (
         <section className="ca-actions" aria-label="Needs your attention">
           {actions.map((a) => (
-            <a key={a.g.id} className="ca-action" href={`/gallery/${a.g.id}/`}>
+            <a key={a.g.id} className="ca-action" href={galleryHref(a.g.id, a.g.share_token)}>
               <ActionCover id={a.g.id} />
               <span className="ca-action-t"><b>{a.title}</b><span>{a.text}</span><em className="cg-btn solid red">{a.cta}</em></span>
             </a>
@@ -212,7 +266,7 @@ function GalleryCard({ g }: { g: GalleryRow }) {
   const c = useCover(g.id, !g.previews_purged_at)
   const expires = g.kind === 'proof' && g.previews_purge_at && !g.previews_purged_at ? `Previews available until ${fmtDay(g.previews_purge_at)}` : g.expires_at ? `Available until ${fmtDay(g.expires_at)}` : ''
   return (
-    <a className="ca-gcard" href={`/gallery/${g.id}/`}>
+    <a className="ca-gcard" href={galleryHref(g.id, g.share_token)}>
       <span className="ca-gcard-img" style={c?.url ? { backgroundImage: `url("${c.url}")` } : undefined}>
         <span className="ca-kind">{g.kind === 'proof' ? 'Previews' : 'Final photos'}</span>
       </span>
@@ -256,6 +310,7 @@ function Profile({ profile, email, onSaved }: { profile: ProfileRow | null; emai
   const [name, setName] = useState(profile?.full_name ?? '')
   const [phone, setPhone] = useState(profile?.phone ?? '')
   const [pw, setPw] = useState('')
+  const [showPw, setShowPw] = useState(false)
   const [msg, setMsg] = useState<{ t: string; ok: boolean } | null>(null)
   async function save() {
     const { error } = await supabase!.from('profiles').update({ full_name: name.trim(), phone: phone.trim() }).eq('id', profile!.id)
@@ -265,7 +320,7 @@ function Profile({ profile, email, onSaved }: { profile: ProfileRow | null; emai
   async function setPassword() {
     if (pw.length < 8) return setMsg({ t: 'Use at least 8 characters.', ok: false })
     const { error } = await supabase!.auth.updateUser({ password: pw })
-    setMsg(error ? { t: error.message, ok: false } : { t: 'Password set. You can now sign in with it, or keep using email codes.', ok: true })
+    setMsg(error ? { t: /different from the old/i.test(error.message) ? 'Choose a password you haven’t used before.' : error.message, ok: false } : { t: 'Password changed. Use the new one next time you sign in.', ok: true })
     if (!error) setPw('')
   }
   return (
@@ -278,10 +333,15 @@ function Profile({ profile, email, onSaved }: { profile: ProfileRow | null; emai
         <button className="cg-btn solid" onClick={save} disabled={!profile}>Save details</button>
       </section>
       <section className="ca-card ca-form">
-        <h2>Password (optional)</h2>
-        <p className="ca-muted">You can always sign in with a code sent to your email. Set a password if you prefer.</p>
-        <label>New password<input type="password" value={pw} onChange={(e) => setPw(e.target.value)} autoComplete="new-password" minLength={8} /></label>
-        <button className="cg-btn line" onClick={setPassword}>Set password</button>
+        <h2>Password</h2>
+        <p className="ca-muted">Change the password you sign in with. At least 8 characters.</p>
+        <label>New password
+          <span className="ca-pw">
+            <input type={showPw ? 'text' : 'password'} value={pw} onChange={(e) => setPw(e.target.value)} autoComplete="new-password" minLength={8} />
+            <button type="button" onClick={() => setShowPw((v) => !v)} aria-pressed={showPw} aria-label={showPw ? 'Hide password' : 'Show password'}>{showPw ? 'Hide' : 'Show'}</button>
+          </span>
+        </label>
+        <button className="cg-btn line" onClick={setPassword}>Change password</button>
         <hr />
         <button className="cg-btn line" onClick={() => supabase!.auth.signOut()}>Sign out</button>
       </section>

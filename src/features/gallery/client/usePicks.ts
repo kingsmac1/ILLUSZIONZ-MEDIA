@@ -1,13 +1,14 @@
 /**
- * The client's hearts + notes. Optimistic: the heart fills instantly, the row is written to gallery_selections in the
- * background (RLS checks it is their gallery, still open, and within the limit) and rolled back with a message if refused.
+ * The client's hearts + notes. Optimistic: the heart fills instantly, the gallery-pick function saves it in the background
+ * (it checks the private link or account, that the gallery is still open, and the limit) and it rolls back with a message
+ * if refused. Works the same signed in or not.
  */
 import { useCallback, useRef, useState } from 'react'
-import { supabase } from '../../../admin/supabase'
+import { callFn } from '../api'
 
 export type Picks = Map<string, string | null>
 
-export function usePicks(galleryId: string, email: string, initial: { image_id: string; note: string | null }[], opts: { limit: number | null; extras: boolean; locked: boolean; onMessage: (m: string) => void }) {
+export function usePicks(galleryId: string, key: string | null, initial: { image_id: string; note: string | null }[], opts: { limit: number | null; extras: boolean; locked: boolean; onMessage: (m: string) => void }) {
   const [picks, setPicks] = useState<Picks>(() => new Map(initial.map((s) => [s.image_id, s.note])))
   const ref = useRef(picks)
   ref.current = picks
@@ -15,6 +16,8 @@ export function usePicks(galleryId: string, email: string, initial: { image_id: 
   o.current = opts
 
   const update = (fn: (m: Picks) => void) => setPicks((cur) => { const n = new Map(cur); fn(n); ref.current = n; return n })
+  const save = (image_id: string, action: 'add' | 'remove' | 'note', note?: string | null) =>
+    callFn<{ count: number }>('gallery-pick', { gallery_id: galleryId, key, image_id, action, note })
 
   const toggle = useCallback(async (imageId: string) => {
     const { limit, extras, locked, onMessage } = o.current
@@ -23,16 +26,14 @@ export function usePicks(galleryId: string, email: string, initial: { image_id: 
     const prevNote = ref.current.get(imageId) ?? null
     if (!had && limit && !extras && ref.current.size >= limit) return onMessage(`You’ve picked all ${limit} photos. Remove one to choose another.`)
     update((m) => (had ? m.delete(imageId) : m.set(imageId, null)))
-    const { error } = had
-      ? await supabase!.from('gallery_selections').delete().eq('image_id', imageId).eq('client_email', email)
-      : await supabase!.from('gallery_selections').insert({ gallery_id: galleryId, image_id: imageId, client_email: email })
-    if (error) {
+    const r = await save(imageId, had ? 'remove' : 'add')
+    if (!r.ok) {
       update((m) => (had ? m.set(imageId, prevNote) : m.delete(imageId)))
-      onMessage(/up to \d+/i.test(error.message) ? error.message : 'That didn’t save — check your connection and try again.')
+      onMessage(/up to \d+|submitted|link in your email/i.test(r.error) ? r.error : 'That didn’t save — check your connection and try again.')
       return
     }
     if (!had && limit && ref.current.size === limit) onMessage(extras ? `That’s your ${limit} included photos — any more are extras.` : `That’s all ${limit}! Review your picks, then submit.`)
-  }, [galleryId, email])
+  }, [galleryId, key]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const setNote = useCallback(async (imageId: string, note: string) => {
     const { locked, onMessage } = o.current
@@ -44,10 +45,10 @@ export function usePicks(galleryId: string, email: string, initial: { image_id: 
     }
     const before = ref.current.get(imageId) ?? null
     update((m) => m.set(imageId, clean))
-    const { error } = await supabase!.from('gallery_selections').update({ note: clean }).eq('image_id', imageId).eq('client_email', email)
-    if (error) { update((m) => m.set(imageId, before)); onMessage('Your note didn’t save — try again.'); return false }
+    const r = await save(imageId, 'note', clean)
+    if (!r.ok) { update((m) => m.set(imageId, before)); onMessage('Your note didn’t save — try again.'); return false }
     return true
-  }, [email, toggle])
+  }, [galleryId, key, toggle]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return { picks, toggle, setNote }
 }

@@ -19,7 +19,9 @@ import { refreshGalleries, useGalleryIndex } from './useGalleryIndex'
 import { SetupNeeded } from './SetupNeeded'
 import './gallery-admin.css'
 
-const clientUrl = (id: string) => `${window.location.origin}/gallery/${id}/`
+/** The client's private link: opens the gallery without signing in (the key is what keeps it private). */
+const clientUrl = (g: GalleryRow) => `${window.location.origin}/gallery/${g.id}/${g.share_token ? `?k=${g.share_token}` : ''}`
+const newKey = () => Array.from(crypto.getRandomValues(new Uint8Array(32)), (b) => b.toString(16).padStart(2, '0')).join('')
 
 async function copy(text: string, toast: (m: string, k?: 'ok' | 'err') => void, what: string) {
   try {
@@ -174,6 +176,13 @@ function useGalleryActions(g: GalleryRow | undefined, reload: () => void) {
       run(resend ? 'resend' : 'send', 'gallery-send', { gallery_id: g.id }, () => (g.kind === 'proof' ? `✓ Sent to ${g.client_email}` : `✓ Delivered to ${g.client_email}`)),
     remind: () => g && window.confirm(`Send a reminder to ${g.client_email}?`) && run('remind', 'gallery-send', { gallery_id: g.id, reminder: true }, () => '✓ Reminder sent'),
     unlock: () => g && window.confirm('Reopen the selection? The client keeps their picks and gets an email saying they can change them.') && run('unlock', 'gallery-unlock-selection', { gallery_id: g.id }, () => '✓ Selection unlocked'),
+    resetLink: async () => {
+      if (!g || !window.confirm('Make a new private link for this gallery?\n\nThe old link stops working straight away — use this if it was shared with someone who shouldn’t see it. Then send the client the new link (Resend email or Copy client link). Their picks are kept.')) return
+      const { error } = await supabase!.from('galleries').update({ share_token: newKey() }).eq('id', g.id)
+      if (error) return toast(error.message, 'err')
+      toast('✓ New link made — the old one no longer works')
+      await refreshGalleries()
+    },
     removeAll: () => g && window.confirm(`Delete this ${g.kind === 'proof' ? 'proof' : 'finals'} gallery and all its photos permanently?`) && run('delete', 'gallery-delete', { gallery_id: g.id }, () => '✓ Gallery deleted'),
   }
 }
@@ -229,8 +238,9 @@ function ProofsTab({ booking, gallery: g, ensure }: { booking: R; gallery?: Gall
                 ? <button className="ad-btn primary" disabled={!ready || !!act.busy} onClick={() => act.send()}>{act.busy === 'send' ? 'Sending…' : `Send to client (${ready})`}</button>
                 : <button className="ad-btn" disabled={!!act.busy} onClick={() => act.send(true)}>{act.busy === 'resend' ? 'Sending…' : 'Resend email'}</button>}
               {['sent', 'viewed', 'selecting'].includes(g.status) && <button className="ad-btn" disabled={!!act.busy} onClick={act.remind}>Send reminder</button>}
-              <button className="ad-btn" onClick={() => copy(clientUrl(g.id), toast, 'Client link')}>Copy client link</button>
-              {g.status !== 'draft' && <a className="ad-btn" href={clientUrl(g.id)} target="_blank" rel="noreferrer">Open ↗</a>}
+              <button className="ad-btn" onClick={() => copy(clientUrl(g), toast, 'Client link')}>Copy client link</button>
+              {g.status !== 'draft' && <a className="ad-btn" href={clientUrl(g)} target="_blank" rel="noreferrer">Open ↗</a>}
+              {g.status !== 'draft' && <button className="ad-btn sm" onClick={act.resetLink} title="Turn off the old link and make a new one">Reset link</button>}
               <span style={{ flex: 1 }} />
               <button className="ad-btn danger sm" onClick={act.removeAll}>Delete gallery</button>
             </div>
@@ -351,8 +361,9 @@ function FinalsTab({ gallery: g, proof, ensure }: { booking: R; gallery?: Galler
               {g.status !== 'delivered'
                 ? <button className="ad-btn primary" disabled={!ready || !!act.busy} onClick={() => act.send()}>{act.busy === 'send' ? 'Delivering…' : `Deliver to client (${ready})`}</button>
                 : <button className="ad-btn" disabled={!!act.busy} onClick={() => act.send(true)}>{act.busy === 'resend' ? 'Sending…' : 'Resend email'}</button>}
-              <button className="ad-btn" onClick={() => copy(clientUrl(g.id), toast, 'Client link')}>Copy client link</button>
-              {g.status === 'delivered' && <a className="ad-btn" href={clientUrl(g.id)} target="_blank" rel="noreferrer">Open ↗</a>}
+              <button className="ad-btn" onClick={() => copy(clientUrl(g), toast, 'Client link')}>Copy client link</button>
+              {g.status === 'delivered' && <a className="ad-btn" href={clientUrl(g)} target="_blank" rel="noreferrer">Open ↗</a>}
+              {g.status === 'delivered' && <button className="ad-btn sm" onClick={act.resetLink} title="Turn off the old link and make a new one">Reset link</button>}
               <span style={{ flex: 1 }} />
               <button className="ad-btn danger sm" onClick={act.removeAll}>Delete finals</button>
             </div>

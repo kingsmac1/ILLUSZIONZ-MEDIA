@@ -64,3 +64,34 @@ Each item: what was decided, and why. Change any of them later if you prefer oth
     real watermark worker: uploaded previews were checked to be JPEGs ≤ 2048 px with a visible watermark, and no original is ever uploaded for proofs.
     The existing site tests still pass (71/71).
 28. **R2 doesn't enforce the Content-Type on presigned uploads.** Harmless here (only admins get upload links, and they expire after 2 h).
+
+## Update — 31 Oct 2026: link access + password accounts (Macauley's new flow)
+
+29. **Galleries open from the emailed link, no sign-in.** Each gallery has a private key (`galleries.share_token`, 64 random hex
+    characters); the link is `/gallery/<id>/?k=<key>`. This is how Pixieset and Pic-Time work. The key is checked on the server
+    (constant-time) by every gallery function; picks, notes, submitting and downloads all work with the link alone. The key is
+    remembered on that device, so a bookmark without it still opens. The page sends no referrer, so the key doesn't leak to other sites.
+30. **Signed-in clients still get in without the key**, if they're signed in with the gallery's email (account area links carry the key too).
+31. **"Reset link"** in the Gallery Manager makes a new key. It is the answer to "the link was forwarded to the wrong person".
+32. **Picks now go through a new function (`gallery-pick`)** instead of straight to the database, because link visitors aren't signed in.
+    Picks are stored against the gallery's email either way, so link picks show up in the account later. The limit is still enforced by the
+    database trigger.
+33. **The save-to-account prompt** shows 6 seconds after the gallery opens, only to people who aren't signed in, never on top of the
+    lightbox or another sheet, on both previews and finals. "Not now" snoozes it for 3 days on that device. The email is pre-filled with the
+    gallery's email, with a note to use it so the gallery attaches automatically. A link in the gallery footer reopens it.
+34. **Accounts are email + password only** (8+ characters). No more email codes. New accounts must confirm their email before signing in.
+35. **Every account email links to our own `/account/` page** with a one-time token (`token_hash`), not through Supabase's redirect.
+    Why: it works on any device, it can't send people to a wrong address (the old emails sent people to `localhost:3000` because Supabase's
+    "Site URL" was never changed), and email security scanners that pre-open links can't use them up.
+36. **Account emails are sent by Supabase through Resend** (custom SMTP, sender "Illuszionz Media" <mail@illuszionzmedia.com>), with our own
+    templates (confirm email, reset password, change email), so nothing comes from "Supabase Auth" any more. Templates live in
+    `scripts/gallery-auth-config.py`; `python3 scripts/gallery-auth-config.py https://illuszionzmedia.com --preview /tmp/emails` saves them as
+    HTML to look at.
+37. **The go-live script no longer `source`s `.env.local`** (the `EMAIL_FROM=ILLUSZIONZ MEDIA <mail@…>` line breaks that), and it now prints
+    Supabase's own error message if a step is refused, instead of stopping silently. The previous run stopped at step 4, so the site URL,
+    email templates, SMTP and the nightly preview clean-up were never set.
+38. **Live changes were blocked again** by Claude Code's safety check (writing to the live database), so the new migration, the 10 functions
+    and the account settings go live with `npm run gallery:go-live`, like last time.
+39. **Tested:** `npm run test:gallery` now has 97 checks (link access without sign-in, picks sent with the key, the prompt after a few seconds,
+    sign up → check your email, wrong password, forgot password, the reset link → new password, the confirm link), all passing at 375 px and
+    desktop; the site's own 71 checks pass on a production build; all 10 functions type-check with Deno.

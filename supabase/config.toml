@@ -20,3 +20,5 @@ verify_jwt = true
 verify_jwt = true
 [functions.gallery-purge-previews]
 verify_jwt = true
+[functions.gallery-pick]
+verify_jwt = true

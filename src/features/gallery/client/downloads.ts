@@ -9,8 +9,8 @@ import type { ViewImage } from '../types'
 
 type Signed = { files: { id: string; filename: string; bytes: number; url: string }[] }
 
-export async function downloadOne(galleryId: string, imageId: string) {
-  const r = await callFn<Signed>('gallery-download-url', { gallery_id: galleryId, image_id: imageId })
+export async function downloadOne(galleryId: string, imageId: string, key: string | null) {
+  const r = await callFn<Signed>('gallery-download-url', { gallery_id: galleryId, image_id: imageId, key })
   if (!r.ok) throw new Error(r.error)
   const f = r.files[0]
   if (!f) throw new Error('This photo is not available for download.')
@@ -47,9 +47,9 @@ export function planParts(images: Pick<ViewImage, 'id' | 'bytes'>[]) {
 export type ZipProgress = { part: number; parts: number; done: number; total: number; bytes: number }
 
 /** Builds and saves one zip part. */
-export async function downloadZipPart(o: { galleryId: string; ids: string[]; part: number; parts: number; total: number; name: string; onProgress: (p: { done: number; bytes: number }) => void; signal?: AbortSignal }) {
+export async function downloadZipPart(o: { galleryId: string; key: string | null; ids: string[]; part: number; parts: number; total: number; name: string; onProgress: (p: { done: number; bytes: number }) => void; signal?: AbortSignal }) {
   const { downloadZip } = await import('client-zip')
-  const r = await callFn<Signed>('gallery-download-url', { gallery_id: o.galleryId, image_ids: o.ids, zip: true, part: o.part, total: o.total })
+  const r = await callFn<Signed>('gallery-download-url', { gallery_id: o.galleryId, key: o.key, image_ids: o.ids, zip: true, part: o.part, total: o.total })
   if (!r.ok) throw new Error(r.error)
   const fileName = `${o.name}${o.parts > 1 ? ` (part ${o.part} of ${o.parts})` : ''}.zip`
 

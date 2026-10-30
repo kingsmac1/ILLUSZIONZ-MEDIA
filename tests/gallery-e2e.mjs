@@ -1,7 +1,8 @@
 // Client gallery + client area + Gallery Manager, in a real browser with Supabase and R2 mocked (no live project needed).
 // Checks the in-browser watermark/upload pipeline (the uploaded JPEGs are saved for inspection), the client proofing flow
-// (hearts, notes, limit, submit, WhatsApp hand-off), finals downloads, the account area and the dashboard screens,
-// at 375 px and at desktop width.
+// (hearts, notes, limit, submit, WhatsApp hand-off), opening a gallery from the emailed private link with no sign-in and
+// the save-to-account prompt, finals downloads, password sign in / sign up / reset, the account area and the dashboard
+// screens, at 375 px and at desktop width.
 //   npm run dev &          (any VITE_SUPABASE_URL works — every request to it is intercepted)
 //   BASE=http://localhost:3000 SHOTS=/tmp/gallery-shots node tests/gallery-e2e.mjs
 import { chromium } from 'playwright'
@@ -22,11 +23,13 @@ const PROOF = uuid(1), FINAL = uuid(2), LOCKED = uuid(3), BOOKING = uuid(9)
 const img = (f, i, kind) => ({ id: uuid(100 + i), filename: f.replace(/\.\w+$/, '.jpg').replace('ILU', 'DSC_').replace('-copy', ''), width: dims[f][0], height: dims[f][1], sort_order: i, taken_at: null, source_proof_image_id: null, status: 'ready', bytes: 9_000_000, has_original: kind === 'final', thumb: `${BASE}/images/${f}`, display: `${BASE}/images/${f}` })
 const images = (kind) => SAMPLES.map((f, i) => img(f, i, kind))
 const gallery = (id, kind, extra = {}) => ({ id, title: kind === 'proof' ? 'Maternity — 20 Nov 2026' : 'Maternity — Final photos', kind, client_first_name: 'Elena', client_name: 'Elena Test', event_date: '2026-11-20', shoot: 'Maternity', status: kind === 'proof' ? 'selecting' : 'delivered', selection_limit: kind === 'proof' ? 4 : null, allow_extra_selections: false, extra_price_note: null, message_to_client: kind === 'proof' ? 'It was a joy photographing you both. Pick your four favourites and we will edit them with care.' : null, cover_image_id: uuid(102), previews_purge_at: null, ...extra })
-const view = (body) => {
-  if (body.gallery_id === LOCKED) return { ok: true, access: 'signin', gallery: gallery(LOCKED, 'proof'), cover: { url: `${BASE}/images/ILU0061.webp`, width: 1600, height: 2000 }, email_hint: 'e•••••@example.com' }
+const KEY = 'a'.repeat(64)
+const picksSent = []
+const view = (body, signedIn) => {
+  if (body.gallery_id === LOCKED || (!signedIn && body.key !== KEY)) return { ok: true, access: 'signin', gallery: gallery(LOCKED, 'proof'), cover: { url: `${BASE}/images/ILU0061.webp`, width: 1600, height: 2000 }, email_hint: 'e•••••@example.com' }
   const kind = body.gallery_id === FINAL ? 'final' : 'proof'
   if (body.cover_only) return { ok: true, access: 'full', gallery: gallery(body.gallery_id, kind), cover: { url: `${BASE}/images/${kind === 'proof' ? 'ILU0061.webp' : 'ILU6433.webp'}` }, total: 12 }
-  return { ok: true, access: 'full', gallery: gallery(body.gallery_id, kind), cover: null, images: images(kind), total: 12, page: 0, pages: 1, selections: kind === 'proof' ? [{ image_id: uuid(101), note: null, created_at: '' }] : undefined, related: kind === 'proof' ? [] : [{ id: PROOF, kind: 'proof', status: 'submitted' }] }
+  return { ok: true, access: 'full', client_email: 'elena@example.com', signed_in_as: signedIn ? 'elena@example.com' : null, is_owner: signedIn, gallery: gallery(body.gallery_id, kind), cover: null, images: images(kind), total: 12, page: 0, pages: 1, selections: kind === 'proof' ? [{ image_id: uuid(101), note: null, created_at: '' }] : undefined, related: kind === 'proof' ? [] : [{ id: PROOF, kind: 'proof', status: 'submitted', key: KEY }] }
 }
 
 const uploads = []
@@ -38,7 +41,15 @@ async function mockSupabase(page, { admin = false } = {}) {
     const json = (d, status = 200) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(d), headers: { 'access-control-allow-origin': '*' } })
     if (req.method() === 'OPTIONS') return route.fulfill({ status: 200, headers: { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': '*' } })
     const p = url.pathname
-    if (p.endsWith('/functions/v1/gallery-view-urls')) return json(view(body))
+    const signedIn = /^Bearer test\./.test(req.headers()['authorization'] ?? '')
+    if (p.endsWith('/functions/v1/gallery-view-urls')) return json(view(body, signedIn))
+    if (p.endsWith('/functions/v1/gallery-pick')) { picksSent.push(body); return json({ ok: true, count: 1 }) }
+    // password accounts
+    if (p.endsWith('/auth/v1/signup')) return json({ id: uuid(78), email: body.email, aud: 'authenticated', role: '', identities: [{ id: uuid(78) }], user_metadata: body.data ?? {}, app_metadata: {}, created_at: '2026-01-01T00:00:00Z', confirmation_sent_at: new Date().toISOString() })
+    if (p.endsWith('/auth/v1/recover')) return json({})
+    if (p.endsWith('/auth/v1/verify')) return json(JSON.parse(fakeSession('elena@example.com')))
+    if (p.endsWith('/auth/v1/user')) return json(JSON.parse(fakeSession('elena@example.com')).user)
+    if (p.endsWith('/auth/v1/token')) return json({ error: 'invalid_grant', error_description: 'Invalid login credentials' }, 400)
     if (p.endsWith('/functions/v1/gallery-submit-selection')) return json({ ok: true, count: 3, submitted_at: new Date().toISOString(), whatsapp_text: 'Hi Illuszionz Media 👋 test' })
     if (p.endsWith('/functions/v1/gallery-download-url')) return json({ ok: true, files: (body.image_ids ?? [body.image_id]).map((id) => ({ id, filename: 'DSC_0001.jpg', bytes: 1000, url: `${BASE}/images/ILZ_8904.jpg` })) })
     if (p.endsWith('/functions/v1/gallery-upload-urls')) return json({ ok: true, items: body.files.map((f, i) => ({ client_ref: f.client_ref, image_id: uuid(500 + uploads.length + i), urls: Object.fromEntries(f.variants.map((v) => [v, `${BASE}/__r2/${encodeURIComponent(f.original_filename)}/${v}.jpg`])) })) })
@@ -50,8 +61,8 @@ async function mockSupabase(page, { admin = false } = {}) {
     if (p.includes('/rest/v1/rpc/')) return json(null)
     const table = p.split('/rest/v1/')[1]
     const galleriesRows = [
-      { id: PROOF, created_at: '2026-10-20T10:00:00Z', updated_at: new Date().toISOString(), booking_id: BOOKING, client_email: 'elena@example.com', client_name: 'Elena Test', title: 'Maternity — 20 Nov 2026', kind: 'proof', status: 'selecting', selection_limit: 4, allow_extra_selections: false, cover_image_id: null, sent_at: '2026-10-21T10:00:00Z', first_viewed_at: '2026-10-21T12:00:00Z' },
-      { id: FINAL, created_at: '2026-10-25T10:00:00Z', updated_at: new Date().toISOString(), booking_id: BOOKING, client_email: 'elena@example.com', client_name: 'Elena Test', title: 'Maternity — Final photos', kind: 'final', status: 'delivered', delivered_at: '2026-10-28T10:00:00Z' },
+      { id: PROOF, created_at: '2026-10-20T10:00:00Z', updated_at: new Date().toISOString(), booking_id: BOOKING, client_email: 'elena@example.com', client_name: 'Elena Test', title: 'Maternity — 20 Nov 2026', kind: 'proof', status: 'selecting', share_token: KEY, selection_limit: 4, allow_extra_selections: false, cover_image_id: null, sent_at: '2026-10-21T10:00:00Z', first_viewed_at: '2026-10-21T12:00:00Z' },
+      { id: FINAL, created_at: '2026-10-25T10:00:00Z', updated_at: new Date().toISOString(), booking_id: BOOKING, client_email: 'elena@example.com', client_name: 'Elena Test', title: 'Maternity — Final photos', kind: 'final', status: 'delivered', share_token: KEY, delivered_at: '2026-10-28T10:00:00Z' },
     ]
     if (req.method() !== 'GET') return json(table === 'galleries' ? [galleriesRows[0]] : [], req.method() === 'POST' ? 201 : 200)
     if (table === 'profiles') return json({ id: uuid(77), email: 'elena@example.com', full_name: 'Elena Test', phone: '', role: 'client' })
@@ -96,7 +107,8 @@ for (const vp of [{ width: 375, height: 812 }, { width: 1440, height: 900 }]) {
   const page = await newPage(vp)
   await page.goto(`${BASE}/gallery/${LOCKED}/`)
   await page.waitForSelector('.cg-gate input[type=email]')
-  ok(`gate asks for the email (${vp.width})`, await page.isVisible('text=This gallery is private'))
+  ok(`gate explains the private link (${vp.width})`, await page.isVisible('text=This gallery is private'))
+  ok(`gate offers password sign-in, no codes (${vp.width})`, (await page.locator('.cg-gate input[type=password]').count()) === 1 && !(await page.isVisible('text=code')))
   ok(`gate shows the email hint (${vp.width})`, await page.isVisible('text=e•••••@example.com'))
   ok(`gate has no horizontal scroll (${vp.width})`, await noHScroll(page))
   await shot(page, `1-gate-${vp.width}`)
@@ -156,6 +168,34 @@ for (const vp of [{ width: 375, height: 812 }, { width: 1440, height: 900 }]) {
   await page.context().close()
 }
 
+/* ── 2b. from the emailed link: no sign-in, picks save with the key, then the save-to-account prompt ── */
+for (const vp of [{ width: 375, height: 812 }, { width: 1440, height: 900 }]) {
+  const page = await newPage(vp)
+  picksSent.length = 0
+  await page.goto(`${BASE}/gallery/${PROOF}/?k=${KEY}`)
+  await page.waitForSelector('.cg-album img')
+  ok(`link opens the gallery without signing in (${vp.width})`, !(await page.isVisible('.cg-gate')))
+  await page.locator('.cg-heart').nth(2).click({ force: true })
+  await page.waitForTimeout(300)
+  ok(`a heart saves through gallery-pick with the link key (${vp.width})`, picksSent.length === 1 && picksSent[0].key === KEY && picksSent[0].action === 'add')
+  ok(`no save prompt straight away (${vp.width})`, !(await page.isVisible('text=Keep your photos in one place')))
+  await page.waitForSelector('text=Keep your photos in one place', { timeout: 9000 }).then(() => ok(`save prompt appears after a few seconds (${vp.width})`, true), () => ok(`save prompt appears after a few seconds (${vp.width})`, false))
+  await shot(page, `2b-save-prompt-${vp.width}`)
+  await page.click('.cg-sheet .cg-btn:has-text("Create account")')
+  ok(`create account is prefilled with the gallery email (${vp.width})`, (await page.inputValue('.cg-sheet #cg-email')) === 'elena@example.com')
+  ok(`sign-up asks for a password (${vp.width})`, (await page.locator('.cg-sheet input[type=password]').count()) === 1)
+  await shot(page, `2b-save-signup-${vp.width}`)
+  await page.fill('.cg-sheet #cg-pw', 'a-good-password')
+  await page.click('.cg-sheet .cg-auth-go')
+  await page.waitForSelector('.cg-sheet >> text=Check your email', { timeout: 5000 }).then(() => ok(`sign-up says to check email (${vp.width})`, true), () => ok(`sign-up says to check email (${vp.width})`, false))
+  await shot(page, `2b-save-check-${vp.width}`)
+  await page.click('.cg-sheet .cg-x')
+  ok(`"later" is remembered on this device (${vp.width})`, !!(await page.evaluate(() => localStorage.getItem('cg-save-later'))))
+  ok(`the key is remembered on this device (${vp.width})`, (await page.evaluate((id) => localStorage.getItem(`cg-key:${id}`), PROOF)) === KEY)
+  ok(`link view has no horizontal scroll (${vp.width})`, await noHScroll(page))
+  await page.context().close()
+}
+
 /* ── 3. finals ── */
 for (const vp of [{ width: 375, height: 812 }, { width: 1440, height: 900 }]) {
   const page = await newPage(vp, { session: 'elena@example.com' })
@@ -191,7 +231,34 @@ for (const vp of [{ width: 375, height: 812 }, { width: 1440, height: 900 }]) {
   await shot(out, `10-account-signin-${vp.width}`)
   ok(`header shows the sign-in link (${vp.width})`, (await out.locator('.hd-account').count()) === 1)
   ok(`signed-out account page has no horizontal scroll (${vp.width})`, await noHScroll(out))
+  await out.fill('#cg-email', 'elena@example.com'); await out.fill('#cg-pw', 'wrong')
+  await out.click('.cg-auth-go')
+  await out.waitForSelector('.cg-auth-err', { timeout: 5000 })
+  ok(`wrong password gives a clear message (${vp.width})`, (await out.textContent('.cg-auth-err'))?.includes('reset your password'))
+  await out.click('text=Forgot password?')
+  ok(`forgot password keeps the email (${vp.width})`, (await out.inputValue('#cg-email')) === 'elena@example.com')
+  await out.click('.cg-auth-go')
+  await out.waitForSelector('text=Check your email', { timeout: 5000 }).then(() => ok(`reset link "sent" screen (${vp.width})`, true), () => ok(`reset link "sent" screen (${vp.width})`, false))
+  await shot(out, `10-account-reset-sent-${vp.width}`)
+  await out.click('text=Back to sign in')
+  await out.click('.cg-auth-tabs button:has-text("Create account")')
+  ok(`create account tab has name + password (${vp.width})`, (await out.locator('#cg-name').count()) === 1 && (await out.locator('#cg-pw[autocomplete=new-password]').count()) === 1)
+  await shot(out, `10-account-signup-${vp.width}`)
   await out.context().close()
+  // the link in the reset email: verify → choose a new password → into the account
+  const rec = await newPage(vp)
+  await rec.goto(`${BASE}/account/?token_hash=test&type=recovery`)
+  await rec.waitForSelector('text=Choose a new password', { timeout: 8000 }).then(() => ok(`reset link opens "Choose a new password" (${vp.width})`, true), () => ok(`reset link opens "Choose a new password" (${vp.width})`, false))
+  ok(`reset token is removed from the address bar (${vp.width})`, !rec.url().includes('token_hash'))
+  await shot(rec, `10-account-newpw-${vp.width}`)
+  await rec.fill('#cg-newpw', 'a-new-password')
+  await rec.click('.cg-auth-go')
+  await rec.waitForSelector('text=Your new password is saved', { timeout: 8000 }).then(() => ok(`new password saved, signed in (${vp.width})`, true), () => ok(`new password saved, signed in (${vp.width})`, false))
+  await rec.context().close()
+  const conf = await newPage(vp)
+  await conf.goto(`${BASE}/account/?token_hash=test&type=email`)
+  await conf.waitForSelector('text=Your email is confirmed', { timeout: 8000 }).then(() => ok(`confirm link welcomes them in (${vp.width})`, true), () => ok(`confirm link welcomes them in (${vp.width})`, false))
+  await conf.context().close()
 }
 
 /* ── 5. dashboard: manager upload pipeline (watermark) + galleries section ── */
@@ -227,6 +294,7 @@ for (const vp of [{ width: 375, height: 812 }, { width: 1440, height: 900 }]) {
     for (let i = 0; i < clean.length; i += 3) if (Math.abs(clean[i] - marked[i]) > 18) diff++
     ok('preview carries a visible watermark (centre band)', diff / (clean.length / 3) > 0.08, `${((diff / (clean.length / 3)) * 100).toFixed(1)}% of centre pixels changed`)
   }
+  ok('manager offers Reset link once sent', await page.isVisible('button:has-text("Reset link")'))
   await page.click('.ad-tabs button:has-text("Finals")')
   await page.waitForTimeout(800)
   await shot(page, '13-manager-finals', true)

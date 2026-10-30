@@ -20,7 +20,18 @@ Everything is in your dashboard, and clients see all their shoots in one account
    - **Send reminder** nudges a client who hasn't finished picking.
    - In the photo grid: click photos to select them (**Delete**, **Set as cover**), drag to reorder, or **Sort by filename** for camera order.
 
-The client signs in with the **same email as the booking**. They get a 6-digit code by email, with no password needed. Any other email is refused.
+**No sign-in needed.** The link in the email (and from **Copy client link**) is private: it ends in `?k=` and a long secret key, and it
+opens the gallery straight away, on any device. Anyone holding the link can see the gallery, so treat it like a key.
+- **Reset link** (next to Copy client link) makes a new key and the old link stops working at once. Use it if a link was
+  shared with the wrong person, then send the new link (**Resend email** or Copy client link). Picks are kept.
+- A few seconds after the gallery opens, a visitor who isn't signed in is invited to **create an account** (or sign in) so the
+  gallery stays in their client area. It is optional; "Not now" hides it for 3 days on that device.
+
+**Client accounts** (`/account/`, and **Sign in / Sign up** in the site header and menu) use an email + password:
+- *Create account*: name, email, password (8+ characters). They get a **Confirm your email** email from Illuszionz Media; the
+  link signs them in. Every booking and gallery under that email then appears in their account.
+- *Forgot password?* emails a link to choose a new password (works once, for one hour).
+- Clients who signed up earlier with a code have no password yet: they use **Forgot password?** once to set one.
 
 ## 2. Read the selection
 When the client presses **Submit selection**:
@@ -47,7 +58,7 @@ The "Storage used" card shows how much space your galleries take up. The **Overv
 ## The client's side
 - **Gallery page**: full-screen cover, then all photos in a clean grid. ♥ to pick, a note on any photo, a counter like "23 / 40",
   **All / Picked** filter, a full-screen viewer (swipe on phones, arrow keys on computers, pinch or scroll to zoom). Picks save as they go.
-- **Client area** (`/account/`, "Sign in" / "My Account" icon in the site header): next shoot, "action needed" cards, all bookings,
+- **Client area** (`/account/`, "Sign in / Sign up" / "My Account" in the site header and menu): next shoot, "action needed" cards, all bookings,
   galleries per shoot, a timeline ("You submitted 38 photos for editing · 3 Nov"), download history, profile and optional password.
   Anything booked with their email shows up automatically, even bookings made before they signed up.
 
@@ -61,7 +72,10 @@ The "Storage used" card shows how much space your galleries take up. The **Overv
 ## Test before going live
 1. Upload 10 previews. Open one: the logo watermark is big and visible.
 2. Send to a test email you own (a Gmail that isn't your admin email).
-3. Open the link while signed out: it asks you to sign in with that email. Try a *different* email: access is refused.
+3. Open the link in a private window: the gallery opens without signing in. Remove the `?k=…` part from the address: it asks you
+   to sign in instead. Wait a few seconds: the "Keep your photos in one place" prompt appears. Create an account with the test
+   email and check that the **Confirm your email** email comes from Illuszionz Media and that its link signs you in.
+   Then sign out, use **Forgot password?**, and check the reset email and link too.
 4. Pick photos, add a note, refresh: the picks are still there. Submit: you get the email with the filenames, and WhatsApp opens.
 5. Upload finals, **Deliver**. The client gets the email and can download single photos and "Download all".
 6. `/account/` shows the booking, both galleries and the timeline. Dashboard → Galleries shows the client.
@@ -76,7 +90,7 @@ The "Storage used" card shows how much space your galleries take up. The **Overv
 | Dashboard screens (Gallery Manager, Galleries, uploader, watermark worker) | `src/features/gallery/admin/`, `src/features/gallery/imaging/` |
 | Client gallery `/gallery/<id>/` | `src/features/gallery/client/`, route `src/routes/gallery.$galleryId.tsx`, edge shell `functions/gallery/[id].ts` |
 | Client area `/account/` | `src/features/account/`, route `src/routes/account.tsx` |
-| Server functions (signed R2 URLs, send, submit, unlock, delete, downloads, clean-up) | `supabase/functions/gallery-*`, shared code in `supabase/functions/_shared/` |
+| Server functions (signed R2 URLs, send, picks, submit, unlock, delete, downloads, clean-up) | `supabase/functions/gallery-*`, shared code in `supabase/functions/_shared/` |
 | Email templates (brand at the top) | `supabase/functions/_shared/email-templates.ts` |
 | Database (tables, security rules, helpers) | `supabase/migrations/20261030120000_gallery_foundations.sql` (copy: `docs/gallery/sql/`) |
 | Switch-on script | `scripts/gallery-go-live.sh` (`npm run gallery:go-live`) |

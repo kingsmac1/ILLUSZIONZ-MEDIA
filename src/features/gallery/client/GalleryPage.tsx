@@ -1,7 +1,9 @@
 /**
- * /gallery/<id>/ — the client's private gallery.
- * Signed out (or wrong email): cover screen + inline email-code sign-in. Proofs: hearts, notes, "23 / 40" counter, submit
- * (review sheet → success → WhatsApp). Finals: per-photo download + "Download all" (zips in parts).
+ * /gallery/<id>/?k=<key> — the client's private gallery. The emailed link carries the key, so it opens straight away
+ * with no sign-in; the key is remembered on this device. Without it, the gallery's owner can sign in instead.
+ * A few seconds in, visitors who aren't signed in are invited to save it to an account (optional).
+ * Proofs: hearts, notes, "23 / 40" counter, submit (review sheet → success → WhatsApp). Finals: per-photo download +
+ * "Download all" (zips in parts).
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { RowsPhotoAlbum, type Photo } from 'react-photo-album'
@@ -15,14 +17,18 @@ import { fmtDay } from '../status'
 import type { ViewImage, ViewResponse } from '../types'
 import { downloadOne, downloadZipPart, planParts } from './downloads'
 import { usePicks } from './usePicks'
+import { galleryHref } from './links'
 import { Lightbox } from './Lightbox'
-import { SubmitSheet, NoteSheet, SuccessScreen } from './Sheets'
+import { SubmitSheet, NoteSheet, SuccessScreen, SaveSheet } from './Sheets'
 import { DownloadIcon, Heart } from './icons'
 import './gallery.css'
 
 type GPhoto = Photo & { img: ViewImage; tw: number; dw: number }
 
 const OPEN = ['sent', 'viewed', 'selecting']
+/** the save-to-account prompt: shown this long after the gallery opens, then snoozed this long after "Not now" */
+const SAVE_DELAY = 6000
+const SAVE_SNOOZE = 3 * 86_400_000
 
 function useSession() {
   const [session, setSession] = useState<Session | null | undefined>(undefined)
@@ -35,31 +41,46 @@ function useSession() {
   return session
 }
 
+/** The private key from the emailed link (?k=…), remembered on this device so a bookmark without it still opens. */
+function useGalleryKey(id: string) {
+  return useMemo(() => {
+    if (typeof window === 'undefined') return null
+    const fromUrl = new URLSearchParams(window.location.search).get('k')
+    try {
+      if (fromUrl) localStorage.setItem(`cg-key:${id}`, fromUrl)
+      return fromUrl || localStorage.getItem(`cg-key:${id}`)
+    } catch {
+      return fromUrl
+    }
+  }, [id])
+}
+
 export default function GalleryPage({ id }: { id: string }) {
   const session = useSession()
+  const key = useGalleryKey(id)
   const [data, setData] = useState<ViewResponse | null>(null)
   const [error, setError] = useState('')
   const uid = session?.user.id ?? null
 
   const load = useCallback(async () => {
     setError('')
-    const r = await callFn<ViewResponse>('gallery-view-urls', { gallery_id: id, page: 0 })
+    const r = await callFn<ViewResponse>('gallery-view-urls', { gallery_id: id, key, page: 0 })
     if (!r.ok) return setError(r.error)
     setData(r)
     // remaining pages load in the background, in order
     for (let p = 1; p < (r.pages ?? 1); p++) {
-      const more = await callFn<ViewResponse>('gallery-view-urls', { gallery_id: id, page: p })
+      const more = await callFn<ViewResponse>('gallery-view-urls', { gallery_id: id, key, page: p })
       if (!more.ok) break
       setData((cur) => (cur ? { ...cur, images: [...(cur.images ?? []), ...(more.images ?? [])] } : cur))
     }
-  }, [id])
+  }, [id, key])
 
   useEffect(() => { if (session !== undefined) load() }, [session === undefined, uid]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (error) return <Message title="We couldn’t open this gallery" text={error} action={<button className="cg-btn solid" onClick={load}>Try again</button>} />
   if (!data || session === undefined) return <div className="cg cg-loading" aria-busy="true"><img src={galleryConfig.logoLight} alt={galleryConfig.brandName} /></div>
   if (data.access !== 'full') return <CoverGate data={data} onSignedIn={load} />
-  return <GalleryView key={data.gallery.id} data={data} email={session?.user.email?.toLowerCase() ?? ''} reload={load} />
+  return <GalleryView key={data.gallery.id} data={data} linkKey={key} reload={load} />
 }
 
 function Message({ title, text, action }: { title: string; text: string; action?: React.ReactNode }) {
@@ -86,14 +107,14 @@ function CoverGate({ data, onSignedIn }: { data: ViewResponse; onSignedIn: () =>
         <p className="cg-sub">{[g.client_first_name && `For ${g.client_first_name}`, g.event_date && fmtDay(g.event_date)].filter(Boolean).join(', ')}</p>
         {wrong ? (
           <div className="cg-auth dark">
-            <h2>This gallery belongs to another email</h2>
-            <p className="cg-auth-hint">You’re signed in as <b>{data.signed_in_as}</b>, but it was sent to <b>{data.email_hint}</b>.</p>
+            <h2>This gallery was sent to another email</h2>
+            <p className="cg-auth-hint">You’re signed in as <b>{data.signed_in_as}</b>, but it was sent to <b>{data.email_hint}</b>. Open it with the button in that email, or sign in with that address.</p>
             <button className="cg-btn solid" onClick={() => supabase!.auth.signOut()}>Sign in with another email</button>
           </div>
         ) : (
           <>
-            <p className="cg-gate-text">This gallery is private. Sign in, or create your account, with the email it was sent to.</p>
-            <AuthPanel dark hint={data.email_hint} onSignedIn={onSignedIn} />
+            <p className="cg-gate-text">This gallery is private. Open it with the <b>View your gallery</b> button in the email we sent to {data.email_hint ?? 'you'}, or sign in to your account.</p>
+            <AuthPanel dark onSignedIn={onSignedIn} />
           </>
         )}
       </div>
@@ -102,7 +123,7 @@ function CoverGate({ data, onSignedIn }: { data: ViewResponse; onSignedIn: () =>
 }
 
 /* -------------------------------------------------------------- the gallery */
-function GalleryView({ data, email, reload }: { data: ViewResponse; email: string; reload: () => void }) {
+function GalleryView({ data, linkKey, reload }: { data: ViewResponse; linkKey: string | null; reload: () => void }) {
   const g = data.gallery
   const proof = g.kind === 'proof'
   const images = data.images ?? []
@@ -112,13 +133,27 @@ function GalleryView({ data, email, reload }: { data: ViewResponse; email: strin
   const [notice, setNotice] = useState('')
   const noticeTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
   const say = useCallback((m: string) => { setNotice(m); clearTimeout(noticeTimer.current); noticeTimer.current = setTimeout(() => setNotice(''), 4500) }, [])
-  const { picks, toggle, setNote } = usePicks(g.id, email, data.selections ?? [], { limit: g.selection_limit ?? null, extras: !!g.allow_extra_selections, locked, onMessage: say })
+  const { picks, toggle, setNote } = usePicks(g.id, linkKey, data.selections ?? [], { limit: g.selection_limit ?? null, extras: !!g.allow_extra_selections, locked, onMessage: say })
   const [filter, setFilter] = useState<'all' | 'picked'>('all')
   const [open, setOpen] = useState<number | null>(null)
   const [noteFor, setNoteFor] = useState<string | null>(null)
   const [review, setReview] = useState(false)
   const [success, setSuccess] = useState<{ count: number; url: string } | null>(null)
   const gridRef = useRef<HTMLDivElement>(null)
+  // invite people who came in by the link (not signed in) to keep it in an account — once the page has had a moment,
+  // never on top of the lightbox or another sheet, and not again for a few days after "Not now"
+  const canSave = !data.is_admin && !data.signed_in_as
+  const [saveOpen, setSaveOpen] = useState(false)
+  const [saveDue, setSaveDue] = useState(false)
+  useEffect(() => {
+    if (!canSave) return
+    try { if (Date.now() - Number(localStorage.getItem('cg-save-later') || 0) < SAVE_SNOOZE) return } catch { /* private mode */ }
+    const t = setTimeout(() => setSaveDue(true), SAVE_DELAY)
+    return () => clearTimeout(t)
+  }, [canSave])
+  const busy = open !== null || !!noteFor || review || !!success
+  useEffect(() => { if (saveDue && !busy) { setSaveDue(false); setSaveOpen(true) } }, [saveDue, busy])
+  const closeSave = () => { setSaveOpen(false); try { localStorage.setItem('cg-save-later', String(Date.now())) } catch { /* private mode */ } }
 
   const shown = useMemo(() => (filter === 'picked' ? images.filter((i) => picks.has(i.id)) : images), [filter, images, picks])
   const photos: GPhoto[] = useMemo(() => shown.map((img) => {
@@ -136,7 +171,7 @@ function GalleryView({ data, email, reload }: { data: ViewResponse; email: strin
   const cover = images.find((i) => i.id === g.cover_image_id) ?? images[0]
 
   async function submit() {
-    const r = await callFn<{ count: number; whatsapp_text: string; submitted_at: string }>('gallery-submit-selection', { gallery_id: g.id })
+    const r = await callFn<{ count: number; whatsapp_text: string; submitted_at: string }>('gallery-submit-selection', { gallery_id: g.id, key: linkKey })
     if (!r.ok) { say(r.error); return false }
     setReview(false)
     setStatus('submitted')
@@ -177,7 +212,7 @@ function GalleryView({ data, email, reload }: { data: ViewResponse; email: strin
               {!locked && <button className="cg-btn solid red" disabled={!count} onClick={() => setReview(true)}><span className="cg-hide-s">Submit selection</span><span className="cg-show-s">Submit</span></button>}
             </>
           ) : (
-            <DownloadAll galleryId={g.id} title={g.title} images={images} onError={say} />
+            <DownloadAll galleryId={g.id} linkKey={linkKey} title={g.title} images={images} onError={say} />
           )}
         </div>
         {proof && <div className="cg-bar-line" style={{ transform: `scaleX(${limit ? Math.min(1, count / limit) : count ? 1 : 0})` }} aria-hidden="true" />}
@@ -186,8 +221,8 @@ function GalleryView({ data, email, reload }: { data: ViewResponse; email: strin
       <main className="cg-main" data-no-motion>
         {data.is_admin && <p className="cg-banner">Studio preview — this is what the client sees. Hearts are read-only for you.</p>}
         {proof && status === 'submitted' && <p className="cg-banner">Selection submitted on {fmtDay(submittedAt)}. We’re editing your photos ✨ {count ? `(${count} picked)` : ''}</p>}
-        {proof && status === 'archived' && <p className="cg-banner">The previews were removed after your final photos were delivered.{finals ? <> <a href={`/gallery/${finals.id}/`}>Open your final photos</a></> : null}</p>}
-        {proof && finals && status !== 'archived' && <p className="cg-banner strong">Your final photos are ready. <a href={`/gallery/${finals.id}/`}>Open and download them</a></p>}
+        {proof && status === 'archived' && <p className="cg-banner">The previews were removed after your final photos were delivered.{finals ? <> <a href={galleryHref(finals.id, finals.key)}>Open your final photos</a></> : null}</p>}
+        {proof && finals && status !== 'archived' && <p className="cg-banner strong">Your final photos are ready. <a href={galleryHref(finals.id, finals.key)}>Open and download them</a></p>}
         {!proof && proofsOf && <p className="cg-banner">These are your edited photos in full resolution, without a watermark.</p>}
         {g.previews_purge_at && proof && status !== 'archived' && <p className="cg-banner muted">Previews are available until {fmtDay(g.previews_purge_at)}.</p>}
         {g.message_to_client && <blockquote className="cg-message-text">{g.message_to_client}</blockquote>}
@@ -229,7 +264,7 @@ function GalleryView({ data, email, reload }: { data: ViewResponse; email: strin
                   )}
                   {proof && picks.get(photo.img.id) && <span className="cg-has-note" title={picks.get(photo.img.id)!}>Note</span>}
                   {!proof && (
-                    <button className="cg-dl" aria-label={`Download ${photo.img.filename}`} onClick={(e) => { e.stopPropagation(); downloadOne(g.id, photo.img.id).catch((err) => say(err.message)) }}>
+                    <button className="cg-dl" aria-label={`Download ${photo.img.filename}`} onClick={(e) => { e.stopPropagation(); downloadOne(g.id, photo.img.id, linkKey).catch((err) => say(err.message)) }}>
                       <DownloadIcon />
                     </button>
                   )}
@@ -246,7 +281,9 @@ function GalleryView({ data, email, reload }: { data: ViewResponse; email: strin
       <footer className="cg-foot">
         <img src={galleryConfig.logoDark} alt={galleryConfig.brandName} />
         <p>Questions? <a href={`https://wa.me/${galleryConfig.ownerWhatsapp}`} target="_blank" rel="noreferrer">WhatsApp us</a> or email <a href={`mailto:${galleryConfig.ownerEmail}`}>{galleryConfig.ownerEmail}</a>.</p>
-        <p><a href="/account/">Your account</a> — all your shoots in one place.</p>
+        {canSave
+          ? <p><button className="cg-link" onClick={() => setSaveOpen(true)}>Save this gallery to your account</button> to keep all your shoots in one place.</p>
+          : <p><a href="/account/">Your account</a>: all your shoots in one place.</p>}
       </footer>
 
       {open !== null && (
@@ -259,7 +296,7 @@ function GalleryView({ data, email, reload }: { data: ViewResponse; email: strin
           locked={locked}
           onToggle={toggle}
           onNote={(id) => setNoteFor(id)}
-          onDownload={proof ? undefined : (id) => downloadOne(g.id, id).catch((err) => say(err.message))}
+          onDownload={proof ? undefined : (id) => downloadOne(g.id, id, linkKey).catch((err) => say(err.message))}
         />
       )}
       {noteFor && (
@@ -275,6 +312,7 @@ function GalleryView({ data, email, reload }: { data: ViewResponse; email: strin
       {review && (
         <SubmitSheet images={images.filter((i) => picks.has(i.id))} picks={picks} limit={limit} extrasNote={g.allow_extra_selections ? g.extra_price_note ?? null : null} onClose={() => setReview(false)} onSubmit={submit} onNote={setNoteFor} />
       )}
+      {saveOpen && <SaveSheet email={data.client_email ?? ''} kind={proof ? 'proof' : 'final'} onClose={closeSave} onSignedIn={() => { setSaveOpen(false); reload() }} />}
       {success && <SuccessScreen count={success.count} whatsappUrl={success.url} onClose={() => { setSuccess(null); reload() }} />}
       <div className={'cg-toast' + (notice ? ' show' : '')} role="status" aria-live="polite">{notice}</div>
     </div>
@@ -282,7 +320,7 @@ function GalleryView({ data, email, reload }: { data: ViewResponse; email: strin
 }
 
 /* -------------------------------------------------------------- download all */
-function DownloadAll({ galleryId, title, images, onError }: { galleryId: string; title: string; images: ViewImage[]; onError: (m: string) => void }) {
+function DownloadAll({ galleryId, linkKey, title, images, onError }: { galleryId: string; linkKey: string | null; title: string; images: ViewImage[]; onError: (m: string) => void }) {
   const parts = useMemo(() => planParts(images.filter((i) => i.has_original)), [images])
   const [state, setState] = useState<{ part: number; done: number; bytes: number } | null>(null)
   const [finished, setFinished] = useState<Set<number>>(new Set())
@@ -292,7 +330,7 @@ function DownloadAll({ galleryId, title, images, onError }: { galleryId: string;
   async function run(i: number) {
     setState({ part: i + 1, done: 0, bytes: 0 })
     try {
-      await downloadZipPart({ galleryId, ids: parts[i], part: i + 1, parts: parts.length, total: images.length, name, onProgress: (p) => setState({ part: i + 1, ...p }) })
+      await downloadZipPart({ galleryId, key: linkKey, ids: parts[i], part: i + 1, parts: parts.length, total: images.length, name, onProgress: (p) => setState({ part: i + 1, ...p }) })
       setFinished((f) => new Set(f).add(i))
     } catch (e) {
       if ((e as Error).name !== 'AbortError') onError((e as Error).message || 'The download stopped. Try that part again.')

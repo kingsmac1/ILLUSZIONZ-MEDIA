@@ -82,3 +82,8 @@
 .ca-msg { grid-column: 1 / -1; margin: 0; padding: 12px 16px; border-radius: 12px; background: #eef8f0; color: #14532d; }
 .ca-msg.err { background: #fde8eb; color: #8a0a20; }
 .ca-help { grid-column: 1 / -1; }
+
+.ca-link-msg { margin: 0 0 18px; }
+.ca-pw { position: relative; display: block; }
+.ca-pw input { width: 100%; padding-right: 76px; }
+.ca-pw button { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); height: 36px; padding: 0 14px; border: 0; border-radius: 999px; background: var(--cg-soft); font: 600 13px var(--cg-sans); cursor: pointer; }

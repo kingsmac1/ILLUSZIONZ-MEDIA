@@ -28,6 +28,8 @@ export type GalleryRow = {
   expires_at: string | null
   previews_purge_at: string | null
   previews_purged_at: string | null
+  /** private link key: /gallery/<id>/?k=<share_token> opens the gallery without signing in */
+  share_token: string
 }
 
 export type GalleryImageRow = {
@@ -100,10 +102,13 @@ export type ViewResponse = {
   cover: { url: string; width: number | null; height: number | null } | null
   email_hint?: string
   signed_in_as?: string | null
+  /** with full access: the gallery's email (to offer "save to your account") and whether the viewer is signed in as it */
+  client_email?: string
+  is_owner?: boolean
   images?: ViewImage[]
   total?: number
   page?: number
   pages?: number
   selections?: { image_id: string; note: string | null; created_at: string }[]
-  related?: { id: string; kind: GalleryKind; status: GalleryStatus; delivered_at: string | null }[]
+  related?: { id: string; kind: GalleryKind; status: GalleryStatus; delivered_at: string | null; key?: string }[]
 }

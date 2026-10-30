@@ -143,3 +143,11 @@
 .cg-foot { border-top: 1px solid var(--cg-line); padding: 40px max(20px, 6vw) 56px; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; color: var(--cg-grey); font-size: 14px; }
 .cg-foot img { height: 30px; width: auto; margin-bottom: 10px; }
 .cg-foot a { color: #000; }
+
+/* save-to-account prompt */
+.cg-save-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 4px; }
+.cg-save-later { margin-left: auto; padding: 10px 4px; font-size: 14px; color: var(--cg-grey); }
+.cg-save-auth { margin-top: 8px; }
+.cg-save-auth .cg-auth { max-width: none; }
+@media (max-width: 480px) { .cg-save-actions .cg-btn { flex: 1 1 100%; } .cg-save-later { margin: 0 auto; } }
+.cg-foot .cg-link { color: inherit; }

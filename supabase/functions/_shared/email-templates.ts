@@ -76,7 +76,7 @@ type Base = { siteUrl: string; clientName: string; title: string; link: string }
 export function previewsReady(o: Base & { message?: string | null; limit?: number | null; extrasNote?: string | null; reminder?: boolean }): RenderedEmail {
   const pick = o.limit ? `Pick your favourite <b>${o.limit}</b> photos` : 'Pick your favourite photos'
   const steps = [
-    'Open the gallery and sign in with this email address — we send you a 6-digit code, no password needed.',
+    'Open the gallery with the button below — no sign-in needed. Keep this email: the link is your private key to the gallery.',
     `${o.limit ? `Tap ♥ on the ${o.limit} photos you love` : 'Tap ♥ on the photos you love'}. Add a note to any photo if you'd like something changed.`,
     'Press “Submit selection”. We edit your picks and email you when your finals are ready.',
   ]

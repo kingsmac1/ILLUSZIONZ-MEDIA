@@ -62,6 +62,7 @@ export type Gallery = {
   previews_purge_at: string | null
   previews_purged_at: string | null
   created_at: string
+  share_token: string
 }
 
 export async function loadGallery(id: string): Promise<Gallery> {
@@ -71,9 +72,27 @@ export async function loadGallery(id: string): Promise<Gallery> {
   return data as Gallery
 }
 
-/** The caller may see this gallery: an admin, or the owning client once it has been sent. */
-export function canView(who: Caller, g: Gallery) {
-  return who.isAdmin || (!!who.email && who.email === g.client_email && g.status !== 'draft')
+/** Constant-time compare of the ?k= key from the emailed link. */
+export function keyMatches(g: Gallery, key: unknown) {
+  if (typeof key !== 'string' || !g.share_token || key.length !== g.share_token.length) return false
+  let diff = 0
+  for (let i = 0; i < key.length; i++) diff |= key.charCodeAt(i) ^ g.share_token.charCodeAt(i)
+  return diff === 0
+}
+
+/**
+ * The caller may see this gallery: an admin, anyone holding the private link (?k=…) once it has been sent, or the owning
+ * client signed in with the gallery's email (the account area links carry no key).
+ */
+export function canView(who: Caller, g: Gallery, key?: unknown) {
+  if (who.isAdmin) return true
+  if (g.status === 'draft') return false
+  return keyMatches(g, key) || (!!who.email && who.email === g.client_email)
+}
+
+/** Client-side actions (picks, submit, downloads) — same rule as viewing, but the studio's own preview stays read-only. */
+export function canAct(who: Caller, g: Gallery, key?: unknown) {
+  return g.status !== 'draft' && (keyMatches(g, key) || (!!who.email && who.email === g.client_email))
 }
 
 /** Adds a row to the client's timeline (never throws). */

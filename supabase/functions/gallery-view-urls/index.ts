@@ -1,7 +1,7 @@
 /**
- * Signed thumb + display URLs for a gallery (200 per page), for the owning client or an admin.
- * Anyone else (signed out, or signed in with another email) only gets the cover screen: title, date, a blurred cover
- * thumbnail and a masked hint of the email the gallery was sent to.
+ * Signed thumb + display URLs for a gallery (200 per page), for anyone holding the private link (body.key), the owning
+ * client signed in with the gallery's email, or an admin. Anyone else only gets the cover screen: title, date, a blurred
+ * cover thumbnail and a masked hint of the email the gallery was sent to.
  * The client's first visit sets first_viewed_at, moves the status to "viewed" and logs it.
  */
 import { handle, HttpError, isUuid, json } from '../_shared/http.ts'
@@ -35,7 +35,7 @@ Deno.serve(handle(async (req, body) => {
     id: g.id, title: g.title, kind: g.kind, client_first_name: g.client_name.trim().split(/\s+/)[0] ?? '',
     event_date: booking?.event_date ?? null, shoot: booking?.kind?.replace(/ booking$/i, '') ?? null,
   }
-  if (!canView(who, g)) {
+  if (!canView(who, g, body.key)) {
     return json({ ok: true, access: who.email ? 'wrong_email' : 'signin', gallery: publicInfo, cover, email_hint: maskEmail(g.client_email), signed_in_as: who.email })
   }
 
@@ -46,7 +46,7 @@ Deno.serve(handle(async (req, body) => {
   }
 
   // first look by the client
-  if (!who.isAdmin && who.email === g.client_email && !g.first_viewed_at) {
+  if (!who.isAdmin && !g.first_viewed_at) {
     const patch: Partial<Gallery> = { first_viewed_at: new Date().toISOString() }
     if (g.status === 'sent') patch.status = 'viewed'
     await service().from('galleries').update(patch).eq('id', g.id)
@@ -72,12 +72,16 @@ Deno.serve(handle(async (req, body) => {
 
   // the other half of the shoot: finals for a proof gallery, the proofs for a finals gallery
   const { data: related } = g.booking_id
-    ? await service().from('galleries').select('id, kind, status, delivered_at').eq('booking_id', g.booking_id).neq('id', g.id)
+    ? await service().from('galleries').select('id, kind, status, delivered_at, share_token, client_email').eq('booking_id', g.booking_id).neq('id', g.id)
     : { data: [] }
-  const visibleRelated = (related ?? []).filter((r) => who.isAdmin || r.status !== 'draft')
+  // same client, same shoot: whoever may open this gallery gets the other one's private link too
+  const visibleRelated = (related ?? []).filter((r) => (who.isAdmin || r.status !== 'draft') && r.client_email === g.client_email)
+    .map((r) => ({ id: r.id, kind: r.kind, status: r.status, delivered_at: r.delivered_at, key: r.share_token }))
 
   return json({
     ok: true, access: 'full', is_admin: who.isAdmin,
+    // lets the page offer "save to your account" with the right email, and know whether that is already done
+    client_email: g.client_email, signed_in_as: who.email, is_owner: !!who.email && who.email === g.client_email,
     gallery: {
       ...publicInfo, status: g.status, selection_limit: g.selection_limit, allow_extra_selections: g.allow_extra_selections, extra_price_note: g.extra_price_note,
       message_to_client: g.message_to_client, sent_at: g.sent_at, submitted_at: g.submitted_at, delivered_at: g.delivered_at,

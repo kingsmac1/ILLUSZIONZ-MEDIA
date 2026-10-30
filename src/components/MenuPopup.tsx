@@ -26,6 +26,7 @@ const MENU: Item[] = [
   { label: 'Store', href: '/store/' },
   { label: 'Blog', href: '/blog/' },
   { label: 'Contact', href: '/contact/' },
+  { label: 'Client sign in / sign up', href: '/account/' },
 ]
 
 const EASE = [0.76, 0, 0.24, 1] as const
