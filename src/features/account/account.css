@@ -87,3 +87,22 @@
 .ca-pw { position: relative; display: block; }
 .ca-pw input { width: 100%; padding-right: 76px; }
 .ca-pw button { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); height: 36px; padding: 0 14px; border: 0; border-radius: 999px; background: var(--cg-soft); font: 600 13px var(--cg-sans); cursor: pointer; }
+
+.ca-top-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+
+/* phones: tabs become a 3 × 2 grid of pills (nothing hidden off-screen), tighter cards, stacked timeline dates */
+@media (max-width: 600px) {
+  .ca { padding: 28px 0 72px; }
+  .ca-top { align-items: flex-start; }
+  .ca-top-actions { width: 100%; }
+  .ca-top-actions .cg-btn { flex: 1 1 0; min-height: 44px; }
+  .ca-nav { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 22px 0 22px; border: 0; overflow: visible; }
+  .ca-nav button { padding: 0 6px; margin: 0; border: 1px solid var(--cg-line); border-radius: 999px; color: #000; font-size: 13.5px; }
+  .ca-nav button[aria-current='page'] { background: #000; color: #fff; border-color: #000; }
+  .ca-card { padding: 18px; }
+  .ca-action-t { padding: 18px 20px; }
+  .ca-action-t b { font-size: 23px; }
+  .ca-timeline li { grid-template-columns: 24px 1fr; gap: 2px 10px; }
+  .ca-timeline time { grid-column: 2; font-size: 12.5px; }
+  .ca-gcards { grid-template-columns: 1fr; }
+}

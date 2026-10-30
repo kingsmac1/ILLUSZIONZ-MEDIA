@@ -218,6 +218,13 @@ for (const vp of [{ width: 375, height: 812 }, { width: 1440, height: 900 }]) {
   ok(`account greets by name (${vp.width})`, await page.isVisible('text=Hello, Elena'))
   ok(`account shows the action card (${vp.width})`, await page.isVisible('text=Finish picking your photos'))
   ok(`account has no horizontal scroll (${vp.width})`, await noHScroll(page))
+  ok(`account shows Sign out at the top (${vp.width})`, await page.isVisible('.ca-top-actions button:has-text("Sign out")'))
+  ok(`every section tab is on screen (${vp.width})`, await page.evaluate(() => [...document.querySelectorAll('.ca-nav button')].every((b) => { const r = b.getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth })))
+  await page.click('button.hd-account')
+  await page.waitForSelector('.hd-acc-menu')
+  ok(`header account menu offers Sign out (${vp.width})`, await page.isVisible('.hd-acc-menu button:has-text("Sign out")'))
+  await shot(page, `9-account-menu-${vp.width}`)
+  await page.keyboard.press('Escape')
   await shot(page, `9-account-${vp.width}`, true)
   for (const s of ['Bookings', 'Galleries', 'Activity', 'Profile']) {
     await page.click(`.ca-nav button:has-text("${s}")`)

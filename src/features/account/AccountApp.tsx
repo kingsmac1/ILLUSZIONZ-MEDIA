@@ -115,6 +115,12 @@ function Account({ session, banner }: { session: Session; banner?: string }) {
     return (SECTIONS.find((s) => s.id === h)?.id ?? 'overview') as Section
   })
   const go = (s: Section) => { setSection(s); history.replaceState(null, '', s === 'overview' ? window.location.pathname : `#${s}`) }
+  // the header's account menu links to /account/#galleries etc. — follow it while already on this page
+  useEffect(() => {
+    const f = () => setSection((SECTIONS.find((x) => x.id === window.location.hash.slice(1))?.id ?? 'overview') as Section)
+    window.addEventListener('hashchange', f)
+    return () => window.removeEventListener('hashchange', f)
+  }, [])
   const [data, setData] = useState<Data | null>(null)
   const [error, setError] = useState('')
   const [isAdmin, setIsAdmin] = useState(false)
@@ -151,7 +157,13 @@ function Account({ session, banner }: { session: Session; banner?: string }) {
             <h1 className="ca-h1">{first ? `Hello, ${first}` : 'Your client area'}</h1>
             <p className="ca-muted">Signed in as {email}</p>
           </div>
-          {isAdmin && <a className="cg-btn line" href="/dashboard/">Open the studio dashboard</a>}
+          <div className="ca-top-actions">
+            {isAdmin && <a className="cg-btn line" href="/dashboard/">Studio dashboard</a>}
+            <button className="cg-btn line" onClick={() => supabase!.auth.signOut()}>
+              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 4h3a2 2 0 012 2v12a2 2 0 01-2 2h-3M10 17l-5-5 5-5M5 12h11" /></svg>
+              Sign out
+            </button>
+          </div>
         </div>
         {banner && <p className="ca-msg ca-link-msg" role="status">{banner}</p>}
         <nav className="ca-nav" aria-label="Client area">
