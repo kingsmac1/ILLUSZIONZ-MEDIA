@@ -1,6 +1,7 @@
 /**
  * Admin: send a gallery to the client (or resend / remind).
- *  - proofs: status -> "sent" (only from draft), sent_at, "Your previews are ready" email
+ *  - proofs: status -> "sent" (only from draft), sent_at, "Your previews are ready" email; the first send schedules the
+ *    previews for deletion PURGE_DAYS later, and the email asks the client to choose before then
  *  - finals: status -> "delivered", delivered_at; the proof gallery's previews are scheduled for deletion PURGE_DAYS later
  * The status change happens even when email is not configured yet; the response says whether the email went out.
  */
@@ -15,7 +16,10 @@ Deno.serve(handle(async (req, body) => {
   if (!isUuid(body.gallery_id)) throw new HttpError('Missing gallery.')
   const g = await loadGallery(body.gallery_id)
   const reminder = !!body.reminder
-  const { count } = await service().from('gallery_images').select('id', { count: 'exact', head: true }).eq('gallery_id', g.id).eq('status', 'ready')
+  const { count } = await service().from('gallery_images').select('id', { count: 'exact', head: true }).eq('gallery_id', g.id).eq('status', 'ready').eq('image_set', 'edited')
+  const { count: unedited } = g.kind === 'final'
+    ? await service().from('gallery_images').select('id', { count: 'exact', head: true }).eq('gallery_id', g.id).eq('status', 'ready').eq('image_set', 'unedited')
+    : { count: 0 }
   if (!count) throw new HttpError('Upload at least one photo before sending.')
   if (!/^\S+@\S+\.\S+$/.test(g.client_email)) throw new HttpError('This gallery has no valid client email. Add one to the booking first.')
 
@@ -30,7 +34,9 @@ Deno.serve(handle(async (req, body) => {
     if (reminder && !OPEN_FOR_PICKS.includes(g.status)) throw new HttpError('A reminder only makes sense while the client is still choosing.')
     if (g.status === 'draft') patch.status = 'sent'
     if (!g.sent_at || g.status === 'draft') patch.sent_at = now
-    message = previewsReady({ siteUrl: cfg.siteUrl, clientName: g.client_name, title: g.title, link, message: g.message_to_client, limit: g.selection_limit, extrasNote: g.allow_extra_selections ? g.extra_price_note : null, reminder })
+    if (!g.previews_purge_at) patch.previews_purge_at = addDays(now, PURGE_DAYS)
+    const deleteOn = (patch.previews_purge_at as string | undefined) ?? g.previews_purge_at
+    message = previewsReady({ siteUrl: cfg.siteUrl, clientName: g.client_name, title: g.title, link, message: g.message_to_client, limit: g.selection_limit, extrasNote: g.allow_extra_selections ? g.extra_price_note : null, reminder, deleteOn, days: PURGE_DAYS, uneditedPrice: g.unedited_price })
     event = reminder ? 'gallery_reminder' : g.status === 'draft' ? 'gallery_sent' : 'gallery_resent'
   } else {
     const first = g.status !== 'delivered'
@@ -41,10 +47,13 @@ Deno.serve(handle(async (req, body) => {
     const parentId = g.parent_gallery_id ?? (g.booking_id ? (await service().from('galleries').select('id').eq('booking_id', g.booking_id).eq('kind', 'proof').maybeSingle()).data?.id : null)
     if (parentId) {
       purgeAt = addDays(deliveredAt, PURGE_DAYS)
+      // keep whichever comes later: 30 days after the previews were sent, or 30 days after this delivery
+      const { data: parent } = await service().from('galleries').select('previews_purge_at').eq('id', parentId).maybeSingle()
+      if (parent?.previews_purge_at && parent.previews_purge_at > purgeAt) purgeAt = parent.previews_purge_at
       await service().from('galleries').update({ previews_purge_at: purgeAt }).eq('id', parentId).is('previews_purged_at', null)
       if (!g.parent_gallery_id) patch.parent_gallery_id = parentId
     }
-    message = finalsReady({ siteUrl: cfg.siteUrl, clientName: g.client_name, title: g.title, link, count, message: g.message_to_client, previewsExpire: purgeAt })
+    message = finalsReady({ siteUrl: cfg.siteUrl, clientName: g.client_name, title: g.title, link, count: count ?? 0, unedited: unedited ?? 0, message: g.message_to_client, previewsExpire: purgeAt })
     event = first ? 'finals_delivered' : 'finals_resent'
   }
 

@@ -21,10 +21,11 @@ const dims = Object.fromEntries(await Promise.all(SAMPLES.map(async (f) => { con
 const uuid = (n) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`
 const PROOF = uuid(1), FINAL = uuid(2), LOCKED = uuid(3), BOOKING = uuid(9)
 const img = (f, i, kind) => ({ id: uuid(100 + i), filename: f.replace(/\.\w+$/, '.jpg').replace('ILU', 'DSC_').replace('-copy', ''), width: dims[f][0], height: dims[f][1], sort_order: i, taken_at: null, source_proof_image_id: null, status: 'ready', bytes: 9_000_000, has_original: kind === 'final', thumb: `${BASE}/images/${f}`, display: `${BASE}/images/${f}` })
-const images = (kind) => SAMPLES.map((f, i) => img(f, i, kind))
-const gallery = (id, kind, extra = {}) => ({ id, title: kind === 'proof' ? 'Maternity — 20 Nov 2026' : 'Maternity — Final photos', kind, client_first_name: 'Elena', client_name: 'Elena Test', event_date: '2026-11-20', shoot: 'Maternity', status: kind === 'proof' ? 'selecting' : 'delivered', selection_limit: kind === 'proof' ? 4 : null, allow_extra_selections: false, extra_price_note: null, message_to_client: kind === 'proof' ? 'It was a joy photographing you both. Pick your four favourites and we will edit them with care.' : null, cover_image_id: uuid(102), previews_purge_at: null, ...extra })
+const images = (kind) => [...SAMPLES.map((f, i) => img(f, i, kind)), ...(kind === 'final' ? SAMPLES.slice(0, 3).map((f, i) => ({ ...img(f, 50 + i, kind), set: 'unedited', filename: `RAW_${i + 1}.jpg` })) : [])]
+const gallery = (id, kind, extra = {}) => ({ id, title: kind === 'proof' ? 'Maternity — 20 Nov 2026' : 'Maternity — Final photos', kind, client_first_name: 'Elena', client_name: 'Elena Test', event_date: '2026-11-20', shoot: 'Maternity', status: kind === 'proof' ? 'selecting' : 'delivered', selection_limit: kind === 'proof' ? 4 : null, allow_extra_selections: false, extra_price_note: null, message_to_client: kind === 'proof' ? 'It was a joy photographing you both. Pick your four favourites and we will edit them with care.' : null, cover_image_id: uuid(102), previews_purge_at: kind === 'proof' ? '2026-12-20T10:00:00Z' : null, unedited_price: kind === 'proof' ? 50 : null, ...extra })
 const KEY = 'a'.repeat(64)
 const picksSent = []
+const sent = { submit: null, feedback: [], deleted: [] }
 const view = (body, signedIn) => {
   if (body.gallery_id === LOCKED || (!signedIn && body.key !== KEY)) return { ok: true, access: 'signin', gallery: gallery(LOCKED, 'proof'), cover: { url: `${BASE}/images/ILU0061.webp`, width: 1600, height: 2000 }, email_hint: 'e•••••@example.com' }
   const kind = body.gallery_id === FINAL ? 'final' : 'proof'
@@ -50,6 +51,9 @@ async function mockSupabase(page, { admin = false } = {}) {
     if (p.endsWith('/auth/v1/verify')) return json(JSON.parse(fakeSession('elena@example.com')))
     if (p.endsWith('/auth/v1/user')) return json(JSON.parse(fakeSession('elena@example.com')).user)
     if (p.endsWith('/auth/v1/token')) return json({ error: 'invalid_grant', error_description: 'Invalid login credentials' }, 400)
+    if (p.endsWith('/functions/v1/gallery-feedback')) { sent.feedback.push(body); return json(body.action === 'send' ? { ok: true, sent_at: new Date().toISOString(), whatsapp_text: 'x' } : { ok: true }) }
+    if (p.endsWith('/functions/v1/gallery-delete')) { sent.deleted.push(...(body.image_ids ?? [])); return json({ ok: true }) }
+    if (p.endsWith('/functions/v1/gallery-submit-selection')) sent.submit = body
     if (p.endsWith('/functions/v1/gallery-submit-selection')) return json({ ok: true, count: 3, submitted_at: new Date().toISOString(), whatsapp_text: 'Hi Illuszionz Media 👋 test' })
     if (p.endsWith('/functions/v1/gallery-download-url')) return json({ ok: true, files: (body.image_ids ?? [body.image_id]).map((id) => ({ id, filename: 'DSC_0001.jpg', bytes: 1000, url: `${BASE}/images/ILZ_8904.jpg` })) })
     if (p.endsWith('/functions/v1/gallery-upload-urls')) return json({ ok: true, items: body.files.map((f, i) => ({ client_ref: f.client_ref, image_id: uuid(500 + uploads.length + i), urls: Object.fromEntries(f.variants.map((v) => [v, `${BASE}/__r2/${encodeURIComponent(f.original_filename)}/${v}.jpg`])) })) })
@@ -61,7 +65,7 @@ async function mockSupabase(page, { admin = false } = {}) {
     if (p.includes('/rest/v1/rpc/')) return json(null)
     const table = p.split('/rest/v1/')[1]
     const galleriesRows = [
-      { id: PROOF, created_at: '2026-10-20T10:00:00Z', updated_at: new Date().toISOString(), booking_id: BOOKING, client_email: 'elena@example.com', client_name: 'Elena Test', title: 'Maternity — 20 Nov 2026', kind: 'proof', status: 'selecting', share_token: KEY, selection_limit: 4, allow_extra_selections: false, cover_image_id: null, sent_at: '2026-10-21T10:00:00Z', first_viewed_at: '2026-10-21T12:00:00Z' },
+      { id: PROOF, created_at: '2026-10-20T10:00:00Z', updated_at: new Date().toISOString(), booking_id: BOOKING, client_email: 'elena@example.com', client_name: 'Elena Test', title: 'Maternity — 20 Nov 2026', kind: 'proof', status: 'selecting', share_token: KEY, wants_unedited: true, unedited_price: 50, selection_limit: 4, allow_extra_selections: false, cover_image_id: null, sent_at: '2026-10-21T10:00:00Z', first_viewed_at: '2026-10-21T12:00:00Z' },
       { id: FINAL, created_at: '2026-10-25T10:00:00Z', updated_at: new Date().toISOString(), booking_id: BOOKING, client_email: 'elena@example.com', client_name: 'Elena Test', title: 'Maternity — Final photos', kind: 'final', status: 'delivered', share_token: KEY, delivered_at: '2026-10-28T10:00:00Z' },
     ]
     if (req.method() !== 'GET') return json(table === 'galleries' ? [galleriesRows[0]] : [], req.method() === 'POST' ? 201 : 200)
@@ -159,10 +163,14 @@ for (const vp of [{ width: 375, height: 812 }, { width: 1440, height: 900 }]) {
   await page.click('.cg-bar .cg-btn.red')
   await page.waitForSelector('.cg-review')
   ok(`review sheet lists the picks (${vp.width})`, (await page.locator('.cg-review figure').count()) === 4)
+  ok(`"all unedited images" tick shows its price (${vp.width})`, (await page.textContent('.cg-unedited'))?.includes('£50'))
+  await page.click('.cg-unedited input')
+  ok(`ticking adds the cost to the summary (${vp.width})`, (await page.textContent('.cg-summary-row.total'))?.includes('£50'))
   await shot(page, `6-review-${vp.width}`)
   await page.click('.cg-sheet .cg-btn.red')
   await page.waitForSelector('.cg-success')
   await shot(page, `7-success-${vp.width}`)
+  ok(`submit sends the unedited choice (${vp.width})`, sent.submit?.wants_unedited === true)
   ok(`success screen shows (${vp.width})`, await page.isVisible('text=Selection sent!'))
   await page.waitForURL(/wa\.me/, { timeout: 4000 }).then(() => ok(`WhatsApp opens after submit (${vp.width})`, true), () => ok(`WhatsApp opens after submit (${vp.width})`, false))
   await page.context().close()
@@ -207,6 +215,28 @@ for (const vp of [{ width: 375, height: 812 }, { width: 1440, height: 900 }]) {
   await page.waitForTimeout(600)
   ok(`finals: no hearts, download buttons (${vp.width})`, (await page.locator('.cg-heart').count()) === 0 && (await page.locator('.cg-dl').count()) === 12)
   ok(`finals: "Download all" (${vp.width})`, await page.isVisible('text=Download all'))
+  ok(`finals: switch to the unedited set (${vp.width})`, await page.isVisible('.cg-sets button:has-text("All unedited (3)")'))
+  ok(`finals: feedback bar (${vp.width})`, await page.isVisible('.cg-fb-bar >> text=What do you think?'))
+  sent.feedback.length = 0
+  await page.locator('.cg-open').nth(1).click()
+  await page.waitForSelector('.cg-lb-up')
+  await page.click('.cg-lb-down')
+  await page.click('.yarl__toolbar .cg-lb-note')
+  await page.fill('.cg-sheet textarea', 'A little brighter please')
+  await page.click('.cg-sheet .cg-btn.solid')
+  await page.waitForTimeout(300)
+  await shot(page, `8-finals-lightbox-${vp.width}`)
+  await page.keyboard.press('Escape'); await page.waitForTimeout(300)
+  ok(`👎 and a comment save through gallery-feedback (${vp.width})`, sent.feedback.some((f) => f.action === 'react' && f.reaction === -1) && sent.feedback.some((f) => f.action === 'comment' && f.comment === 'A little brighter please'))
+  await page.click('.cg-fb-bar .cg-btn')
+  await page.waitForSelector('.cg-sheet >> text=Send your feedback?')
+  await shot(page, `8-finals-feedback-${vp.width}`)
+  await page.click('.cg-sheet .cg-btn.solid')
+  await page.waitForTimeout(400)
+  ok(`feedback is sent to the photographer (${vp.width})`, sent.feedback.some((f) => f.action === 'send') && (await page.isVisible('.cg-fb-bar >> text=Thank you for your feedback')))
+  await page.click('.cg-sets button:has-text("All unedited")')
+  await page.waitForTimeout(300)
+  ok(`unedited set shows its photos, without feedback buttons (${vp.width})`, (await page.locator('.cg-dl').count()) === 3 && !(await page.isVisible('.cg-fb-bar')))
   await shot(page, `8-finals-${vp.width}`)
   await page.context().close()
 }
@@ -306,6 +336,19 @@ for (const vp of [{ width: 375, height: 812 }, { width: 1440, height: 900 }]) {
   ok('manager offers Reset link once sent', await page.isVisible('button:has-text("Reset link")'))
   await page.click('.ad-tabs button:has-text("Finals")')
   await page.waitForTimeout(800)
+  ok('finals tab shows "All unedited images" when the client asked', await page.isVisible('.gm-unedited h3:has-text("All unedited images")'))
+  // cancel an upload half-way
+  page.on('dialog', (d) => d.accept())
+  await page.route(`${BASE}/__r2/**`, async (route) => { await new Promise((r) => setTimeout(r, 4000)); return route.fulfill({ status: 200, headers: { 'access-control-allow-origin': '*' } }).catch(() => {}) })
+  await page.setInputFiles('.gm-unedited .gm-drop input', ['ILZ_8923.jpg', 'ILZ_8962.jpg'].map((f) => `public/images/${f}`))
+  await page.click('.gm-unedited button:has-text("Upload 2 unedited")')
+  await page.waitForSelector('.gm-unedited button:has-text("Cancel upload")', { timeout: 10000 })
+  await page.waitForTimeout(1200)
+  await page.click('.gm-unedited button:has-text("Cancel upload")')
+  await page.waitForTimeout(800)
+  await shot(page, '13-manager-cancelled', true)
+  ok('cancel stops the upload (both marked cancelled)', (await page.locator('.gm-unedited .gm-q.cancelled').count()) === 2, await page.textContent('.gm-unedited .gm-queue-sum'))
+  ok('cancelled files are removed from storage', sent.deleted.length >= 1, `${sent.deleted.length} deleted`)
   await shot(page, '13-manager-finals', true)
   await page.goto(`${BASE}/dashboard/#/galleries`)
   await page.waitForSelector('.gx-client', { timeout: 15000 })

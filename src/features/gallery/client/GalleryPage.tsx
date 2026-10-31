@@ -2,8 +2,9 @@
  * /gallery/<id>/?k=<key> — the client's private gallery. The emailed link carries the key, so it opens straight away
  * with no sign-in; the key is remembered on this device. Without it, the gallery's owner can sign in instead.
  * A few seconds in, visitors who aren't signed in are invited to save it to an account (optional).
- * Proofs: hearts, notes, "23 / 40" counter, submit (review sheet → success → WhatsApp). Finals: per-photo download +
- * "Download all" (zips in parts).
+ * Proofs: hearts, notes, "23 / 40" counter, optional "all unedited images", submit (review sheet → success → WhatsApp).
+ * Finals: edited / all-unedited switch, per-photo download + "Download all" (zips in parts), 👍 / 👎 / comments on the
+ * edited photos and "Send feedback" to the photographer.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { RowsPhotoAlbum, type Photo } from 'react-photo-album'
@@ -20,8 +21,9 @@ import { usePicks } from './usePicks'
 import { galleryHref } from './links'
 import { Preloader, useReleasePreloader } from '../../../components/Preloader'
 import { Lightbox } from './Lightbox'
-import { SubmitSheet, NoteSheet, SuccessScreen, SaveSheet } from './Sheets'
-import { DownloadIcon, Heart } from './icons'
+import { SubmitSheet, NoteSheet, SuccessScreen, SaveSheet, CommentSheet, FeedbackSheet } from './Sheets'
+import { useFeedback } from './useFeedback'
+import { CommentIcon, DownloadIcon, Heart } from './icons'
 import './gallery.css'
 
 type GPhoto = Photo & { img: ViewImage; tw: number; dw: number }
@@ -128,7 +130,12 @@ function CoverGate({ data, onSignedIn }: { data: ViewResponse; onSignedIn: () =>
 function GalleryView({ data, linkKey, reload }: { data: ViewResponse; linkKey: string | null; reload: () => void }) {
   const g = data.gallery
   const proof = g.kind === 'proof'
-  const images = data.images ?? []
+  const all = data.images ?? []
+  // finals can hold two sets: the edited photos and (for some clients) every unedited image
+  const edited = useMemo(() => all.filter((i) => (i.set ?? 'edited') === 'edited'), [all])
+  const uneditedImgs = useMemo(() => all.filter((i) => i.set === 'unedited'), [all])
+  const [set, setSet] = useState<'edited' | 'unedited'>('edited')
+  const images = proof || set === 'edited' ? edited : uneditedImgs
   const [status, setStatus] = useState(g.status!)
   const [submittedAt, setSubmittedAt] = useState(g.submitted_at ?? null)
   const locked = !proof || !OPEN.includes(status) || !!data.is_admin
@@ -136,6 +143,10 @@ function GalleryView({ data, linkKey, reload }: { data: ViewResponse; linkKey: s
   const noticeTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
   const say = useCallback((m: string) => { setNotice(m); clearTimeout(noticeTimer.current); noticeTimer.current = setTimeout(() => setNotice(''), 4500) }, [])
   const { picks, toggle, setNote } = usePicks(g.id, linkKey, data.selections ?? [], { limit: g.selection_limit ?? null, extras: !!g.allow_extra_selections, locked, onMessage: say })
+  const fb = useFeedback(g.id, linkKey, data.feedback ?? [], g.feedback_sent_at ?? null, say)
+  const canFeedback = !proof && set === 'edited' && !data.is_admin && status === 'delivered'
+  const [commentFor, setCommentFor] = useState<string | null>(null)
+  const [fbOpen, setFbOpen] = useState(false)
   const [filter, setFilter] = useState<'all' | 'picked'>('all')
   const [open, setOpen] = useState<number | null>(null)
   const [noteFor, setNoteFor] = useState<string | null>(null)
@@ -153,7 +164,7 @@ function GalleryView({ data, linkKey, reload }: { data: ViewResponse; linkKey: s
     const t = setTimeout(() => setSaveDue(true), SAVE_DELAY)
     return () => clearTimeout(t)
   }, [canSave])
-  const busy = open !== null || !!noteFor || review || !!success
+  const busy = open !== null || !!noteFor || review || !!success || !!commentFor || fbOpen
   useEffect(() => { if (saveDue && !busy) { setSaveDue(false); setSaveOpen(true) } }, [saveDue, busy])
   const closeSave = () => { setSaveOpen(false); try { localStorage.setItem('cg-save-later', String(Date.now())) } catch { /* private mode */ } }
 
@@ -172,8 +183,8 @@ function GalleryView({ data, linkKey, reload }: { data: ViewResponse; linkKey: s
   const proofsOf = data.related?.find((r) => r.kind === 'proof')
   const cover = images.find((i) => i.id === g.cover_image_id) ?? images[0]
 
-  async function submit() {
-    const r = await callFn<{ count: number; whatsapp_text: string; submitted_at: string }>('gallery-submit-selection', { gallery_id: g.id, key: linkKey })
+  async function submit({ wantsUnedited }: { wantsUnedited: boolean }) {
+    const r = await callFn<{ count: number; whatsapp_text: string; submitted_at: string }>('gallery-submit-selection', { gallery_id: g.id, key: linkKey, wants_unedited: wantsUnedited })
     if (!r.ok) { say(r.error); return false }
     setReview(false)
     setStatus('submitted')
@@ -214,7 +225,15 @@ function GalleryView({ data, linkKey, reload }: { data: ViewResponse; linkKey: s
               {!locked && <button className="cg-btn solid red" disabled={!count} onClick={() => setReview(true)}><span className="cg-hide-s">Submit selection</span><span className="cg-show-s">Submit</span></button>}
             </>
           ) : (
-            <DownloadAll galleryId={g.id} linkKey={linkKey} title={g.title} images={images} onError={say} />
+            <>
+              {uneditedImgs.length > 0 && (
+                <div className="cg-sets" role="group" aria-label="Show">
+                  <button aria-pressed={set === 'edited'} onClick={() => { setSet('edited'); setOpen(null) }}>Edited<span className="cg-hide-s"> ({edited.length})</span></button>
+                  <button aria-pressed={set === 'unedited'} onClick={() => { setSet('unedited'); setOpen(null) }}><span className="cg-hide-s">All unedited ({uneditedImgs.length})</span><span className="cg-show-s">Unedited</span></button>
+                </div>
+              )}
+              <DownloadAll key={set} galleryId={g.id} linkKey={linkKey} title={set === 'unedited' ? `${g.title} (unedited)` : g.title} images={images} onError={say} />
+            </>
           )}
         </div>
         {proof && <div className="cg-bar-line" style={{ transform: `scaleX(${limit ? Math.min(1, count / limit) : count ? 1 : 0})` }} aria-hidden="true" />}
@@ -222,11 +241,26 @@ function GalleryView({ data, linkKey, reload }: { data: ViewResponse; linkKey: s
 
       <main className="cg-main" data-no-motion>
         {data.is_admin && <p className="cg-banner">Studio preview — this is what the client sees. Hearts are read-only for you.</p>}
-        {proof && status === 'submitted' && <p className="cg-banner">Selection submitted on {fmtDay(submittedAt)}. We’re editing your photos ✨ {count ? `(${count} picked)` : ''}</p>}
+        {proof && status === 'submitted' && <p className="cg-banner">Selection submitted on {fmtDay(submittedAt)}. We’re editing your photos ✨ {count ? `(${count} picked${g.wants_unedited ? ', plus all the unedited images' : ''})` : ''}</p>}
         {proof && status === 'archived' && <p className="cg-banner">The previews were removed after your final photos were delivered.{finals ? <> <a href={galleryHref(finals.id, finals.key)}>Open your final photos</a></> : null}</p>}
         {proof && finals && status !== 'archived' && <p className="cg-banner strong">Your final photos are ready. <a href={galleryHref(finals.id, finals.key)}>Open and download them</a></p>}
         {!proof && proofsOf && <p className="cg-banner">These are your edited photos in full resolution, without a watermark.</p>}
-        {g.previews_purge_at && proof && status !== 'archived' && <p className="cg-banner muted">Previews are available until {fmtDay(g.previews_purge_at)}.</p>}
+        {g.previews_purge_at && proof && OPEN.includes(status) && !data.is_admin && <p className="cg-banner strong">Please make your selection by {fmtDay(g.previews_purge_at)}. The previews are deleted after that.</p>}
+        {g.previews_purge_at && proof && !OPEN.includes(status) && status !== 'archived' && <p className="cg-banner muted">Previews are available until {fmtDay(g.previews_purge_at)}.</p>}
+        {!proof && set === 'unedited' && <p className="cg-banner">Every photo from your shoot, as shot, in full resolution.</p>}
+        {canFeedback && (
+          <div className="cg-fb-bar">
+            <p>
+              <b>{fb.sent && !fb.dirty ? 'Thank you for your feedback' : 'What do you think?'}</b>
+              {fb.sent && !fb.dirty
+                ? `Sent on ${fmtDay(fb.sent)}. Changed your mind about a photo? Update it and send again.`
+                : 'Open a photo and tap 👍 or 👎, or add a comment, then send it all to us in one go.'}
+            </p>
+            <button className="cg-btn solid" disabled={!fb.fb.size || (!!fb.sent && !fb.dirty)} onClick={() => setFbOpen(true)}>
+              {fb.sent && !fb.dirty ? 'Feedback sent' : `Send feedback${fb.fb.size ? ` (${fb.fb.size})` : ''}`}
+            </button>
+          </div>
+        )}
         {canSave && (
           <div className="cg-save-band">
             <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" aria-hidden="true"><path d="M6 3h12v18l-6-4.5L6 21z" /></svg>
@@ -272,6 +306,13 @@ function GalleryView({ data, linkKey, reload }: { data: ViewResponse; linkKey: s
                     </button>
                   )}
                   {proof && picks.get(photo.img.id) && <span className="cg-has-note" title={picks.get(photo.img.id)!}>Note</span>}
+                  {canFeedback && fb.fb.get(photo.img.id) && (
+                    <span className="cg-fb-mini" aria-hidden="true">
+                      {fb.fb.get(photo.img.id)!.reaction === 1 && <span>👍</span>}
+                      {fb.fb.get(photo.img.id)!.reaction === -1 && <span>👎</span>}
+                      {fb.fb.get(photo.img.id)!.comment && <span><CommentIcon filled /></span>}
+                    </span>
+                  )}
                   {!proof && (
                     <button className="cg-dl" aria-label={`Download ${photo.img.filename}`} onClick={(e) => { e.stopPropagation(); downloadOne(g.id, photo.img.id, linkKey).catch((err) => say(err.message)) }}>
                       <DownloadIcon />
@@ -306,6 +347,9 @@ function GalleryView({ data, linkKey, reload }: { data: ViewResponse; linkKey: s
           onToggle={toggle}
           onNote={(id) => setNoteFor(id)}
           onDownload={proof ? undefined : (id) => downloadOne(g.id, id, linkKey).catch((err) => say(err.message))}
+          feedback={canFeedback ? fb.fb : undefined}
+          onReact={canFeedback ? fb.react : undefined}
+          onComment={canFeedback ? (id) => setCommentFor(id) : undefined}
         />
       )}
       {noteFor && (
@@ -319,7 +363,23 @@ function GalleryView({ data, linkKey, reload }: { data: ViewResponse; linkKey: s
         />
       )}
       {review && (
-        <SubmitSheet images={images.filter((i) => picks.has(i.id))} picks={picks} limit={limit} extrasNote={g.allow_extra_selections ? g.extra_price_note ?? null : null} onClose={() => setReview(false)} onSubmit={submit} onNote={setNoteFor} />
+        <SubmitSheet images={images.filter((i) => picks.has(i.id))} picks={picks} limit={limit} extrasNote={g.allow_extra_selections ? g.extra_price_note ?? null : null} uneditedPrice={g.unedited_price ?? null} onClose={() => setReview(false)} onSubmit={submit} onNote={setNoteFor} />
+      )}
+      {commentFor && (
+        <CommentSheet
+          filename={edited.find((i) => i.id === commentFor)?.filename ?? ''}
+          initial={fb.fb.get(commentFor)?.comment ?? ''}
+          inside={open !== null ? document.querySelector('.yarl__root') : null}
+          onClose={() => setCommentFor(null)}
+          onSave={async (t) => { if (await fb.comment(commentFor, t)) setCommentFor(null) }}
+        />
+      )}
+      {fbOpen && (
+        <FeedbackSheet
+          images={edited} feedback={fb.fb} sentAt={fb.sent} onComment={setCommentFor}
+          onClose={() => setFbOpen(false)}
+          onSend={async () => { const r = await fb.send(); if (r) { setFbOpen(false); say('Feedback sent — thank you! We’ll be in touch.') } return !!r }}
+        />
       )}
       {saveOpen && <SaveSheet email={data.client_email ?? ''} kind={proof ? 'proof' : 'final'} onClose={closeSave} onSignedIn={() => { setSaveOpen(false); reload() }} />}
       {success && <SuccessScreen count={success.count} whatsappUrl={success.url} onClose={() => { setSuccess(null); reload() }} />}

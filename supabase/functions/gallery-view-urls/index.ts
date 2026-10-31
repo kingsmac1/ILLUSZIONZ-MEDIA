@@ -55,17 +55,21 @@ Deno.serve(handle(async (req, body) => {
   }
 
   const page = Math.max(0, Math.floor(Number(body.page) || 0))
-  let q = service().from('gallery_images').select('id, original_filename, width, height, thumb_key, display_key, original_key, sort_order, taken_at, source_proof_image_id, status, bytes', { count: 'exact' }).eq('gallery_id', g.id)
+  let q = service().from('gallery_images').select('id, original_filename, width, height, thumb_key, display_key, original_key, sort_order, taken_at, source_proof_image_id, status, bytes, image_set', { count: 'exact' }).eq('gallery_id', g.id)
   if (!who.isAdmin || !body.include_unready) q = q.eq('status', 'ready')
   const { data: rows, count, error } = await q.order('sort_order').order('original_filename').range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1)
   if (error) throw error
   const images = await Promise.all((rows ?? []).map(async (r) => ({
     id: r.id, filename: r.original_filename, width: r.width, height: r.height, sort_order: r.sort_order, taken_at: r.taken_at,
-    source_proof_image_id: r.source_proof_image_id, status: r.status, bytes: who.isAdmin || g.kind === 'final' ? r.bytes : undefined, has_original: !!r.original_key,
+    source_proof_image_id: r.source_proof_image_id, status: r.status, set: r.image_set, bytes: who.isAdmin || g.kind === 'final' ? r.bytes : undefined, has_original: !!r.original_key,
     thumb: r.thumb_key && !purged ? await signGet(r.thumb_key) : null,
     display: r.display_key && !purged ? await signGet(r.display_key) : null,
   })))
 
+  // finals: the client's 👍 / 👎 and comments
+  const { data: feedback } = page === 0 && g.kind === 'final'
+    ? await service().from('gallery_feedback').select('image_id, reaction, comment, updated_at').eq('gallery_id', g.id).eq('client_email', g.client_email)
+    : { data: null }
   const { data: selections } = page === 0 && g.kind === 'proof'
     ? await service().from('gallery_selections').select('image_id, note, created_at').eq('gallery_id', g.id).eq('client_email', g.client_email)
     : { data: null }
@@ -85,9 +89,10 @@ Deno.serve(handle(async (req, body) => {
     gallery: {
       ...publicInfo, status: g.status, selection_limit: g.selection_limit, allow_extra_selections: g.allow_extra_selections, extra_price_note: g.extra_price_note,
       message_to_client: g.message_to_client, sent_at: g.sent_at, submitted_at: g.submitted_at, delivered_at: g.delivered_at,
-      expires_at: g.expires_at, previews_purge_at: g.previews_purge_at, previews_purged: purged, cover_image_id: coverImg?.id ?? null, client_name: g.client_name,
+      expires_at: g.expires_at, previews_purge_at: g.previews_purge_at,
+      unedited_price: g.unedited_price, wants_unedited: g.wants_unedited, unedited_included: g.unedited_included, feedback_sent_at: g.feedback_sent_at, previews_purged: purged, cover_image_id: coverImg?.id ?? null, client_name: g.client_name,
     },
     cover, images, total: count ?? images.length, page, pages: Math.max(1, Math.ceil((count ?? 0) / PAGE_SIZE)),
-    selections: selections ?? undefined, related: visibleRelated,
+    selections: selections ?? undefined, feedback: feedback ?? undefined, related: visibleRelated,
   })
 }))

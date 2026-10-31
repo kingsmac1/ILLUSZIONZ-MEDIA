@@ -63,6 +63,10 @@ export type Gallery = {
   previews_purged_at: string | null
   created_at: string
   share_token: string
+  unedited_price: number | null
+  wants_unedited: boolean
+  unedited_included: boolean
+  feedback_sent_at: string | null
 }
 
 export async function loadGallery(id: string): Promise<Gallery> {

@@ -95,3 +95,22 @@ Each item: what was decided, and why. Change any of them later if you prefer oth
 39. **Tested:** `npm run test:gallery` now has 97 checks (link access without sign-in, picks sent with the key, the prompt after a few seconds,
     sign up → check your email, wrong password, forgot password, the reset link → new password, the confirm link), all passing at 375 px and
     desktop; the site's own 71 checks pass on a production build; all 10 functions type-check with Deno.
+
+## Update — 31 Oct 2026: cancel uploads, selection deadline, unedited images, feedback on finals
+
+40. **Cancel upload** aborts the transfers in progress and deletes what that file already put in storage (its database row too).
+    Finished photos are kept on purpose: cancelling half-way shouldn't throw away work that arrived; delete those from the grid.
+41. **Previews are deleted 30 days after the first send** (`previews_purge_at` is set when the gallery is sent; the nightly clean-up
+    already deletes on that date). When finals are delivered, the later of "30 days after sending" and "30 days after delivery" wins.
+    The email shows the date in a red-edged box, the gallery shows "Please make your selection by …", and **+30 days** extends it.
+42. **The unedited price is set per preview gallery** (there was no unedited option or price anywhere on the site). Empty = the tick box
+    isn't shown. The client's choice is saved when they submit (`galleries.wants_unedited`) and goes into both emails, the WhatsApp text
+    and the timeline. Payment is handled by you as today (invoice / WhatsApp); the site shows the amount, it doesn't take payment.
+43. **Unedited images live in the same finals gallery** as a second set (`gallery_images.image_set = 'unedited'`), so one link, one
+    account entry and one delivery email cover both. They upload like finals (full resolution, no watermark) and have their own
+    Download all. Feedback buttons are only on the edited photos.
+44. **Feedback is per photo (👍 / 👎 / comment) and sent in one go**, not one email per tap. It is saved as the client goes
+    (`gallery_feedback`, written only through the `gallery-feedback` function) so nothing is lost if they close the page, and they can
+    send again after changing it.
+45. **Tested:** `npm run test:gallery` now has 124 checks (cancel mid-upload removes the files, the tick box with its price and summary,
+    the choice sent with the selection, the edited / unedited switch, 👎 + comment saved, feedback sent); all 11 functions type-check.

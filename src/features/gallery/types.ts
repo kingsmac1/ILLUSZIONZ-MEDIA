@@ -30,6 +30,11 @@ export type GalleryRow = {
   previews_purged_at: string | null
   /** private link key: /gallery/<id>/?k=<share_token> opens the gallery without signing in */
   share_token: string
+  /** proof: price of the "all unedited images" option (null = not offered); final: whether the client gets them */
+  unedited_price: number | null
+  wants_unedited: boolean
+  unedited_included: boolean
+  feedback_sent_at: string | null
 }
 
 export type GalleryImageRow = {
@@ -48,6 +53,7 @@ export type GalleryImageRow = {
   taken_at: string | null
   source_proof_image_id: string | null
   status: 'uploading' | 'ready' | 'failed'
+  image_set: 'edited' | 'unedited'
 }
 
 export type SelectionRow = { gallery_id: string; image_id: string; client_email: string; note: string | null; created_at: string; updated_at: string }
@@ -68,6 +74,8 @@ export type ViewImage = {
   status: 'uploading' | 'ready' | 'failed'
   bytes?: number
   has_original: boolean
+  /** finals: the edited photos, or the client's full set of unedited ones */
+  set?: 'edited' | 'unedited'
   thumb: string | null
   display: string | null
 }
@@ -92,6 +100,10 @@ export type ViewGallery = {
   previews_purge_at?: string | null
   previews_purged?: boolean
   cover_image_id?: string | null
+  unedited_price?: number | null
+  wants_unedited?: boolean
+  unedited_included?: boolean
+  feedback_sent_at?: string | null
 }
 
 export type ViewResponse = {
@@ -110,5 +122,9 @@ export type ViewResponse = {
   page?: number
   pages?: number
   selections?: { image_id: string; note: string | null; created_at: string }[]
+  feedback?: FeedbackRow[]
   related?: { id: string; kind: GalleryKind; status: GalleryStatus; delivered_at: string | null; key?: string }[]
 }
+
+/** The client's reaction / comment on one final photo. */
+export type FeedbackRow = { image_id: string; reaction: 1 | -1 | null; comment: string | null; updated_at?: string }

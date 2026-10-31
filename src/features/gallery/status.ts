@@ -47,9 +47,10 @@ export function describeActivity(a: Pick<ActivityRow, 'event' | 'meta' | 'actor'
     case 'gallery_resent': return { icon: '✉️', text: you ? `We re-sent the link to ${t}` : 'Gallery link re-sent' }
     case 'gallery_reminder': return { icon: '🔔', text: you ? `Reminder: ${t} is waiting for your picks` : 'Reminder sent' }
     case 'gallery_viewed': return { icon: '👀', text: you ? `You opened ${t}` : `${who} opened the ${m.kind === 'final' ? 'finals' : 'previews'}` }
-    case 'selection_submitted': return { icon: '♥', text: you ? `You submitted ${m.count} photos for editing` : `${who} submitted ${m.count} picks${m.notes ? ` with ${m.notes} note${m.notes === 1 ? '' : 's'}` : ''}` }
+    case 'selection_submitted': return { icon: '♥', text: you ? `You submitted ${m.count} photos for editing${m.wants_unedited ? ', plus all the unedited images' : ''}` : `${who} submitted ${m.count} picks${m.notes ? ` with ${m.notes} note${m.notes === 1 ? '' : 's'}` : ''}${m.wants_unedited ? ' + wants all unedited' : ''}` }
     case 'selection_unlocked': return { icon: '🔓', text: you ? 'Your selection was reopened so you can change it' : 'Selection unlocked for changes' }
     case 'finals_delivered': return { icon: '✨', text: you ? `Your final photos are ready — ${m.count} photos` : `Finals delivered (${m.count} photos)${m.emailed === false ? ' — email not sent' : ''}` }
+    case 'feedback_sent': return { icon: '💬', text: you ? `You sent feedback on ${t}` : `${who} sent feedback: ${m.liked ?? 0} 👍, ${m.disliked ?? 0} 👎${m.comments ? `, ${m.comments} comment${m.comments === 1 ? '' : 's'}` : ''}` }
     case 'finals_resent': return { icon: '✉️', text: you ? 'We re-sent your download link' : 'Finals email re-sent' }
     case 'downloaded': return { icon: '⬇️', text: m.all ? `${who} downloaded all photos${m.count ? ` (${m.count})` : ''}` : `${who} downloaded ${m.filename ?? 'a photo'}` }
     case 'previews_purged': return { icon: '🧹', text: you ? 'Your watermarked previews were removed (finals are kept)' : `Previews removed from storage (${m.objects ?? 0} files)` }

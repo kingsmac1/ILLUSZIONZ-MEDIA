@@ -11,7 +11,8 @@ In the VS Code terminal, in the project folder:
 ```
 npm run gallery:go-live
 ```
-It adds the private-link key to every gallery, deploys the 10 gallery functions (including the new `gallery-pick`), switches client
+It adds the private-link key to every gallery, deploys the 11 gallery functions (including the new `gallery-pick` and `gallery-feedback`), adds the tables for feedback
+and unedited images, switches client
 accounts to email + password with **Confirm your email** and **Reset your password** emails sent from Illuszionz Media through
 Resend, fixes the address in those emails (it was still `localhost:3000`), and schedules the nightly preview clean-up.
 It never prints your keys, and it is safe to run again. If Supabase refuses a step, it now shows Supabase's reason: send it to Claude Code.

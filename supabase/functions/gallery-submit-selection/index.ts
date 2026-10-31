@@ -5,7 +5,7 @@
 import { handle, HttpError, isUuid, json } from '../_shared/http.ts'
 import { caller, canAct, loadGallery, logActivity, service } from '../_shared/auth.ts'
 import { mailConfig, sendEmail } from '../_shared/email.ts'
-import { selectionConfirmation, selectionReceived } from '../_shared/email-templates.ts'
+import { money, selectionConfirmation, selectionReceived } from '../_shared/email-templates.ts'
 import { adminLink, clientLink, OPEN_FOR_PICKS } from '../_shared/gallery.ts'
 import { byFilename, lightroomFilter } from '../_shared/filenames.ts'
 
@@ -27,7 +27,10 @@ Deno.serve(handle(async (req, body) => {
   if (g.selection_limit && !g.allow_extra_selections && list.length > g.selection_limit) throw new HttpError(`You can pick up to ${g.selection_limit} photos — please remove ${list.length - g.selection_limit}.`)
 
   const now = new Date().toISOString()
-  const { error: upErr } = await service().from('galleries').update({ status: 'submitted', submitted_at: now }).eq('id', g.id).in('status', OPEN_FOR_PICKS)
+  // "I want all unedited images" — only when the studio offers it on this gallery (a price is set)
+  const wantsUnedited = !!body.wants_unedited && g.unedited_price != null
+  const unedited = wantsUnedited ? Number(g.unedited_price) : null
+  const { error: upErr } = await service().from('galleries').update({ status: 'submitted', submitted_at: now, wants_unedited: wantsUnedited }).eq('id', g.id).in('status', OPEN_FOR_PICKS)
   if (upErr) throw upErr
 
   const cfg = mailConfig()
@@ -35,11 +38,11 @@ Deno.serve(handle(async (req, body) => {
   const notes = list.filter((x) => x.note).sort((a, b) => byFilename(a.file, b.file))
   const base = { siteUrl: cfg.siteUrl, clientName: g.client_name || g.client_email, title: g.title, link: clientLink(g) }
   const [owner, client] = await Promise.all([
-    sendEmail({ to: cfg.owners, replyTo: g.client_email, message: selectionReceived({ ...base, clientEmail: g.client_email, adminLink: adminLink(g), count: list.length, limit: g.selection_limit, filenames, lightroom: lightroomFilter(filenames), notes }) }),
-    sendEmail({ to: g.client_email, replyTo: cfg.owners[0], message: selectionConfirmation({ ...base, count: list.length }) }),
+    sendEmail({ to: cfg.owners, replyTo: g.client_email, message: selectionReceived({ ...base, clientEmail: g.client_email, adminLink: adminLink(g), count: list.length, limit: g.selection_limit, filenames, lightroom: lightroomFilter(filenames), notes, unedited }) }),
+    sendEmail({ to: g.client_email, replyTo: cfg.owners[0], message: selectionConfirmation({ ...base, count: list.length, unedited }) }),
   ])
-  await logActivity({ client_email: g.client_email, booking_id: g.booking_id, gallery_id: g.id, actor: 'client', event: 'selection_submitted', meta: { title: g.title, count: list.length, notes: notes.length, emailed: owner.sent } })
+  await logActivity({ client_email: g.client_email, booking_id: g.booking_id, gallery_id: g.id, actor: 'client', event: 'selection_submitted', meta: { title: g.title, count: list.length, notes: notes.length, wants_unedited: wantsUnedited, emailed: owner.sent } })
 
-  const whatsapp_text = `Hi Illuszionz Media 👋 I've submitted my photo selection — ${list.length} photos from "${g.title}". Name: ${g.client_name || '—'}. Email: ${g.client_email}. Link: ${adminLink(g)}`
+  const whatsapp_text = `Hi Illuszionz Media 👋 I've submitted my photo selection — ${list.length} photos from "${g.title}"${wantsUnedited ? `, plus all the unedited images (${money(unedited!)})` : ''}. Name: ${g.client_name || '—'}. Email: ${g.client_email}. Link: ${adminLink(g)}`
   return json({ ok: true, count: list.length, submitted_at: now, emailed: owner.sent && client.sent, whatsapp_text, whatsapp_url: `https://wa.me/${cfg.whatsapp}?text=${encodeURIComponent(whatsapp_text)}` })
 }))

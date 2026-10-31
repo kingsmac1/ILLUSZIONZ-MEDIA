@@ -1,6 +1,7 @@
 /**
  * Admin: register new images and get presigned PUT URLs for each variant. The browser uploads straight to R2.
- * Proof galleries only accept watermarked 'thumb' + 'preview' (never the original); finals take 'thumb' + 'web' + 'original'.
+ * Proof galleries only accept watermarked 'thumb' + 'preview' (never the original); finals take 'thumb' + 'web' + 'original',
+ * as body.image_set 'edited' (default) or 'unedited' (the client's full set of unedited images).
  */
 import { handle, HttpError, isUuid, json } from '../_shared/http.ts'
 import { loadGallery, requireAdmin, service } from '../_shared/auth.ts'
@@ -19,6 +20,7 @@ Deno.serve(handle(async (req, body) => {
   if (files.length > MAX_FILES_PER_CALL) throw new HttpError(`Send at most ${MAX_FILES_PER_CALL} files per request.`)
   const g = await loadGallery(body.gallery_id)
   const want = g.kind === 'proof' ? ['thumb', 'preview'] : ['thumb', 'web', 'original']
+  const imageSet = g.kind === 'final' && body.image_set === 'unedited' ? 'unedited' : 'edited'
 
   const { data: last } = await service().from('gallery_images').select('sort_order').eq('gallery_id', g.id).order('sort_order', { ascending: false }).limit(1)
   let sort = (last?.[0]?.sort_order ?? -1) + 1
@@ -34,7 +36,7 @@ Deno.serve(handle(async (req, body) => {
     const row: Record<string, unknown> = {
       id, gallery_id: g.id, original_filename: name, status: 'uploading', sort_order: sort++,
       width: Math.round(Number(f.width)) || null, height: Math.round(Number(f.height)) || null, bytes: Math.max(0, Math.round(Number(f.bytes) || 0)),
-      taken_at: f.taken_at && !Number.isNaN(Date.parse(f.taken_at)) ? f.taken_at : null, content_type: 'image/jpeg',
+      taken_at: f.taken_at && !Number.isNaN(Date.parse(f.taken_at)) ? f.taken_at : null, content_type: 'image/jpeg', image_set: imageSet,
     }
     const urls: Record<string, string> = {}
     if (g.kind === 'proof') {

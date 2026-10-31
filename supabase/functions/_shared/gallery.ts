@@ -2,7 +2,7 @@
 import type { Gallery } from './auth.ts'
 import { mailConfig } from './email.ts'
 
-/** Watermarked previews are deleted this many days after the finals are delivered. */
+/** Watermarked previews are deleted this many days after they're sent (and at the latest this long after the finals are delivered). */
 export const PURGE_DAYS = 30
 export const PAGE_SIZE = 200
 /** At most this many files per upload-URL request (the browser asks in batches). */

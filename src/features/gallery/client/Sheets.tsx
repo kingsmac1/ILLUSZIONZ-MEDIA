@@ -54,16 +54,21 @@ export function NoteSheet({ filename, initial, readOnly, onClose, onSave, inside
   )
 }
 
-export function SubmitSheet({ images, picks, limit, extrasNote, onClose, onSubmit, onNote }: {
+const money = (n: number) => `£${Number.isInteger(n) ? n : n.toFixed(2)}`
+
+export function SubmitSheet({ images, picks, limit, extrasNote, uneditedPrice, onClose, onSubmit, onNote }: {
   images: ViewImage[]
   picks: Map<string, string | null>
   limit: number | null
   extrasNote: string | null
+  /** the studio offers "all unedited images" on this gallery for this price (null = not offered) */
+  uneditedPrice: number | null
   onClose: () => void
-  onSubmit: () => Promise<boolean>
+  onSubmit: (o: { wantsUnedited: boolean }) => Promise<boolean>
   onNote: (id: string) => void
 }) {
   const [busy, setBusy] = useState(false)
+  const [unedited, setUnedited] = useState(false)
   const n = images.length
   const notes = images.filter((i) => picks.get(i.id)).length
   const left = limit ? limit - n : 0
@@ -84,9 +89,20 @@ export function SubmitSheet({ images, picks, limit, extrasNote, onClose, onSubmi
           </figure>
         ))}
       </div>
+      <div className="cg-summary" aria-live="polite">
+        <div className="cg-summary-row"><span>Photos for editing</span><b>{n}{limit ? ` of ${limit}` : ''}</b></div>
+        {uneditedPrice != null && (
+          <label className={'cg-unedited' + (unedited ? ' on' : '')}>
+            <input type="checkbox" checked={unedited} onChange={(e) => setUnedited(e.target.checked)} />
+            <span><b>I want all unedited images</b><small>Every photo from the shoot, as shot, in full resolution, delivered with your edited photos.</small></span>
+            <em>{money(uneditedPrice)}</em>
+          </label>
+        )}
+        {unedited && uneditedPrice != null && <div className="cg-summary-row total"><span>To pay for the unedited images</span><b>{money(uneditedPrice)}</b></div>}
+      </div>
       <div className="cg-sheet-f">
         <button className="cg-btn line" onClick={onClose}>Keep picking</button>
-        <button className="cg-btn solid red" disabled={busy || !n} onClick={async () => { setBusy(true); await onSubmit(); setBusy(false) }}>{busy ? 'Sending…' : `Submit ${n} photo${n === 1 ? '' : 's'}`}</button>
+        <button className="cg-btn solid red" disabled={busy || !n} onClick={async () => { setBusy(true); await onSubmit({ wantsUnedited: unedited }); setBusy(false) }}>{busy ? 'Sending…' : `Submit ${n} photo${n === 1 ? '' : 's'}`}</button>
       </div>
     </Sheet>
   )
@@ -148,6 +164,59 @@ export function SaveSheet({ email, kind, onClose, onSignedIn }: { email: string;
           />
         </div>
       )}
+    </Sheet>
+  )
+}
+
+/** A comment on one final photo, for the photographer. */
+export function CommentSheet({ filename, initial, onClose, onSave, inside }: { filename: string; initial: string; onClose: () => void; onSave: (t: string) => void; inside?: Element | null }) {
+  const [t, setT] = useState(initial)
+  return (
+    <Sheet title="Comment for the photographer" onClose={onClose} inside={inside}>
+      <p className="cg-sheet-sub">{filename}</p>
+      <textarea rows={4} value={t} maxLength={2000} onChange={(e) => setT(e.target.value)} placeholder="e.g. Love this! Could it be a little brighter? Or: please soften the skin a touch." />
+      <div className="cg-sheet-f">
+        <button className="cg-btn line" onClick={onClose}>Cancel</button>
+        <button className="cg-btn solid" onClick={() => onSave(t)}>{initial && !t.trim() ? 'Remove comment' : 'Save comment'}</button>
+      </div>
+    </Sheet>
+  )
+}
+
+/** Review the 👍 / 👎 / comments, then email them to the studio. */
+export function FeedbackSheet({ images, feedback, sentAt, onClose, onSend, onComment }: {
+  images: ViewImage[]
+  feedback: Map<string, { reaction: 1 | -1 | null; comment: string | null }>
+  sentAt: string | null
+  onClose: () => void
+  onSend: () => Promise<boolean>
+  onComment: (id: string) => void
+}) {
+  const [busy, setBusy] = useState(false)
+  const rows = images.filter((i) => feedback.has(i.id))
+  const up = rows.filter((i) => feedback.get(i.id)!.reaction === 1).length
+  const down = rows.filter((i) => feedback.get(i.id)!.reaction === -1).length
+  return (
+    <Sheet title="Send your feedback?" onClose={onClose} wide>
+      <p className="cg-sheet-sub">{up} 👍 · {down} 👎 · {rows.filter((i) => feedback.get(i.id)!.comment).length} with a comment. We’ll get it by email and come back to you{down ? ' about the photos you marked 👎' : ''}.{sentAt ? ' This sends your latest feedback again.' : ''}</p>
+      <div className="cg-review">
+        {rows.map((i) => {
+          const f = feedback.get(i.id)!
+          return (
+            <figure key={i.id}>
+              {i.thumb ? <img src={i.thumb} alt={i.filename} loading="lazy" draggable={false} /> : null}
+              <figcaption>
+                <span>{f.reaction === 1 ? '👍 ' : f.reaction === -1 ? '👎 ' : ''}{i.filename}</span>
+                <button className="cg-link" onClick={() => onComment(i.id)}>{f.comment ? `“${f.comment}”` : 'Add comment'}</button>
+              </figcaption>
+            </figure>
+          )
+        })}
+      </div>
+      <div className="cg-sheet-f">
+        <button className="cg-btn line" onClick={onClose}>Not yet</button>
+        <button className="cg-btn solid" disabled={busy || !rows.length} onClick={async () => { setBusy(true); await onSend(); setBusy(false) }}>{busy ? 'Sending…' : 'Send to the photographer'}</button>
+      </div>
     </Sheet>
   )
 }

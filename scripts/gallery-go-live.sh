@@ -5,7 +5,7 @@
 # Reads .env.local (never prints a secret). Steps:
 #   1. database migrations (supabase/migrations)      4. accounts: site URL, password sign-up with a confirmation
 #   2. Edge Function secrets (R2 keys, owner details)     link, forgot-password, branded emails sent through Resend
-#   3. deploy the 10 gallery Edge Functions            5. daily clean-up of old previews (pg_cron)
+#   3. deploy the 11 gallery Edge Functions            5. daily clean-up of old previews (pg_cron)
 #                                                      6. R2 upload rules (CORS) — needs an R2-enabled API token
 # RESEND_API_KEY + EMAIL_FROM in .env.local make every account email come from Illuszionz Media (via Resend SMTP).
 # =====================================================================================================

@@ -41,6 +41,11 @@ const quote = (t: string) =>
 const mono = (t: string) =>
   `<div style="margin-top:10px;padding:16px 18px;background:${PAPER};border:1px solid ${LINE};border-radius:10px;font-family:Menlo,Consolas,monospace;font-size:12.5px;line-height:1.7;color:${INK};word-break:break-all;white-space:pre-wrap;">${esc(t)}</div>`
 
+/** a boxed notice that stands out from the body text (deadlines, things to act on) */
+const callout = (html: string) =>
+  `<div style="margin-top:28px;padding:18px 20px;border-left:4px solid #c8102e;background:#fdf0f2;border-radius:10px;font-family:${SANS};font-size:14.5px;line-height:1.65;color:${INK};">${html}</div>`
+export const money = (n: number) => `£${Number.isInteger(n) ? n : n.toFixed(2)}`
+
 function layout(o: { siteUrl: string; preheader: string; eyebrow: string; title: string; body: string }) {
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light only"><title>${esc(o.title)}</title></head>
@@ -73,7 +78,10 @@ function layout(o: { siteUrl: string; preheader: string; eyebrow: string; title:
 type Base = { siteUrl: string; clientName: string; title: string; link: string }
 
 /** 1. Previews ready (to the client) */
-export function previewsReady(o: Base & { message?: string | null; limit?: number | null; extrasNote?: string | null; reminder?: boolean }): RenderedEmail {
+export function previewsReady(o: Base & { message?: string | null; limit?: number | null; extrasNote?: string | null; reminder?: boolean; deleteOn?: string | null; days?: number; uneditedPrice?: number | null }): RenderedEmail {
+  const deadline = o.deleteOn
+    ? `<b>Please make your selection early.</b> These previews are kept for ${o.days ?? 30} days and are deleted on <b>${esc(fmtDay(o.deleteOn))}</b>. After that we can't send you photos you haven't picked.`
+    : ''
   const pick = o.limit ? `Pick your favourite <b>${o.limit}</b> photos` : 'Pick your favourite photos'
   const steps = [
     'Open the gallery with the button below — no sign-in needed. Keep this email: the link is your private key to the gallery.',
@@ -88,22 +96,25 @@ export function previewsReady(o: Base & { message?: string | null; limit?: numbe
     ${p(intro, 16)}
     ${o.message ? quote(o.message) : ''}
     <div style="margin-top:34px;">${button(o.link, 'View your gallery')}</div>
+    ${deadline ? callout(deadline) : ''}
     <div style="margin-top:30px;">${label('How it works')}</div>
     ${steps.map((t, i) => `<table role="presentation" cellspacing="0" cellpadding="0" style="margin-top:12px;"><tr><td style="width:36px;vertical-align:top;"><div style="width:26px;height:26px;border-radius:50%;background:${INK};color:#fff;font-family:${SANS};font-size:12px;font-weight:700;line-height:26px;text-align:center;">${i + 1}</div></td><td style="font-family:${SANS};font-size:14px;line-height:1.6;color:${INK};padding-top:3px;">${esc(t)}</td></tr></table>`).join('')}
     ${o.extrasNote ? small(`Want more than ${o.limit}? ${esc(o.extrasNote)}`) : ''}
+    ${o.uneditedPrice != null ? small(`Want every photo from the shoot? Tick “I want all unedited images” before you submit (${money(o.uneditedPrice)}).`) : ''}
     ${small('The previews carry our watermark; your edited photos come without it, in full resolution.')}`
   const subject = o.reminder ? `Reminder: your previews are waiting · ${o.title}` : `Your previews are ready · ${o.title}`
   return {
     subject,
     html: layout({ siteUrl: o.siteUrl, preheader: o.limit ? `Pick ${o.limit} photos for editing.` : 'Pick your favourites for editing.', eyebrow: 'Your previews', title: o.reminder ? 'Your previews are waiting' : 'Your previews are ready', body }),
-    text: [`Hi ${first(o.clientName)},`, '', `Your previews from "${o.title}" are ready.${o.limit ? ` Pick your favourite ${o.limit} photos.` : ''}`, ...(o.message ? ['', o.message] : []), '', `Open your gallery: ${o.link}`, '', ...steps.map((t, i) => `${i + 1}. ${t}`), ...(o.extrasNote ? ['', o.extrasNote] : []), '', BRAND.name].join('\n'),
+    text: [`Hi ${first(o.clientName)},`, '', `Your previews from "${o.title}" are ready.${o.limit ? ` Pick your favourite ${o.limit} photos.` : ''}`, ...(o.message ? ['', o.message] : []), '', `Open your gallery: ${o.link}`, ...(o.deleteOn ? ['', `Please make your selection early: the previews are deleted on ${fmtDay(o.deleteOn)} (${o.days ?? 30} days).`] : []), '', ...steps.map((t, i) => `${i + 1}. ${t}`), ...(o.extrasNote ? ['', o.extrasNote] : []), '', BRAND.name].join('\n'),
   }
 }
 
 /** 2. Selection received (to the photographer) — includes the filename list for Lightroom */
-export function selectionReceived(o: Base & { clientEmail: string; adminLink: string; count: number; limit: number | null; filenames: string[]; lightroom: string; notes: { file: string; note: string }[] }): RenderedEmail {
+export function selectionReceived(o: Base & { clientEmail: string; adminLink: string; count: number; limit: number | null; filenames: string[]; lightroom: string; notes: { file: string; note: string }[]; unedited?: number | null }): RenderedEmail {
   const body = `
     ${p(`<b>${esc(o.clientName)}</b> (${esc(o.clientEmail)}) picked <b>${o.count}</b>${o.limit ? ` of ${o.limit}` : ''} photos from <b>${esc(o.title)}</b>. The selection is now locked.`)}
+    ${o.unedited != null ? callout(`<b>They also want all the unedited images</b> (${money(o.unedited)}). Upload them in the Finals tab under “All unedited images”.`) : ''}
     <div style="margin-top:30px;">${button(o.adminLink, 'Open the selection')}</div>
     ${o.notes.length ? `<div style="margin-top:30px;">${label(`Notes from the client (${o.notes.length})`)}</div>${rows(o.notes.map((n) => [n.file, n.note]))}` : ''}
     <div style="margin-top:30px;">${label('Lightroom filter — paste into Library → Text → Filename')}</div>
@@ -111,17 +122,18 @@ export function selectionReceived(o: Base & { clientEmail: string; adminLink: st
     <div style="margin-top:26px;">${label(`Filenames (${o.filenames.length})`)}</div>
     ${mono(o.filenames.join('\n'))}`
   return {
-    subject: `Selection received: ${o.count} photos · ${o.clientName}`,
+    subject: `Selection received: ${o.count} photos${o.unedited != null ? ' + all unedited' : ''} · ${o.clientName}`,
     html: layout({ siteUrl: o.siteUrl, preheader: `${o.clientName} picked ${o.count} photos.`, eyebrow: 'Selection received', title: `${o.count} photos picked`, body }),
-    text: [`${o.clientName} (${o.clientEmail}) picked ${o.count}${o.limit ? ` of ${o.limit}` : ''} photos from "${o.title}".`, `Open: ${o.adminLink}`, '', ...(o.notes.length ? ['Notes:', ...o.notes.map((n) => `- ${n.file}: ${n.note}`), ''] : []), 'Lightroom filter:', o.lightroom, '', 'Filenames:', ...o.filenames].join('\n'),
+    text: [`${o.clientName} (${o.clientEmail}) picked ${o.count}${o.limit ? ` of ${o.limit}` : ''} photos from "${o.title}".`, ...(o.unedited != null ? [`They also want ALL the unedited images (${money(o.unedited)}).`] : []), `Open: ${o.adminLink}`, '', ...(o.notes.length ? ['Notes:', ...o.notes.map((n) => `- ${n.file}: ${n.note}`), ''] : []), 'Lightroom filter:', o.lightroom, '', 'Filenames:', ...o.filenames].join('\n'),
   }
 }
 
 /** 3. Selection confirmation (to the client) */
-export function selectionConfirmation(o: Base & { count: number }): RenderedEmail {
+export function selectionConfirmation(o: Base & { count: number; unedited?: number | null }): RenderedEmail {
   const body = `
     ${p(`Hi ${esc(first(o.clientName))},`)}
     ${p(`Thank you — we've received your <b>${o.count}</b> picks from <b>${esc(o.title)}</b>. We're editing them now and will email you as soon as your final photos are ready to download.`, 16)}
+    ${o.unedited != null ? p(`You also asked for <b>all the unedited images</b> (${money(o.unedited)}). They'll be in the same gallery as your edited photos.`, 14) : ''}
     <div style="margin-top:34px;">${button(o.link, 'View your selection')}</div>
     ${small('Changed your mind about a photo? Reply to this email or message us on WhatsApp and we can reopen your selection.')}`
   return {
@@ -145,17 +157,38 @@ export function selectionUnlocked(o: Base & { limit?: number | null }): Rendered
 }
 
 /** 5. Final photos ready (to the client) */
-export function finalsReady(o: Base & { count: number; message?: string | null; previewsExpire?: string | null; resend?: boolean }): RenderedEmail {
+export function finalsReady(o: Base & { count: number; unedited?: number; message?: string | null; previewsExpire?: string | null; resend?: boolean }): RenderedEmail {
   const body = `
     ${p(`Hi ${esc(first(o.clientName))},`)}
     ${p(`Your <b>${o.count}</b> edited photos from <b>${esc(o.title)}</b> are ready. Download them one by one or all at once, in full resolution and without a watermark.`, 16)}
+    ${o.unedited ? p(`All <b>${o.unedited}</b> unedited images are in the gallery too, under “All unedited”.`, 14) : ''}
     ${o.message ? quote(o.message) : ''}
     <div style="margin-top:34px;">${button(o.link, 'Download your photos')}</div>
     ${o.previewsExpire ? small(`Your watermarked previews will be removed on ${esc(fmtDay(o.previewsExpire))}. Your final photos stay in your account.`) : ''}
+    ${small('Tell us what you think: give any photo a 👍 or 👎, add a comment, then press “Send feedback”. We read every one.')}
     ${small('We would love to see them shared — tag us on Instagram. Thank you for choosing us!')}`
   return {
     subject: `Your photos are ready · ${o.title}`,
     html: layout({ siteUrl: o.siteUrl, preheader: `${o.count} edited photos ready to download.`, eyebrow: 'Final photos', title: 'Your photos are ready', body }),
     text: [`Hi ${first(o.clientName)},`, '', `Your ${o.count} edited photos from "${o.title}" are ready to download.`, ...(o.message ? ['', o.message] : []), '', o.link, '', BRAND.name].join('\n'),
+  }
+}
+
+/** 6. Feedback on the final photos (to the photographer) */
+export function feedbackReceived(o: Base & { clientEmail: string; adminLink: string; liked: string[]; disliked: { file: string; comment: string }[]; comments: { file: string; comment: string }[]; lightroom: string }): RenderedEmail {
+  const total = o.liked.length + o.disliked.length + o.comments.length
+  const body = `
+    ${p(`<b>${esc(o.clientName)}</b> (${esc(o.clientEmail)}) sent feedback on <b>${esc(o.title)}</b>: <b>${o.liked.length}</b> 👍, <b>${o.disliked.length}</b> 👎${o.comments.length ? `, ${o.comments.length} other comment${o.comments.length === 1 ? '' : 's'}` : ''}.`)}
+    <div style="margin-top:30px;">${button(o.adminLink, 'Open the feedback')}</div>
+    ${o.disliked.length ? `<div style="margin-top:30px;">${label(`👎 Needs another look (${o.disliked.length})`)}</div>${rows(o.disliked.map((d) => [d.file, d.comment || '—']))}<div style="margin-top:18px;">${label('Lightroom filter for these')}</div>${mono(o.lightroom)}` : ''}
+    ${o.comments.length ? `<div style="margin-top:30px;">${label(`Comments (${o.comments.length})`)}</div>${rows(o.comments.map((c) => [c.file, c.comment]))}` : ''}
+    ${o.liked.length ? `<div style="margin-top:30px;">${label(`👍 Loved (${o.liked.length})`)}</div>${mono(o.liked.join('\n'))}` : ''}`
+  return {
+    subject: `Feedback on the finals: ${o.disliked.length ? `${o.disliked.length} 👎 · ` : ''}${o.clientName}`,
+    html: layout({ siteUrl: o.siteUrl, preheader: `${total} reactions and comments from ${o.clientName}.`, eyebrow: 'Client feedback', title: o.disliked.length ? `${o.disliked.length} photo${o.disliked.length === 1 ? '' : 's'} to look at again` : 'Feedback on the finals', body }),
+    text: [`${o.clientName} (${o.clientEmail}) sent feedback on "${o.title}".`, `Open: ${o.adminLink}`, '',
+      ...(o.disliked.length ? ['Thumbs down:', ...o.disliked.map((d) => `- ${d.file}${d.comment ? `: ${d.comment}` : ''}`), '', 'Lightroom filter:', o.lightroom, ''] : []),
+      ...(o.comments.length ? ['Comments:', ...o.comments.map((c) => `- ${c.file}: ${c.comment}`), ''] : []),
+      ...(o.liked.length ? ['Thumbs up:', ...o.liked] : [])].join('\n'),
   }
 }

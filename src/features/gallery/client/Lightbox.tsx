@@ -1,13 +1,14 @@
-/** Full-screen viewer: swipe on phones, arrow keys on desktop, pinch/scroll zoom, heart + note (proofs) or download (finals). */
+/** Full-screen viewer: swipe on phones, arrow keys on desktop, pinch/scroll zoom, heart + note (proofs) or 👍 / 👎 / comment + download (finals). */
 import { useMemo, useState } from 'react'
 import YarLightbox from 'yet-another-react-lightbox'
 import Zoom from 'yet-another-react-lightbox/plugins/zoom'
 import 'yet-another-react-lightbox/styles.css'
 import { galleryConfig } from '../gallery.config'
 import type { ViewImage } from '../types'
-import { DownloadIcon, Heart } from './icons'
+import { CommentIcon, DownloadIcon, Heart, Thumb } from './icons'
+import type { Feedback } from './useFeedback'
 
-export function Lightbox({ images, index, onClose, proof, picks, locked, onToggle, onNote, onDownload }: {
+export function Lightbox({ images, index, onClose, proof, picks, locked, onToggle, onNote, onDownload, feedback, onReact, onComment }: {
   images: ViewImage[]
   index: number
   onClose: () => void
@@ -17,6 +18,10 @@ export function Lightbox({ images, index, onClose, proof, picks, locked, onToggl
   onToggle: (id: string) => void
   onNote: (id: string) => void
   onDownload?: (id: string) => void
+  /** finals: the client's reactions, and what to do on 👍 / 👎 / comment (omitted = read-only, e.g. unedited photos) */
+  feedback?: Feedback
+  onReact?: (id: string, r: 1 | -1) => void
+  onComment?: (id: string) => void
 }) {
   const [cur, setCur] = useState(index)
   const slides = useMemo(() => images.map((img) => {
@@ -32,6 +37,7 @@ export function Lightbox({ images, index, onClose, proof, picks, locked, onToggl
   const img = images[cur]
   const picked = img ? picks.has(img.id) : false
   const note = img ? picks.get(img.id) : null
+  const f = img ? feedback?.get(img.id) : undefined
 
   const buttons = [
     proof && img && (
@@ -43,6 +49,15 @@ export function Lightbox({ images, index, onClose, proof, picks, locked, onToggl
       <button key="note" type="button" className={'yarl__button cg-lb-note' + (note ? ' on' : '')} aria-label={note ? 'Read or edit your note' : 'Add a note'} disabled={locked && !note} onClick={() => onNote(img.id)}>
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z" />{note ? <path d="M8 9h8M8 12h5" /> : null}</svg>
       </button>
+    ),
+    !proof && img && onReact && (
+      <button key="up" type="button" className={'yarl__button cg-lb-up' + (f?.reaction === 1 ? ' on' : '')} aria-pressed={f?.reaction === 1} aria-label="I love this one" onClick={() => onReact(img.id, 1)}><Thumb filled={f?.reaction === 1} /></button>
+    ),
+    !proof && img && onReact && (
+      <button key="down" type="button" className={'yarl__button cg-lb-down' + (f?.reaction === -1 ? ' on' : '')} aria-pressed={f?.reaction === -1} aria-label="This one needs another look" onClick={() => onReact(img.id, -1)}><Thumb down filled={f?.reaction === -1} /></button>
+    ),
+    !proof && img && onComment && (
+      <button key="comment" type="button" className={'yarl__button cg-lb-note' + (f?.comment ? ' on' : '')} aria-label={f?.comment ? 'Read or edit your comment' : 'Add a comment'} onClick={() => onComment(img.id)}><CommentIcon filled={!!f?.comment} /></button>
     ),
     !proof && img && onDownload && (
       <button key="dl" type="button" className="yarl__button" aria-label={`Download ${img.filename}`} onClick={() => onDownload(img.id)}><DownloadIcon /></button>
@@ -75,6 +90,7 @@ export function Lightbox({ images, index, onClose, proof, picks, locked, onToggl
               <span>{im.filename}</span>
               <span>{i + 1} / {images.length}</span>
               {proof && picks.get(im.id) ? <em>“{picks.get(im.id)}”</em> : null}
+              {!proof && feedback?.get(im.id)?.comment ? <em>“{feedback.get(im.id)!.comment}”</em> : null}
             </div>
           )
         },

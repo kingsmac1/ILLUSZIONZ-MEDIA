@@ -33,6 +33,18 @@ opens the gallery straight away, on any device. Anyone holding the link can see 
 - *Forgot password?* emails a link to choose a new password (works once, for one hour).
 - Clients who signed up earlier with a code have no password yet: they use **Forgot password?** once to set one.
 
+**Cancel an upload:** while photos are uploading, press **Cancel upload** above the progress list (or the × on one file).
+Files still waiting or uploading stop and anything half-uploaded is removed; photos that already finished stay.
+
+**Selection deadline:** previews are deleted **30 days after you first send them**, and the email and the gallery tell the client the
+date and ask them to choose early. Need longer? Press **+30 days** next to the date in the Gallery Manager.
+
+**All unedited images (optional):** fill in *Price for all unedited images (£)* in the preview gallery settings. The client then sees
+an **"I want all unedited images"** tick box with that price when they submit their picks, and the price is added to their summary.
+If they tick it, their selection email says so and the Finals tab opens an **All unedited images** upload area. For a client who
+paid for all unedited images in their package, tick **"This client gets all the unedited images"** on the Finals tab instead.
+The client finds them in the finals gallery under **Unedited**, with their own Download all.
+
 ## 2. Read the selection
 When the client presses **Submit selection**:
 - You get an email with the picks, their notes, and the filenames (one per line, plus a Lightroom filter).
@@ -68,6 +80,11 @@ The "Storage used" card shows how much space your galleries take up. The **Overv
 - Export finals as high-quality JPEG (quality 85–90, long edge 4000–6000 px) instead of 50 MB TIFFs. Clients won't see the difference,
   and you will fit roughly 3× more shoots.
 - Delete old galleries you no longer need from the Gallery Manager (**Delete gallery**). This removes the files from storage too.
+
+## Feedback on the final photos
+In the finals gallery the client can open any edited photo and tap **👍**, **👎** or the comment button, then press **Send feedback**.
+You get an email listing the 👎 photos with their comments (plus a Lightroom filter for them), the comments and the 👍 photos;
+the Finals tab shows the same in **Client feedback**. They can change their mind and send again.
 
 ## Test before going live
 1. Upload 10 previews. Open one: the logo watermark is big and visible.
