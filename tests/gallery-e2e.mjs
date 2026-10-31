@@ -325,13 +325,18 @@ for (const vp of [{ width: 375, height: 812 }, { width: 1440, height: 900 }]) {
   const prev = proofs.find((u) => u.url.includes('ILU0061') && u.url.endsWith('/preview.jpg'))
   if (prev) {
     const m = await sharp(prev.body).metadata()
-    // compare the centre band, where the big logo sits
-    const band = { left: Math.round(m.width * 0.2), top: Math.round(m.height * 0.42), width: Math.round(m.width * 0.6), height: Math.round(m.height * 0.16) }
-    const clean = await sharp('public/images/ILU0061.webp').resize(m.width, m.height).extract(band).removeAlpha().raw().toBuffer()
-    const marked = await sharp(prev.body).extract(band).removeAlpha().raw().toBuffer()
-    let diff = 0
-    for (let i = 0; i < clean.length; i += 3) if (Math.abs(clean[i] - marked[i]) > 18) diff++
-    ok('preview carries a visible watermark (centre band)', diff / (clean.length / 3) > 0.08, `${((diff / (clean.length / 3)) * 100).toFixed(1)}% of centre pixels changed`)
+    // only the faint tile of small logos: many pixels change a little, none change a lot (no big bold centre logo)
+    const clean = await sharp('public/images/ILU0061.webp').resize(m.width, m.height).removeAlpha().raw().toBuffer()
+    const marked = await sharp(prev.body).removeAlpha().raw().toBuffer()
+    let faint = 0, strong = 0
+    for (let i = 0; i < clean.length; i += 3) {
+      const d = Math.abs(clean[i] - marked[i])
+      if (d > 5) faint++
+      if (d > 45) strong++
+    }
+    const px = clean.length / 3
+    ok('preview carries the faint logo tile', faint / px > 0.02, `${((faint / px) * 100).toFixed(1)}% of pixels touched`)
+    ok('preview has no big bold centre logo', strong / px < 0.003, `${((strong / px) * 100).toFixed(2)}% of pixels strongly changed`)
   }
   ok('manager offers Reset link once sent', await page.isVisible('button:has-text("Reset link")'))
   await page.click('.ad-tabs button:has-text("Finals")')

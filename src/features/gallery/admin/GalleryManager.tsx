@@ -266,7 +266,7 @@ function ProofsTab({ booking, gallery: g, ensure }: { booking: R; gallery?: Gall
           </p>}
         </div>
         <div className="ad-card">
-          <div className="gm-card-h"><h3>Upload previews</h3><small className="ad-muted">watermark: {Math.round(galleryConfig.watermark.size * 100)}% wide, {Math.round(galleryConfig.watermark.opacity * 100)}% opacity</small></div>
+          <div className="gm-card-h"><h3>Upload previews</h3><small className="ad-muted">watermark: small faint logos across the photo ({Math.round(galleryConfig.watermark.tileOpacity * 100)}% opacity){galleryConfig.watermark.size > 0 ? ` + a ${Math.round(galleryConfig.watermark.size * 100)}% wide centre logo` : ''}</small></div>
           {g?.previews_purged_at ? <p className="ad-muted">The previews of this gallery were removed after delivery.</p> : (
             <Uploader mode="proof" galleryId={g?.id ?? null} ensureGallery={ensure} onSettled={() => { reload(); refreshGalleries() }} onRejected={(n) => toast(`Skipped ${n.length} file${n.length === 1 ? '' : 's'} (only JPG, PNG, WebP): ${n.slice(0, 3).join(', ')}${n.length > 3 ? '…' : ''}`, 'err')} />
           )}

@@ -87,7 +87,7 @@ You get an email listing the 👎 photos with their comments (plus a Lightroom f
 the Finals tab shows the same in **Client feedback**. They can change their mind and send again.
 
 ## Test before going live
-1. Upload 10 previews. Open one: the logo watermark is big and visible.
+1. Upload 10 previews. Open one: small faint logos run diagonally across the whole photo.
 2. Send to a test email you own (a Gmail that isn't your admin email).
 3. Open the link in a private window: the gallery opens without signing in. Remove the `?k=…` part from the address: it asks you
    to sign in instead. Wait a few seconds: the "Keep your photos in one place" prompt appears. Create an account with the test

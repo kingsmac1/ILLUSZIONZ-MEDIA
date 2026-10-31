@@ -22,8 +22,8 @@ export const galleryConfig = {
   watermark: {
     /** the logo drawn on every proof image — a white logo on a transparent background works best */
     logo: '/images/illuszionz-logo-white.png',
-    /** big centred logo: share of the image width, and its opacity */
-    size: 0.6,
+    /** big centred logo: share of the image width (0 = none, only the faint tile below), and its opacity */
+    size: 0,
     opacity: 0.35,
     /** subtle repeated diagonal tile so the mark can't be cropped out */
     tileSize: 0.16,

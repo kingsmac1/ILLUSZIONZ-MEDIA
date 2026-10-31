@@ -54,7 +54,7 @@ export function resize(src: Source, sw: number, sh: number, maxEdge: number): An
   return out
 }
 
-/** Big centred logo + a faint diagonal tile of small logos, so the mark can't be cropped out. */
+/** A faint diagonal tile of small logos over the whole photo, so the mark can't be cropped out; optionally a big centred logo too (size > 0). */
 export function watermark(canvas: AnyCanvas, logo: Source, lw: number, lh: number, wm: ImagingSettings['watermark']) {
   const c = ctx2d(canvas)
   const W = canvas.width
@@ -78,7 +78,8 @@ export function watermark(canvas: AnyCanvas, logo: Source, lw: number, lh: numbe
   }
   c.restore()
 
-  // centre mark
+  // centre mark (off when size is 0)
+  if (!(wm.size > 0)) return
   const bw = Math.min(W * wm.size, (H * 0.8) / ratio)
   const bh = bw * ratio
   c.save()

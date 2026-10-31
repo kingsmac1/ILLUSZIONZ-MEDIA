@@ -114,3 +114,8 @@ Each item: what was decided, and why. Change any of them later if you prefer oth
     send again after changing it.
 45. **Tested:** `npm run test:gallery` now has 124 checks (cancel mid-upload removes the files, the tick box with its price and summary,
     the choice sent with the selection, the edited / unedited switch, 👎 + comment saved, feedback sent); all 11 functions type-check.
+
+## Update — 31 Oct 2026: lighter watermark
+46. **Previews now carry only the faint diagonal tile of small logos** (10 % opacity), as asked. The big bold centre logo (item 15) is
+    switched off with `watermark.size: 0` in `gallery.config.ts`; set it back to e.g. `0.6` to bring it back. The tile still covers the
+    whole photo, so it can't simply be cropped out. Previews already uploaded keep the old watermark; re-upload a gallery to change it.
