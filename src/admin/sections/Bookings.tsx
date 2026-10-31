@@ -8,6 +8,7 @@ import { ContactDrawer } from '../crm/ContactDrawer'
 import { TaskModal } from '../crm/shared'
 import { byBooking, useGalleryIndex } from '../../features/gallery/admin/useGalleryIndex'
 import { STATUS_TONE, statusLabel } from '../../features/gallery/status'
+import { deleteGalleries, galleriesOfBookings } from '../../features/gallery/admin/galleryActions'
 
 const PAGE = 20
 const STATUSES = ['new', 'confirmed', 'completed', 'cancelled']
@@ -168,7 +169,7 @@ export function BookingDetail({ id, onClose }: { id: string; onClose: () => void
       <h4 style={{ margin: '18px 0 8px' }}>Internal notes</h4>
       <textarea value={notes} onChange={(e) => setNotes(e.target.value)} />
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10 }}>
-        <Confirm text="Delete this booking permanently?" onYes={async () => { const r = await db.remove('bookings', { id }, 'Booking deleted', ['deals', 'payments']); if (r.ok) onClose() }}>Delete booking</Confirm>
+        <Confirm text="Delete this booking permanently? Its photo galleries and their photos are deleted too." onYes={async () => { await deleteGalleries(await galleriesOfBookings([id])); const r = await db.remove('bookings', { id }, 'Booking deleted', ['deals', 'payments']); if (r.ok) onClose() }}>Delete booking</Confirm>
         <button className="ad-btn primary sm" onClick={() => db.update('bookings', { id }, { payment_status: b.payment_status, notes }, 'Notes saved')}>Save notes</button>
       </div>
       {pay && <PaymentModal booking={b} onClose={() => setPay(false)} />}
@@ -250,8 +251,9 @@ export function Bookings() {
   }
   async function bulkDelete() {
     const rows = picked()
-    if (!confirmN('Permanently delete', rows.length, 'booking', 'Their payments and pipeline deals are deleted too. This cannot be undone.')) return
+    if (!confirmN('Permanently delete', rows.length, 'booking', 'Their payments, pipeline deals and photo galleries (with all their photos) are deleted too. This cannot be undone.')) return
     const ids = rows.map((b) => b.id)
+    await deleteGalleries(await galleriesOfBookings(ids))
     await db.removeMany('deals', ids, undefined, [], 'booking_id')
     const r = await db.removeMany('bookings', ids, `${rows.length} booking${rows.length === 1 ? '' : 's'} deleted`, ['deals', 'payments', 'tasks'])
     if (r.ok) sel.clear()

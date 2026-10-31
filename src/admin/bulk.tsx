@@ -48,11 +48,11 @@ export function RowBox({ s, id, label }: { s: Selection; id: string; label: stri
 }
 
 /** Bar that appears while rows are selected. Children are the actions (use BulkBtn). */
-export function BulkBar({ s, noun, children }: { s: Selection; noun: string; children: ReactNode }) {
+export function BulkBar({ s, noun, plural, children }: { s: Selection; noun: string; plural?: string; children: ReactNode }) {
   if (!s.count) return null
   return (
     <div className="ad-bulk" role="region" aria-label="Bulk actions">
-      <b>{s.count} {noun}{s.count === 1 ? '' : 's'} selected</b>
+      <b>{s.count} {s.count === 1 ? noun : plural ?? `${noun}s`} selected</b>
       {s.count < s.total && <button type="button" className="ad-link" onClick={s.selectAll}>Select all {s.total}</button>}
       <span className="ad-bulk-actions">{children}</span>
       <button type="button" className="ad-btn sm" onClick={s.clear}>Clear</button>

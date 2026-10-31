@@ -119,3 +119,11 @@ Each item: what was decided, and why. Change any of them later if you prefer oth
 46. **Previews now carry only the faint diagonal tile of small logos** (10 % opacity), as asked. The big bold centre logo (item 15) is
     switched off with `watermark.size: 0` in `gallery.config.ts`; set it back to e.g. `0.6` to bring it back. The tile still covers the
     whole photo, so it can't simply be cropped out. Previews already uploaded keep the old watermark; re-upload a gallery to change it.
+
+## Update — 31 Oct 2026: deleting galleries
+47. **Galleries can be deleted from Dashboard → Galleries**: a ⋯ menu on each card (Manage, Open as the client sees it, Copy client link,
+    Rename, Delete) and checkboxes with a bulk bar (Send reminder, Keep previews +30 days, Delete), like the bookings list. Delete removes
+    the photos from storage too, through the same `gallery-delete` function the Gallery Manager uses.
+48. **Deleting a booking now deletes its galleries and their photos** (single and bulk delete, and the confirm text says so). Before, the
+    galleries stayed behind without a booking; any that are already like that show a "Booking deleted" badge and can be deleted from the
+    Galleries page.

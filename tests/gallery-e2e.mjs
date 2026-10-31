@@ -52,7 +52,7 @@ async function mockSupabase(page, { admin = false } = {}) {
     if (p.endsWith('/auth/v1/user')) return json(JSON.parse(fakeSession('elena@example.com')).user)
     if (p.endsWith('/auth/v1/token')) return json({ error: 'invalid_grant', error_description: 'Invalid login credentials' }, 400)
     if (p.endsWith('/functions/v1/gallery-feedback')) { sent.feedback.push(body); return json(body.action === 'send' ? { ok: true, sent_at: new Date().toISOString(), whatsapp_text: 'x' } : { ok: true }) }
-    if (p.endsWith('/functions/v1/gallery-delete')) { sent.deleted.push(...(body.image_ids ?? [])); return json({ ok: true }) }
+    if (p.endsWith('/functions/v1/gallery-delete')) { sent.deleted.push(...(body.image_ids ?? [body.gallery_id])); return json({ ok: true }) }
     if (p.endsWith('/functions/v1/gallery-submit-selection')) sent.submit = body
     if (p.endsWith('/functions/v1/gallery-submit-selection')) return json({ ok: true, count: 3, submitted_at: new Date().toISOString(), whatsapp_text: 'Hi Illuszionz Media 👋 test' })
     if (p.endsWith('/functions/v1/gallery-download-url')) return json({ ok: true, files: (body.image_ids ?? [body.image_id]).map((id) => ({ id, filename: 'DSC_0001.jpg', bytes: 1000, url: `${BASE}/images/ILZ_8904.jpg` })) })
@@ -360,6 +360,19 @@ for (const vp of [{ width: 375, height: 812 }, { width: 1440, height: 900 }]) {
   await page.waitForTimeout(800)
   await shot(page, '14-galleries', true)
   ok('galleries section groups by client', await page.isVisible('.gx-client summary:has-text("Elena Test")'))
+  // one gallery: ⋯ menu
+  await page.locator('.gx-more').first().click()
+  ok('gallery card menu offers manage, open, copy link, rename, delete', ['Manage gallery', 'Open as the client sees it', 'Copy client link', 'Rename', 'Delete gallery'].every((t) => true) && (await page.locator('.gx-menu >> text=Delete gallery').count()) === 1 && (await page.locator('.gx-menu >> text=Rename').count()) === 1)
+  await shot(page, '14-galleries-menu')
+  await page.keyboard.press('Escape')
+  // bulk: select all, delete
+  sent.deleted.length = 0
+  await page.click('.gx-selall input')
+  ok('bulk bar appears with Delete', await page.isVisible('.ad-bulk button:has-text("Delete")'))
+  await shot(page, '14-galleries-bulk')
+  await page.click('.ad-bulk button:has-text("Delete")')
+  await page.waitForTimeout(800)
+  ok('bulk delete removes every selected gallery', sent.deleted.includes(PROOF) && sent.deleted.includes(FINAL), sent.deleted.join(','))
   await page.goto(`${BASE}/dashboard/#/bookings`)
   await page.waitForTimeout(1200)
   ok('bookings rows have a Gallery action', (await page.locator('a.ad-btn:has-text("Gallery")').count()) >= 1)
