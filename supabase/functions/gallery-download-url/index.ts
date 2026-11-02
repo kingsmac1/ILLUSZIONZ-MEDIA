@@ -5,8 +5,10 @@
 import { handle, HttpError, isUuid, json } from '../_shared/http.ts'
 import { caller, canAct, loadGallery, logActivity, service } from '../_shared/auth.ts'
 import { ORIGINAL_TTL, signGet } from '../_shared/r2.ts'
+import { requireGalleryEnabled } from '../_shared/billing.ts'
 
 Deno.serve(handle(async (req, body) => {
+  await requireGalleryEnabled()
   const who = await caller(req)
   if (!isUuid(body.gallery_id)) throw new HttpError('Missing gallery.')
   const g = await loadGallery(body.gallery_id)

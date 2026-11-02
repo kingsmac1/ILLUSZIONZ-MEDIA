@@ -5,9 +5,11 @@
 import { handle, HttpError, isUuid, json, pool } from '../_shared/http.ts'
 import { loadGallery, requireAdmin, service } from '../_shared/auth.ts'
 import { head } from '../_shared/r2.ts'
+import { requireUploadsAllowed } from '../_shared/billing.ts'
 
 Deno.serve(handle(async (req, body) => {
   await requireAdmin(req)
+  await requireUploadsAllowed()
   if (!isUuid(body.gallery_id)) throw new HttpError('Missing gallery.')
   const g = await loadGallery(body.gallery_id)
   const done = ((body.done ?? []) as unknown[]).filter(isUuid).slice(0, 200)

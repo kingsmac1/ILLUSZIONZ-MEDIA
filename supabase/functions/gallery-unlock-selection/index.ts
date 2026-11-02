@@ -4,8 +4,10 @@ import { loadGallery, logActivity, requireAdmin, service } from '../_shared/auth
 import { mailConfig, sendEmail } from '../_shared/email.ts'
 import { selectionUnlocked } from '../_shared/email-templates.ts'
 import { clientLink } from '../_shared/gallery.ts'
+import { requireGalleryEnabled } from '../_shared/billing.ts'
 
 Deno.serve(handle(async (req, body) => {
+  await requireGalleryEnabled()
   await requireAdmin(req)
   if (!isUuid(body.gallery_id)) throw new HttpError('Missing gallery.')
   const g = await loadGallery(body.gallery_id)

@@ -8,6 +8,7 @@ import { handle, HttpError, isUuid, json } from '../_shared/http.ts'
 import { caller, canView, loadGallery, logActivity, service, type Gallery } from '../_shared/auth.ts'
 import { signGet } from '../_shared/r2.ts'
 import { PAGE_SIZE } from '../_shared/gallery.ts'
+import { requireGalleryEnabled } from '../_shared/billing.ts'
 
 const maskEmail = (e: string) => {
   const [user, domain] = e.split('@')
@@ -15,6 +16,7 @@ const maskEmail = (e: string) => {
 }
 
 Deno.serve(handle(async (req, body) => {
+  await requireGalleryEnabled()
   if (!isUuid(body.gallery_id)) throw new HttpError('This gallery link is not valid.', 404)
   const who = await caller(req)
   const g = await loadGallery(body.gallery_id)

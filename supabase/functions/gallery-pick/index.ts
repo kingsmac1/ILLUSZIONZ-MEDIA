@@ -8,8 +8,10 @@
 import { handle, HttpError, isUuid, json } from '../_shared/http.ts'
 import { caller, canAct, loadGallery, service } from '../_shared/auth.ts'
 import { OPEN_FOR_PICKS } from '../_shared/gallery.ts'
+import { requireGalleryEnabled } from '../_shared/billing.ts'
 
 Deno.serve(handle(async (req, body) => {
+  await requireGalleryEnabled()
   if (!isUuid(body.gallery_id) || !isUuid(body.image_id)) throw new HttpError('Missing photo.')
   const action = body.action as string
   if (!['add', 'remove', 'note'].includes(action)) throw new HttpError('Unknown action.')

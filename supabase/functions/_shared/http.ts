@@ -9,10 +9,10 @@ export const json = (data: unknown, status = 200) =>
   new Response(JSON.stringify(data), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } })
 
 /** Friendly error: `error` is shown to the person as-is. */
-export const fail = (error: string, status = 400) => json({ ok: false, error }, status)
+export const fail = (error: string, status = 400, code?: string) => json({ ok: false, error, ...(code ? { code } : {}) }, status)
 
 export class HttpError extends Error {
-  constructor(message: string, public status = 400) {
+  constructor(message: string, public status = 400, public code?: string) {
     super(message)
   }
 }
@@ -26,7 +26,7 @@ export function handle(fn: (req: Request, body: Record<string, any>) => Promise<
       const body = (await req.json().catch(() => ({}))) as Record<string, any>
       return await fn(req, body)
     } catch (err) {
-      if (err instanceof HttpError) return fail(err.message, err.status)
+      if (err instanceof HttpError) return fail(err.message, err.status, err.code)
       console.error(err)
       return fail('Something went wrong on our side. Please try again in a moment.', 500)
     }

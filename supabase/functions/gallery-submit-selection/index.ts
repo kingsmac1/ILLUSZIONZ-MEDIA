@@ -8,8 +8,10 @@ import { mailConfig, sendEmail } from '../_shared/email.ts'
 import { money, selectionConfirmation, selectionReceived } from '../_shared/email-templates.ts'
 import { adminLink, clientLink, OPEN_FOR_PICKS } from '../_shared/gallery.ts'
 import { byFilename, lightroomFilter } from '../_shared/filenames.ts'
+import { requireGalleryEnabled } from '../_shared/billing.ts'
 
 Deno.serve(handle(async (req, body) => {
+  await requireGalleryEnabled()
   const who = await caller(req)
   if (!isUuid(body.gallery_id)) throw new HttpError('Missing gallery.')
   const g = await loadGallery(body.gallery_id)

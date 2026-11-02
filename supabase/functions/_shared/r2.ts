@@ -64,6 +64,23 @@ export async function remove(key: string) {
   if (!res.ok && res.status !== 404) throw new Error(`R2 DELETE ${res.status}`)
 }
 
+const xmlText = (v: string) => v.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, '&')
+
+/** The first `max` objects in the bucket (optionally under a prefix). Used by the billing purge, which deletes and lists again. */
+export async function listObjects(prefix = '', max = 1000): Promise<{ key: string; size: number }[]> {
+  const url = new URL(`https://${Deno.env.get('R2_ACCOUNT_ID')}.r2.cloudflarestorage.com/${Deno.env.get('R2_BUCKET')}`)
+  url.searchParams.set('list-type', '2')
+  url.searchParams.set('max-keys', String(max))
+  if (prefix) url.searchParams.set('prefix', prefix)
+  const res = await client().fetch(url.toString())
+  if (!res.ok) throw new Error(`R2 LIST ${res.status}`)
+  const xml = await res.text()
+  return [...xml.matchAll(/<Contents>([\s\S]*?)<\/Contents>/g)].map((m) => ({
+    key: xmlText(/<Key>([\s\S]*?)<\/Key>/.exec(m[1])?.[1] ?? ''),
+    size: Number(/<Size>(\d+)<\/Size>/.exec(m[1])?.[1] ?? 0),
+  })).filter((o) => o.key)
+}
+
 /** attachment; filename="…" with a UTF-8 fallback for non-ASCII names */
 export function contentDisposition(filename: string) {
   const safe = filename.replace(/["\\\r\n]/g, '').replace(/[^\x20-\x7e]/g, '_') || 'photo.jpg'

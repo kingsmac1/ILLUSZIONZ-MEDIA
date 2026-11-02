@@ -7,6 +7,7 @@ import { handle, HttpError, isUuid, json } from '../_shared/http.ts'
 import { loadGallery, requireAdmin, service } from '../_shared/auth.ts'
 import { keys, signPut } from '../_shared/r2.ts'
 import { MAX_FILES_PER_CALL } from '../_shared/gallery.ts'
+import { requireUploadsAllowed } from '../_shared/billing.ts'
 
 type FileIn = { client_ref: string; original_filename: string; content_type: string; bytes: number; width: number; height: number; taken_at?: string | null; variants: string[] }
 
@@ -14,6 +15,7 @@ const ORIGINAL_TYPES: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png
 
 Deno.serve(handle(async (req, body) => {
   await requireAdmin(req)
+  await requireUploadsAllowed()
   if (!isUuid(body.gallery_id)) throw new HttpError('Missing gallery.')
   const files = (Array.isArray(body.files) ? body.files : []) as FileIn[]
   if (!files.length) throw new HttpError('No files to upload.')

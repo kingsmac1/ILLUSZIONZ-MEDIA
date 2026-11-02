@@ -11,8 +11,10 @@ import { mailConfig, sendEmail } from '../_shared/email.ts'
 import { feedbackReceived } from '../_shared/email-templates.ts'
 import { adminLink, clientLink } from '../_shared/gallery.ts'
 import { byFilename, lightroomFilter } from '../_shared/filenames.ts'
+import { requireGalleryEnabled } from '../_shared/billing.ts'
 
 Deno.serve(handle(async (req, body) => {
+  await requireGalleryEnabled()
   if (!isUuid(body.gallery_id)) throw new HttpError('Missing gallery.')
   const action = body.action as string
   if (!['react', 'comment', 'send'].includes(action)) throw new HttpError('Unknown action.')

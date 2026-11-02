@@ -64,12 +64,14 @@ export default function GalleryPage({ id }: { id: string }) {
   useReleasePreloader() // the page's own loader (same look) takes over from the boot copy
   const [data, setData] = useState<ViewResponse | null>(null)
   const [error, setError] = useState('')
+  const [paused, setPaused] = useState(false)
   const uid = session?.user.id ?? null
 
   const load = useCallback(async () => {
     setError('')
     const r = await callFn<ViewResponse>('gallery-view-urls', { gallery_id: id, key, page: 0 })
-    if (!r.ok) return setError(r.error)
+    if (!r.ok) { setPaused(r.code === 'GALLERY_PAUSED'); return setError(r.error) }
+    setPaused(false)
     setData(r)
     // remaining pages load in the background, in order
     for (let p = 1; p < (r.pages ?? 1); p++) {
@@ -81,6 +83,7 @@ export default function GalleryPage({ id }: { id: string }) {
 
   useEffect(() => { if (session !== undefined) load() }, [session === undefined, uid]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  if (paused) return <Message title="This gallery is temporarily unavailable" text={error} />
   if (error) return <Message title="We couldn’t open this gallery" text={error} action={<button className="cg-btn solid" onClick={load}>Try again</button>} />
   if (!data || session === undefined) return <Preloader />
   if (data.access !== 'full') return <CoverGate data={data} onSignedIn={load} />

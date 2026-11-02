@@ -8,6 +8,7 @@ import { watermarkPreview } from '../imaging'
 import { byFilename } from '../filenames'
 import { fmtBytes } from '../status'
 import { UploadQueue } from './uploadQueue'
+import { useBilling } from '../../billing/BillingProvider'
 
 /** queues outlive the component: switching tabs or sections never stops an upload */
 const queues = new Map<string, UploadQueue>()
@@ -23,6 +24,8 @@ export function Uploader({ mode, set = 'edited', galleryId, ensureGallery, onSet
   onSettled: () => void
   onRejected: (names: string[]) => void
 }) {
+  const { billing, active } = useBilling()
+  const blocked = active && !!billing && (!billing.gallery_enabled || !billing.uploads_allowed)
   const key = galleryId ? `${galleryId}:${mode}:${set}` : ''
   const [queue, setQueue] = useState<UploadQueue | null>(() => (key ? queues.get(key) ?? null : null))
   useEffect(() => setQueue(key ? queues.get(key) ?? null : null), [key])
@@ -77,6 +80,15 @@ export function Uploader({ mode, set = 'edited', galleryId, ensureGallery, onSet
   const progress = live.length ? live.reduce((s, i) => s + (i.status === 'failed' ? 1 : i.progress), 0) / live.length : 0
   const stagedBytes = staged.reduce((s, f) => s + f.size, 0)
   const onDrop = (e: DragEvent) => { e.preventDefault(); setOver(false); if (e.dataTransfer.files.length) stage(e.dataTransfer.files) }
+
+  if (blocked) {
+    return (
+      <div className="gm-drop" aria-disabled="true" style={{ cursor: 'not-allowed', opacity: 0.75 }}>
+        <strong>{billing!.gallery_enabled ? 'Storage is full' : 'Galleries are paused'}</strong>
+        <small>{billing!.gallery_enabled ? 'Uploads are off until you upgrade your plan.' : 'Uploads are off until the plan is settled.'} <a href="#/billing">Open Billing</a></small>
+      </div>
+    )
+  }
 
   return (
     <div>

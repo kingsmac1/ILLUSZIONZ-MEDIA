@@ -46,6 +46,9 @@ CRON_SECRET=$(python3 -c 'import secrets; print(secrets.token_hex(32))')
   [ -n "${RESEND_API_KEY:-}" ] && echo "RESEND_API_KEY=$RESEND_API_KEY"
   [ -n "${EMAIL_FROM:-}" ] && echo "EMAIL_FROM=$EMAIL_FROM"
   echo "GALLERY_CRON_SECRET=$CRON_SECRET"
+  # gallery billing (optional): the site key from Emkay Digitals dashboard → Gallery billing → studio
+  [ -n "${BILLING_SITE_KEY:-}" ] && echo "BILLING_SITE_KEY=$BILLING_SITE_KEY"
+  [ -n "${BILLING_BASE_URL:-}" ] && echo "BILLING_BASE_URL=$BILLING_BASE_URL"
 } > "$TMP/secrets.env"
 chmod 600 "$TMP/secrets.env"
 $SB secrets set --project-ref "$REF" --env-file "$TMP/secrets.env" > /dev/null
@@ -71,6 +74,18 @@ select cron.unschedule(jobid) from cron.job where jobname = 'gallery-purge-previ
 select cron.schedule('gallery-purge-previews', '15 3 * * *', \$job\$
   select net.http_post(
     url := 'https://$REF.supabase.co/functions/v1/gallery-purge-previews',
+    headers := jsonb_build_object('Content-Type', 'application/json', 'Authorization', 'Bearer $VITE_SUPABASE_ANON_KEY', 'x-cron-secret', '$CRON_SECRET'),
+    body := '{}'::jsonb);
+\$job\$);
+SQL
+echo "  ✓ scheduled"
+
+echo "→ 5b/6 Hourly billing sync (only does anything once BILLING_SITE_KEY is set)"
+sql <<SQL
+select cron.unschedule(jobid) from cron.job where jobname = 'gallery-billing-sync';
+select cron.schedule('gallery-billing-sync', '20 * * * *', \$job\$
+  select net.http_post(
+    url := 'https://$REF.supabase.co/functions/v1/gallery-billing-sync',
     headers := jsonb_build_object('Content-Type', 'application/json', 'Authorization', 'Bearer $VITE_SUPABASE_ANON_KEY', 'x-cron-secret', '$CRON_SECRET'),
     body := '{}'::jsonb);
 \$job\$);

@@ -1,7 +1,7 @@
 /** Calls the gallery Edge Functions with the signed-in user's token (or the anon key when signed out). */
 import { supabase } from '../../admin/supabase'
 
-export type FnResult<T> = (T & { ok: true }) | { ok: false; error: string; status?: number }
+export type FnResult<T> = (T & { ok: true }) | { ok: false; error: string; status?: number; code?: string }
 
 export async function callFn<T = Record<string, unknown>>(name: string, body: Record<string, unknown>): Promise<FnResult<T>> {
   if (!supabase) return { ok: false, error: 'The gallery is not connected yet.' }
@@ -11,14 +11,17 @@ export async function callFn<T = Record<string, unknown>>(name: string, body: Re
     const ctx = (error as { context?: Response }).context
     let msg = ''
     let status: number | undefined
+    let code: string | undefined
     if (ctx && typeof ctx.json === 'function') {
       status = ctx.status
-      msg = await ctx.json().then((j: { error?: string }) => j?.error ?? '', () => '')
+      const j = await ctx.json().then((x: { error?: string; code?: string }) => x, () => ({}) as { error?: string; code?: string })
+      msg = j?.error ?? ''
+      code = j?.code
     }
     if (!msg) msg = status === 404 ? 'Not found.' : /Failed to send|fetch/i.test(error.message) ? 'Could not reach the server. Check your connection and try again.' : error.message
-    return { ok: false, error: msg, status }
+    return { ok: false, error: msg, status, code }
   }
-  if (data && data.ok === false) return { ok: false, error: data.error ?? 'Something went wrong.' }
+  if (data && data.ok === false) return { ok: false, error: data.error ?? 'Something went wrong.', code: data.code }
   return data as FnResult<T>
 }
 
