@@ -79,12 +79,12 @@
   transition: opacity .15s, background-color .15s, transform .15s;
 }
 .cg-heart.on { background: var(--cg-red); opacity: 1; }
-.cg-heart:active { transform: scale(.9); }
+.cg-heart:active, .cg-dl:active { transform: scale(.9); }
 .cg-heart:disabled { cursor: default; }
 @media (hover: hover) {
-  .cg-heart:not(.on), .cg-dl { opacity: 0; }
-  .react-photo-album--photo:hover .cg-heart, .react-photo-album--photo:hover .cg-dl, .cg-heart:focus-visible, .cg-dl:focus-visible { opacity: 1; }
-  .cg-heart:not(.on):hover { background: rgba(0,0,0,.6); }
+  .cg-heart:not(.on) { opacity: 0; }
+  .react-photo-album--photo:hover .cg-heart, .cg-heart:focus-visible { opacity: 1; }
+  .cg-heart:not(.on):hover, .cg-dl:hover { background: rgba(0,0,0,.6); }
 }
 .cg-has-note { position: absolute; left: 8px; bottom: 8px; padding: 3px 9px; border-radius: 999px; background: #fff; color: #000; font-size: 11.5px; font-weight: 600; pointer-events: none; }
 
