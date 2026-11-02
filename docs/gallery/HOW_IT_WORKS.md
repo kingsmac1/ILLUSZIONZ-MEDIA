@@ -59,7 +59,7 @@ When the client presses **Submit selection**:
 1. Same booking → **Finals** tab → drag in the edited photos (full resolution, no watermark). Keep the camera filenames
    (`DSC_0012-edit.jpg` is fine) and they match the picks automatically. The card shows matched photos, which picks have no final yet,
    and finals with no matching pick.
-2. Press **Deliver to client**. They get an email, and can download single photos or **Download all** (zips, in parts for big galleries).
+2. Press **Deliver to client**. They get an email, and can download single photos or **Download all** (each photo saves as its own file, one after the other).
 3. The watermarked previews are deleted automatically **30 days later** to save storage. The picks and notes stay.
 
 ## Dashboard → Galleries
