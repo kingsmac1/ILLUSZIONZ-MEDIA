@@ -45,6 +45,9 @@ export const galleryConfig = {
 
   /** watermarked previews are deleted this many days after finals are delivered (keep in sync with the Edge Function) */
   purgeDays: 30,
+
+  /** "Download all" builds zips in the browser in parts of this size */
+  zipPart: { maxFiles: 100, maxBytes: 2 * 1024 ** 3 },
 }
 
 export type GalleryConfig = typeof galleryConfig

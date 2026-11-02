@@ -44,7 +44,8 @@ Each item: what was decided, and why. Change any of them later if you prefer oth
     The icon only checks whether a sign-in is stored, so public pages don't load any extra code.
 20. **The gallery opts out of the site's scroll-reveal animation** (it would hide the photos for 2.6 s on every visit). The only motion is the
     cover title settling in, which is off for visitors who prefer reduced motion.
-21. **"Download all" saves each photo as its own file, one after the other**, not a zip. Each photo finishes before the next starts, and any that fail can be retried. The browser may ask once to allow multiple downloads.
+21. **"Download all" builds zips in the browser**, in parts of up to 100 photos / 2 GB (smaller parts on phones). Each part is started by its
+    own tap, because browsers only allow a save dialog right after a click. On Chrome/Edge desktop the zip streams straight to disk. Saving photos one by one automatically was tried and dropped: browsers block every download after the first without a new tap. A popup now warns about the zip and points to the per-photo download icons.
 22. **Notes require a pick**: writing a note on a photo also picks it (a note on an unpicked photo would never reach the editor).
 23. **Grid images load the 600 px thumbnail or the 2048 px preview**, whichever fits the screen (`srcset`), and fade in when loaded.
 

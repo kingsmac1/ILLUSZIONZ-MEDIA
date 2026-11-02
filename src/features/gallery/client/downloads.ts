@@ -1,8 +1,11 @@
 /**
- * Finals downloads. One photo: a 15-minute signed link that saves under its original filename. "Download all": the same
- * photos saved one after the other as separate files, each finished before the next starts.
+ * Finals downloads. One photo: a 15-minute signed link that saves under its original filename. "Download all": zips built
+ * in the browser with client-zip, in parts (≈100 photos / 2 GB; smaller on phones), streamed straight to disk where the
+ * browser allows it (Chrome/Edge desktop), otherwise assembled in memory and saved.
  */
 import { callFn } from '../api'
+import { galleryConfig } from '../gallery.config'
+import type { ViewImage } from '../types'
 
 type Signed = { files: { id: string; filename: string; bytes: number; url: string }[] }
 
@@ -20,52 +23,78 @@ export async function downloadOne(galleryId: string, imageId: string, key: strin
   a.remove()
 }
 
-const SIGN_BATCH = 100
-const SIGN_FRESH_MS = 10 * 60_000 // links last 15 minutes; slow connections can outlive a batch
-const SAVE_GAP_MS = 500 // browsers drop downloads that start too close together
+const canStreamToDisk = () => typeof (window as any).showSaveFilePicker === 'function'
+const isTouch = () => typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches
 
-function saveBlob(blob: Blob, filename: string) {
+/** Split into zip parts by count and (approximate) size. */
+export function planParts(images: Pick<ViewImage, 'id' | 'bytes'>[]) {
+  const small = !canStreamToDisk() && isTouch()
+  const maxFiles = small ? 40 : galleryConfig.zipPart.maxFiles
+  const maxBytes = small ? 600 * 1024 ** 2 : canStreamToDisk() ? galleryConfig.zipPart.maxBytes : 1.2 * 1024 ** 3
+  const parts: string[][] = []
+  let cur: string[] = []
+  let size = 0
+  for (const img of images) {
+    const b = img.bytes ?? 8 * 1024 ** 2
+    if (cur.length && (cur.length >= maxFiles || size + b > maxBytes)) { parts.push(cur); cur = []; size = 0 }
+    cur.push(img.id)
+    size += b
+  }
+  if (cur.length) parts.push(cur)
+  return parts
+}
+
+export type ZipProgress = { part: number; parts: number; done: number; total: number; bytes: number }
+
+/** Builds and saves one zip part. */
+export async function downloadZipPart(o: { galleryId: string; key: string | null; ids: string[]; part: number; parts: number; total: number; name: string; onProgress: (p: { done: number; bytes: number }) => void; signal?: AbortSignal }) {
+  const { downloadZip } = await import('client-zip')
+  const r = await callFn<Signed>('gallery-download-url', { gallery_id: o.galleryId, key: o.key, image_ids: o.ids, zip: true, part: o.part, total: o.total })
+  if (!r.ok) throw new Error(r.error)
+  const fileName = `${o.name}${o.parts > 1 ? ` (part ${o.part} of ${o.parts})` : ''}.zip`
+
+  // pick where to save first — each part is started by its own click, which this needs
+  let writable: any = null
+  if (canStreamToDisk()) {
+    try {
+      const handle = await (window as any).showSaveFilePicker({ suggestedName: fileName, types: [{ description: 'Zip archive', accept: { 'application/zip': ['.zip'] } }] })
+      writable = await handle.createWritable()
+    } catch (e) {
+      if ((e as Error).name === 'AbortError') throw e
+    }
+  }
+
+  let done = 0
+  let bytes = 0
+  const used = new Map<string, number>()
+  async function* entries() {
+    for (const f of r.ok ? r.files : []) {
+      if (o.signal?.aborted) throw new DOMException('Cancelled', 'AbortError')
+      const res = await fetch(f.url, { signal: o.signal })
+      if (!res.ok || !res.body) throw new Error(`Could not download ${f.filename} (${res.status})`)
+      // same filename twice in one zip -> "name (2).jpg"
+      const n = (used.get(f.filename) ?? 0) + 1
+      used.set(f.filename, n)
+      const name = n > 1 ? f.filename.replace(/(\.[^.]+)?$/, ` (${n})$1`) : f.filename
+      const counted = res.body.pipeThrough(new TransformStream<Uint8Array, Uint8Array>({
+        transform(chunk, ctl) { bytes += chunk.byteLength; o.onProgress({ done, bytes }); ctl.enqueue(chunk) },
+        flush() { done++; o.onProgress({ done, bytes }) },
+      }))
+      yield { name, input: counted, size: Number(res.headers.get('content-length')) || undefined }
+    }
+  }
+  const zip = downloadZip(entries())
+  if (writable) {
+    await zip.body!.pipeTo(writable, { signal: o.signal })
+    return
+  }
+  const blob = await zip.blob()
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = filename
+  a.download = fileName
   document.body.appendChild(a)
   a.click()
   a.remove()
-  setTimeout(() => URL.revokeObjectURL(url), 20_000)
-}
-
-/** Saves each photo as its own file. Returns the ids that didn't save, so they can be tried again. */
-export async function downloadAll(o: { galleryId: string; key: string | null; ids: string[]; onProgress: (done: number) => void; signal: AbortSignal }) {
-  const signed = new Map<string, Signed['files'][number]>()
-  const failed: string[] = []
-  let signedUpTo = 0
-  let signedAt = 0
-  let calls = 0
-
-  for (let i = 0; i < o.ids.length; i++) {
-    if (o.signal.aborted) throw new DOMException('Cancelled', 'AbortError')
-    if (i >= signedUpTo || Date.now() - signedAt > SIGN_FRESH_MS) {
-      // `zip` is the function's flag for a whole-set request: it logs one download, not one per photo
-      const r = await callFn<Signed>('gallery-download-url', { gallery_id: o.galleryId, key: o.key, image_ids: o.ids.slice(i, i + SIGN_BATCH), zip: true, part: ++calls, total: o.ids.length })
-      if (!r.ok) return { failed: [...failed, ...o.ids.slice(i)], error: r.error }
-      signed.clear()
-      r.files.forEach((f) => signed.set(f.id, f))
-      signedUpTo = i + SIGN_BATCH
-      signedAt = Date.now()
-    }
-    const f = signed.get(o.ids[i])
-    try {
-      if (!f) throw new Error('Not available')
-      const res = await fetch(f.url, { signal: o.signal })
-      if (!res.ok) throw new Error(`Could not download ${f.filename} (${res.status})`)
-      saveBlob(await res.blob(), f.filename)
-      await new Promise((done) => setTimeout(done, SAVE_GAP_MS))
-    } catch (e) {
-      if ((e as Error).name === 'AbortError') throw e
-      failed.push(o.ids[i])
-    }
-    o.onProgress(i + 1)
-  }
-  return { failed, error: null }
+  setTimeout(() => URL.revokeObjectURL(url), 60_000)
 }

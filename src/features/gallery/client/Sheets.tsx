@@ -38,6 +38,22 @@ function Sheet({ title, onClose, children, wide, inside }: { title: string; onCl
   return inside ? createPortal(ui, inside) : ui
 }
 
+/** Shown before "Download all": the photos arrive zipped, and not everyone's phone can open that. */
+export function ZipNoticeSheet({ count, parts, onClose, onContinue }: { count: number; parts: number; onClose: () => void; onContinue: () => void }) {
+  return (
+    <Sheet title="Download as a zipped folder?" onClose={onClose} inside={document.body}>
+      <p className="cg-sheet-sub">
+        {parts > 1 ? `Your ${count} photos will download in ${parts} zipped folders, one at a time.` : `Your ${count} ${count === 1 ? 'photo' : 'photos'} will download together in one zipped folder.`}
+        {' '}Can’t open a zipped folder on your device? Use the download icon on each photo instead, and save the ones you want one after the other.
+      </p>
+      <div className="cg-sheet-f">
+        <button className="cg-btn line" onClick={onClose}>I’ll save them one by one</button>
+        <button className="cg-btn solid" onClick={onContinue}>Download zipped folder</button>
+      </div>
+    </Sheet>
+  )
+}
+
 export function NoteSheet({ filename, initial, readOnly, onClose, onSave, inside }: { filename: string; initial: string; readOnly: boolean; onClose: () => void; onSave: (t: string) => void; inside?: Element | null }) {
   const [t, setT] = useState(initial)
   return (

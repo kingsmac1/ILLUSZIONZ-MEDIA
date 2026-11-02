@@ -3,7 +3,7 @@
  * with no sign-in; the key is remembered on this device. Without it, the gallery's owner can sign in instead.
  * A few seconds in, visitors who aren't signed in are invited to save it to an account (optional).
  * Proofs: hearts, notes, "23 / 40" counter, optional "all unedited images", submit (review sheet → success → WhatsApp).
- * Finals: edited / all-unedited switch, per-photo download + "Download all" (saved one by one), 👍 / 👎 / comments on the
+ * Finals: edited / all-unedited switch, per-photo download + "Download all" (zips in parts, after a notice about zipped folders), 👍 / 👎 / comments on the
  * edited photos and "Send feedback" to the photographer.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -16,12 +16,12 @@ import { callFn } from '../api'
 import { galleryConfig } from '../gallery.config'
 import { fmtDay } from '../status'
 import type { ViewImage, ViewResponse } from '../types'
-import { downloadAll, downloadOne } from './downloads'
+import { downloadOne, downloadZipPart, planParts } from './downloads'
 import { usePicks } from './usePicks'
 import { galleryHref } from './links'
 import { Preloader, useReleasePreloader } from '../../../components/Preloader'
 import { Lightbox } from './Lightbox'
-import { SubmitSheet, NoteSheet, SuccessScreen, SaveSheet, CommentSheet, FeedbackSheet } from './Sheets'
+import { SubmitSheet, NoteSheet, SuccessScreen, SaveSheet, CommentSheet, FeedbackSheet, ZipNoticeSheet } from './Sheets'
 import { useFeedback } from './useFeedback'
 import { CommentIcon, DownloadIcon, Heart } from './icons'
 import './gallery.css'
@@ -235,7 +235,7 @@ function GalleryView({ data, linkKey, reload }: { data: ViewResponse; linkKey: s
                   <button aria-pressed={set === 'unedited'} onClick={() => { setSet('unedited'); setOpen(null) }}><span className="cg-hide-s">All unedited ({uneditedImgs.length})</span><span className="cg-show-s">Unedited</span></button>
                 </div>
               )}
-              <DownloadAll key={set} galleryId={g.id} linkKey={linkKey} images={images} onMessage={say} />
+              <DownloadAll key={set} galleryId={g.id} linkKey={linkKey} title={set === 'unedited' ? `${g.title} (unedited)` : g.title} images={images} onError={say} />
             </>
           )}
         </div>
@@ -392,40 +392,48 @@ function GalleryView({ data, linkKey, reload }: { data: ViewResponse; linkKey: s
 }
 
 /* -------------------------------------------------------------- download all */
-function DownloadAll({ galleryId, linkKey, images, onMessage }: { galleryId: string; linkKey: string | null; images: ViewImage[]; onMessage: (m: string) => void }) {
-  const ids = useMemo(() => images.filter((i) => i.has_original).map((i) => i.id), [images])
-  const [running, setRunning] = useState<{ done: number; total: number } | null>(null)
-  const [failed, setFailed] = useState<string[]>([])
-  const abort = useRef<AbortController | null>(null)
-  useEffect(() => () => abort.current?.abort(), [])
+function DownloadAll({ galleryId, linkKey, title, images, onError }: { galleryId: string; linkKey: string | null; title: string; images: ViewImage[]; onError: (m: string) => void }) {
+  const parts = useMemo(() => planParts(images.filter((i) => i.has_original)), [images])
+  const [state, setState] = useState<{ part: number; done: number; bytes: number } | null>(null)
+  const [finished, setFinished] = useState<Set<number>>(new Set())
+  const [panel, setPanel] = useState(false)
+  const [notice, setNotice] = useState(false)
+  const name = title.replace(/[\\/:*?"<>|]+/g, '').trim() || 'Photos'
 
-  async function run(queue: string[]) {
-    const controller = new AbortController()
-    abort.current = controller
-    setRunning({ done: 0, total: queue.length })
+  async function run(i: number) {
+    setState({ part: i + 1, done: 0, bytes: 0 })
     try {
-      const r = await downloadAll({ galleryId, key: linkKey, ids: queue, signal: controller.signal, onProgress: (done) => setRunning({ done, total: queue.length }) })
-      setFailed(r.failed)
-      const saved = queue.length - r.failed.length
-      if (r.failed.length) onMessage(r.error || `${r.failed.length} ${r.failed.length === 1 ? 'photo' : 'photos'} didn't download. Tap retry.`)
-      else onMessage(`${saved} ${saved === 1 ? 'photo' : 'photos'} saved to your downloads.`)
+      await downloadZipPart({ galleryId, key: linkKey, ids: parts[i], part: i + 1, parts: parts.length, total: images.length, name, onProgress: (p) => setState({ part: i + 1, ...p }) })
+      setFinished((f) => new Set(f).add(i))
     } catch (e) {
-      if ((e as Error).name !== 'AbortError') onMessage((e as Error).message || 'The download stopped. Try again.')
+      if ((e as Error).name !== 'AbortError') onError((e as Error).message || 'The download stopped. Try that part again.')
     }
-    setRunning(null)
+    setState(null)
   }
-  if (!ids.length) return null
-  const label = running ? `Saving ${running.done} of ${running.total}` : failed.length ? `Retry ${failed.length} ${failed.length === 1 ? 'photo' : 'photos'}` : 'Download all'
+  if (!parts.length) return null
+  const label = state ? `Zipping ${state.done}/${parts[state.part - 1].length}` : 'Download all'
   return (
     <div className="cg-dlall">
-      <button className="cg-btn solid" disabled={!!running} onClick={() => run(failed.length ? failed : ids)}>
+      <button className="cg-btn solid" disabled={!!state} onClick={() => (panel ? setPanel(false) : setNotice(true))} aria-expanded={parts.length > 1 ? panel : undefined}>
         <DownloadIcon />{label}
       </button>
-      {running && <span className="cg-dlall-bar"><i style={{ width: `${(running.done / running.total) * 100}%` }} /></span>}
-      {running && (
+      {state && <span className="cg-dlall-bar"><i style={{ width: `${(state.done / parts[state.part - 1].length) * 100}%` }} /></span>}
+      {notice && (
+        <ZipNoticeSheet
+          count={parts.flat().length}
+          parts={parts.length}
+          onClose={() => setNotice(false)}
+          onContinue={() => { setNotice(false); if (parts.length === 1) run(0); else setPanel(true) }}
+        />
+      )}
+      {panel && parts.length > 1 && (
         <div className="cg-dlall-panel">
-          <p>Your photos are saving one by one. Keep this page open. If your browser asks, allow it to download multiple files.</p>
-          <button className="cg-btn line" onClick={() => abort.current?.abort()}>Cancel</button>
+          <p>{parts.flat().length} photos, in {parts.length} zipped folders. Download each part:</p>
+          {parts.map((p, i) => (
+            <button key={i} className="cg-btn line" disabled={!!state} onClick={() => run(i)}>
+              {finished.has(i) ? '✓ ' : ''}Part {i + 1} ({p.length} photos)
+            </button>
+          ))}
         </div>
       )}
     </div>
