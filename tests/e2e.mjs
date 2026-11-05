@@ -171,11 +171,11 @@ for (const [path, cta, id] of FLOWS) {
 
 /* 7 ─ booking API: pricing is recomputed on the server, bad input rejected */
 const post = (body) => ctx.request.post(BASE + '/api/booking', { data: body })
-let r = await post({ flowId: 'portrait', optionIds: ['portrait-2'], units: {}, extras: { 'extra-images': 3, 'express-24': 1 }, fields: { name: 'A B', phone: '+447000000000', email: 'a@b.co', date: '2027-01-01', time: '10:00', setting: 'Studio' } })
+let r = await post({ flowId: 'portrait', optionIds: ['portrait-1'], units: { 'portrait-1': 3 }, extras: { 'extra-images': 3, 'express-24': 1 }, fields: { name: 'A B', phone: '+447000000000', email: 'a@b.co', date: '2027-01-01', time: '10:00', setting: 'Studio' } })
 let j = await r.json()
-ok('API prices portrait 2 looks + extras at £410', j.ok && j.total === '£410', j.total)
+ok('API prices portrait as one look + extras (£170 + £60 + £50), the 2 extra looks agreed on WhatsApp', j.ok && j.total === '£280+' && /2 more looks/.test(j.emails?.customer?.html ?? '') && /Agreed on WhatsApp/.test(j.emails?.customer?.html ?? ''), j.total)
 ok('owner email goes to info@illuszionzmedia.com copy + customer email rendered', j.emails?.owner?.subject.includes('A B') && /Booking request received/.test(j.emails?.customer?.subject ?? ''))
-r = await post({ flowId: 'portrait', optionIds: ['portrait-2'], fields: { name: 'A' } })
+r = await post({ flowId: 'portrait', optionIds: ['portrait-1'], fields: { name: 'A' } })
 ok('API rejects an incomplete booking', r.status() === 422)
 r = await post({ flowId: 'nope', optionIds: [], fields: {} })
 ok('API rejects an unknown service', r.status() === 400)

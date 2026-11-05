@@ -56,11 +56,15 @@ export function useAddedPackages() {
 type Form = {
   flow_id: string; kind: 'option' | 'extra'; label: string; note: string; includes: string; price: string
   perUnit: boolean; unitLabel: string; unitPlural: string; unitMin: string; unitMax: string; maxQty: string; active: boolean
+  /** one look with a counter; extra looks are priced on WhatsApp */
+  looks: boolean; maxLooks: string
 }
-const blank = (flowId = ''): Form => ({ flow_id: flowId, kind: 'option', label: '', note: '', includes: '', price: '', perUnit: false, unitLabel: '', unitPlural: '', unitMin: '1', unitMax: '10', maxQty: '', active: true })
+// booking forms priced by the look (Portrait, Maternity …) start new options as one look with a counter
+const lookForm = (flowId: string) => !!flows[flowId]?.options.some((o) => o.unit?.quoteExtra)
+const blank = (flowId = ''): Form => ({ flow_id: flowId, kind: 'option', label: '', note: '', includes: '', price: '', perUnit: false, unitLabel: '', unitPlural: '', unitMin: '1', unitMax: '10', maxQty: '', active: true, looks: lookForm(flowId), maxLooks: '5' })
 const fromRow = (r: BookingPackage): Form => ({
   flow_id: r.flow_id, kind: r.kind, label: r.label, note: r.note ?? '', includes: (r.includes ?? []).join('\n'), price: String(Number(r.price) || 0),
-  perUnit: !!r.unit?.label, unitLabel: r.unit?.label ?? '', unitPlural: r.unit?.plural ?? '', unitMin: String(r.unit?.min ?? 1), unitMax: String(r.unit?.max ?? 10),
+  perUnit: !!r.unit?.label && !r.unit?.quoteExtra, looks: !!r.unit?.quoteExtra, maxLooks: String(r.unit?.max ?? 5), unitLabel: r.unit?.label ?? '', unitPlural: r.unit?.plural ?? '', unitMin: String(r.unit?.min ?? 1), unitMax: String(r.unit?.max ?? 10),
   maxQty: r.max_qty ? String(r.max_qty) : '', active: r.active,
 })
 
@@ -94,6 +98,7 @@ export function PackageForm({ initial, flowId, rows, onSave, onClose }: {
     if (!page) return setErr('Choose the booking form.')
     if (!f.label.trim()) return setErr('Enter a name.')
     if (!Number.isFinite(price) || price < 0) return setErr('Enter a price of 0 or more (0 means you quote it).')
+    if (isPackage && f.looks && !(Number.isInteger(Number(f.maxLooks)) && Number(f.maxLooks) >= 2 && Number(f.maxLooks) <= 20)) return setErr('The most looks a client can choose must be a whole number from 2 to 20.')
     if (isPackage && f.perUnit) {
       if (!f.unitLabel.trim()) return setErr('Say what the price is per, e.g. look or hour.')
       if (!Number.isInteger(min) || !Number.isInteger(max) || min < 1 || max < min || max > 99) return setErr('The fewest and most must be whole numbers, with the most at least the fewest (up to 99).')
@@ -107,7 +112,7 @@ export function PackageForm({ initial, flowId, rows, onSave, onClose }: {
       note: f.note.trim(),
       includes: isPackage ? f.includes.split('\n').map((x) => x.replace(/^[•\-*]\s*/, '').trim()).filter(Boolean) : [],
       price: Math.round(price * 100) / 100,
-      unit: isPackage && f.perUnit ? { label: unitLabel, plural: f.unitPlural.trim() || `${unitLabel}s`, min, max, def: min } : null,
+      unit: isPackage && f.looks ? { label: 'look', plural: 'looks', min: 1, max: Number(f.maxLooks), def: 1, quoteExtra: true } : isPackage && f.perUnit ? { label: unitLabel, plural: f.unitPlural.trim() || `${unitLabel}s`, min, max, def: min } : null,
       max_qty: !isPackage && f.maxQty.trim() ? Number(f.maxQty) : null,
       active: f.active,
     }
@@ -151,14 +156,20 @@ export function PackageForm({ initial, flowId, rows, onSave, onClose }: {
         </Field>
         {isPackage ? (
           <Field label="Price is">
-            <select value={f.perUnit ? 'unit' : 'fixed'} onChange={(e) => set('perUnit', e.target.value === 'unit')}>
+            <select value={f.looks ? 'looks' : f.perUnit ? 'unit' : 'fixed'} onChange={(e) => { setF((c) => ({ ...c, perUnit: e.target.value === 'unit', looks: e.target.value === 'looks' })); setErr('') }}>
+              <option value="looks">For one look, with a looks counter</option>
               <option value="fixed">One price for the package</option>
-              <option value="unit">Per look, hour or person …</option>
+              <option value="unit">Per hour or person (price × how many)</option>
             </select>
           </Field>
         ) : (
           <Field label="Most a client can choose" hint="Leave empty for a simple tick box.">
             <input type="number" min="1" max="100" value={f.maxQty} onChange={(e) => set('maxQty', e.target.value)} />
+          </Field>
+        )}
+        {isPackage && f.looks && (
+          <Field label="Most looks a client can choose" hint="The price is for one look. Clients say how many looks they want; you agree the price for the extra looks on WhatsApp.">
+            <input type="number" min="2" max="20" value={f.maxLooks} onChange={(e) => set('maxLooks', e.target.value)} />
           </Field>
         )}
         {isPackage && f.perUnit && (

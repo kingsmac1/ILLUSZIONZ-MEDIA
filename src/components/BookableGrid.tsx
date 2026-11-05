@@ -82,6 +82,8 @@ export function BookableGrid({ cards: pageCards, columns = 3, id, page, children
   }, [open?.key]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const flow = open ? flows[open.flowId] ?? addedFlows[open.flowId] ?? null : null
+  // the other shoots on this page, which can be added to the same booking (maternity with portrait …)
+  const companions = useMemo(() => [...new Set(cards.filter((c) => !c.href).map((c) => c.flowId))].map((id) => flows[id] ?? addedFlows[id]).filter(Boolean), [cards, addedFlows])
 
   return (
     <div className="sc-wrap" id={id}>
@@ -166,7 +168,7 @@ export function BookableGrid({ cards: pageCards, columns = 3, id, page, children
               style={{ overflow: 'hidden' }}
             >
               <div className="bk-slot-inner">
-                <BookingPanel flow={flow} initialOptionId={open.optionId} onClose={() => setOpen(null)} />
+                <BookingPanel flow={flow} initialOptionId={open.optionId} onClose={() => setOpen(null)} companions={companions} />
               </div>
             </motion.div>
           )}

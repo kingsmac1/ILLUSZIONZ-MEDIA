@@ -237,8 +237,15 @@
   .ad-grid.c2, .ad-grid.c3, .ad-form { grid-template-columns: 1fr; }
   .ad-bar { grid-template-columns: 90px 1fr 70px; }
   .ad-pagehead h1 { font-size: 25px; }
-  .ad-overlay { padding: 0; align-items: stretch; }
-  .ad-modal, .ad-modal.wide, .ad-modal.drawer { max-width: none; border-radius: 0; min-height: 100vh; }
+  /* full-screen sheet that grows with its content (stretching it to the screen height let long forms spill out of
+     the white sheet, so the buttons floated over the page behind); title and buttons stay in reach while scrolling */
+  .ad-overlay { padding: 0; align-items: flex-start; overscroll-behavior: contain; }
+  .ad-modal, .ad-modal.wide, .ad-modal.drawer, .ad-modal.xl { max-width: none; border-radius: 0; min-height: 100vh; min-height: 100dvh; animation: none; }
+  .ad-modal header { position: sticky; top: 0; z-index: 3; background: #fff; }
+  .ad-modal-body { padding: 18px 16px 0; }
+  .ad-modal-body > :last-child:not(.ad-form) { margin-bottom: 18px; }
+  .ad-modal .ad-formfoot { position: sticky; bottom: 0; z-index: 3; background: #fff; margin: 8px -16px 0; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); flex-wrap: wrap; }
+  .ad-modal .ad-formfoot .ad-btn { flex: 1 1 auto; min-height: 44px; }
   .ad-kv { grid-template-columns: 1fr; gap: 2px; }
   .ad-kv dd { margin-bottom: 10px; }
   .ad-cal .d { min-height: 70px; }
@@ -313,4 +320,9 @@
   .np-item { grid-template-columns: 72px minmax(0, 1fr); }
   .np-item img, .np-item .cp-empty { width: 72px; }
   .np-actions { grid-column: 1 / -1; }
+}
+.np-line.np-addon { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.2fr) 90px 72px auto; }
+@media (max-width: 640px) {
+  .np-line.np-addon { grid-template-columns: minmax(0, 1fr) 80px 64px auto; }
+  .np-line.np-addon input:nth-child(2) { grid-column: 1 / -1; grid-row: 2; }
 }

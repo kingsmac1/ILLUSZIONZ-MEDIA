@@ -14,7 +14,8 @@ export type BookingPackage = {
   description?: string | null
   includes?: string[] | null
   price: number | string
-  unit?: { label?: string; plural?: string; min?: number; max?: number; def?: number } | null
+  /** quoteExtra: the price covers one look and more looks are agreed on WhatsApp */
+  unit?: { label?: string; plural?: string; min?: number; max?: number; def?: number; quoteExtra?: boolean } | null
   max_qty?: number | null
   sort_order?: number | null
   active: boolean
@@ -38,7 +39,7 @@ export function packageToOption(p: BookingPackage): Option {
     price: Math.max(0, Number(p.price) || 0),
     note: p.note?.trim() || undefined,
     includes: (p.includes ?? []).map((x) => x.trim()).filter(Boolean),
-    unit: u ? { label: String(u.label).trim(), plural: String(u.plural ?? '').trim() || `${String(u.label).trim()}s`, min, max, def: int(u.def, min, max, min) } : undefined,
+    unit: u ? { label: String(u.label).trim(), plural: String(u.plural ?? '').trim() || `${String(u.label).trim()}s`, min, max, def: int(u.def, min, max, min), ...(u.quoteExtra ? { quoteExtra: true } : {}) } : undefined,
   }
 }
 

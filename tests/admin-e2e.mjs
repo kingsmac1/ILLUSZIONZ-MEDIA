@@ -24,7 +24,7 @@ ok('booking API returns a reference', b1.ok && /^[0-9A-F]{6}$/.test(b1.ref ?? ''
 let db = await dump()
 ok('booking stored with contact, deal, activity and task', db.bookings?.length === 1 && db.contacts?.length === 1 && db.deals?.length === 1 && db.activities?.length >= 1 && db.tasks?.length === 1, `b${db.bookings?.length} c${db.contacts?.length} d${db.deals?.length} t${db.tasks?.length}`)
 ok('booking total re-priced on the server', Number(db.bookings[0].total) === 220 && db.bookings[0].event_date === '2026-12-20')
-const b2 = await post('/api/booking', { flowId: 'portrait', optionIds: ['portrait-2'], units: {}, extras: {}, fields: { ...fields, date: '2026-12-22' } })
+const b2 = await post('/api/booking', { flowId: 'portrait', optionIds: ['portrait-1'], units: { 'portrait-1': 2 }, extras: {}, fields: { ...fields, date: '2026-12-22' } })
 db = await dump()
 ok('same client reuses the same CRM contact', db.contacts.length === 1 && db.bookings.length === 2)
 
@@ -224,13 +224,13 @@ await page.screenshot({ path: `${SHOTS}/finance-1440.png`, fullPage: true })
 
 // prices
 await go('#/prices', 'Prices')
-const row = page.locator('tr', { hasText: '2 Looks' }).first()
+const row = page.locator('.ad-card', { has: page.locator('h3:has-text("Portrait Photography")') }).locator('tr', { hasText: '1 Look' }).first()
 await row.locator('input[type=number]').fill('320')
 await row.locator('button:has-text("Save")').click()
 await page.waitForTimeout(600)
 db = await dump()
-ok('price override saved from dashboard', db.price_overrides.some((o) => o.item_id === 'portrait-2' && Number(o.price) === 320))
-const b4 = await post('/api/booking', { flowId: 'portrait', optionIds: ['portrait-2'], units: {}, extras: {}, fields: { ...fields, email: 'p2@example.com', phone: '+447700900888', name: 'Price Check' } })
+ok('price override saved from dashboard', db.price_overrides.some((o) => o.item_id === 'portrait-1' && Number(o.price) === 320))
+const b4 = await post('/api/booking', { flowId: 'portrait', optionIds: ['portrait-1'], units: {}, extras: {}, fields: { ...fields, email: 'p2@example.com', phone: '+447700900888', name: 'Price Check' } })
 ok('new price used by the booking API immediately', b4.total === '£320', b4.total)
 
 // promos

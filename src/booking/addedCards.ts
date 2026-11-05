@@ -7,7 +7,7 @@ import { formatGBP, type Option } from './catalog'
 import { addedFor, packageItemId, packageToOption, type BookingPackage } from './overrides'
 import type { CardDef } from '../components/BookableGrid'
 
-const priceText = (o: Option) => (o.price > 0 ? `${formatGBP(o.price)}${o.unit ? ` / ${o.unit.label}` : ''}` : undefined)
+const priceText = (o: Option) => (o.price > 0 ? `${formatGBP(o.price)}${o.unit && !o.unit.quoteExtra ? ` / ${o.unit.label}` : ''}` : undefined)
 /** "Book Gold" style buttons name their package, so a new card gets a plain one instead */
 const genericCta = (cta: string, title: string) => (/^book\b/i.test(cta) && !/this|now/i.test(cta) && cta.toLowerCase().includes(title.toLowerCase().split(' ')[0]) ? 'Book now' : cta)
 

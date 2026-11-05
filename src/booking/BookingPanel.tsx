@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { computeQuote, formatGBP, validateField, type Field, type Flow, type Selection } from './catalog'
+import { MAX_EXTRA_SHOOTS, canCombine, combineFlows, computeQuote, formatGBP, validateField, type Field, type Flow, type Selection } from './catalog'
 import { applyOverrides } from './overrides'
 import { useLivePrices } from './livePrices'
 import { site, whatsappLink } from '../site'
@@ -111,16 +111,41 @@ function FieldInput({ f, value, error, onChange }: { f: Field; value: string; er
   )
 }
 
-export function BookingPanel({ flow: baseFlow, initialOptionId, onClose }: { flow: Flow; initialOptionId?: string; onClose: () => void }) {
+export function BookingPanel({ flow: baseFlow, initialOptionId, onClose, companions }: {
+  flow: Flow; initialOptionId?: string; onClose: () => void
+  /** other shoots on the page that can be booked together with this one (maternity with portrait …) */
+  companions?: Flow[]
+}) {
   const { overrides, packages } = useLivePrices()
-  const flow = useMemo(() => applyOverrides(baseFlow, overrides, packages), [baseFlow, overrides, packages])
+  const mainFlow = useMemo(() => applyOverrides(baseFlow, overrides, packages), [baseFlow, overrides, packages])
+  const companionFlows = useMemo(
+    () => (canCombine(baseFlow) ? (companions ?? []).filter((c) => c.id !== baseFlow.id && canCombine(c)).map((c) => applyOverrides(c, overrides, packages)) : []),
+    [baseFlow, companions, overrides, packages],
+  )
+  // shoots added to this booking, and the package chosen for each
+  const [also, setAlso] = useState<string[]>([])
+  const [alsoPick, setAlsoPick] = useState<Record<string, string>>({})
+  // one form for all the chosen shoots: questions, add-ons, terms, pricing (the server rebuilds the same)
+  const flow = useMemo(() => combineFlows(mainFlow, also.map((id) => companionFlows.find((c) => c.id === id)).filter((x): x is Flow => !!x)), [mainFlow, also, companionFlows])
+  function toggleAlso(c: Flow) {
+    setOptionError('')
+    if (also.includes(c.id)) {
+      setAlso((a) => a.filter((x) => x !== c.id))
+      setAlsoPick((p) => { const n = { ...p }; delete n[c.id]; return n })
+    } else {
+      setAlso((a) => [...a, c.id])
+      if (c.options.length === 1) setAlsoPick((p) => ({ ...p, [c.id]: c.options[0].id }))
+    }
+  }
   const [promoInput, setPromoInput] = useState('')
   const [promo, setPromo] = useState<null | { code: string; discount: number; label: string }>(null)
   const [promoMsg, setPromoMsg] = useState('')
   const steps = useMemo(() => stepsFor(flow), [flow])
   const [i, setI] = useState(0)
   const [dir, setDir] = useState(1)
-  const [optionIds, setOptionIds] = useState<string[]>(initialOptionId ? [initialOptionId] : flow.optionsMulti ? [] : [])
+  const [optionIds, setOptionIds] = useState<string[]>(initialOptionId ? [initialOptionId] : [])
+  /** every package in the booking: the main shoot's, then one per added shoot */
+  const allOptionIds = [...optionIds, ...also.map((id) => alsoPick[id]).filter((x): x is string => !!x)]
   const [units, setUnits] = useState<Record<string, number>>({})
   const [extras, setExtras] = useState<Record<string, number>>({})
   const [fields, setFields] = useState<Record<string, string>>(() => {
@@ -138,7 +163,7 @@ export function BookingPanel({ flow: baseFlow, initialOptionId, onClose }: { flo
   const [done, setDone] = useState<null | { total: string }>(null)
   const bodyRef = useRef<HTMLDivElement>(null)
 
-  const baseQuote = computeQuote(flow, { optionIds, units, extras })
+  const baseQuote = computeQuote(flow, { optionIds: allOptionIds, units, extras })
   const discount = promo ? Math.min(promo.discount, baseQuote.total) : 0
   const quote = discount
     ? { ...baseQuote, lines: [...baseQuote.lines, { label: `Promo ${promo!.code}`, amount: `−${formatGBP(discount)}`, value: -discount }], totalText: formatGBP(baseQuote.total - discount) + (baseQuote.quoted ? '+' : '') }
@@ -169,6 +194,42 @@ export function BookingPanel({ flow: baseFlow, initialOptionId, onClose }: { flo
     smoothScrollTo(bodyRef.current, -120)
   }, [i])
 
+  /** one package choice, with its looks / hours counter when chosen */
+  const renderOption = (o: Flow['options'][number], on: boolean, pick: () => void, multi: boolean) => (
+    <div key={o.id} className={'bk-option' + (on ? ' is-on' : '')}>
+      <button type="button" className="bk-option-main" aria-pressed={on} onClick={pick}>
+        <span className="bk-radio" aria-hidden="true" data-multi={multi ? '1' : undefined} />
+        <span className="bk-option-text">
+          <strong>{o.label}</strong>
+          {o.note && <small>{o.note}</small>}
+          {o.includes && (
+            <ul>
+              {o.includes.map((x) => (
+                <li key={x}>{x}</li>
+              ))}
+            </ul>
+          )}
+        </span>
+        {o.price > 0 && <span className="bk-price">{formatGBP(o.price)}{o.unit && !o.unit.quoteExtra ? <em>/{o.unit.label}</em> : null}</span>}
+      </button>
+      {on && o.unit && (
+        <div className="bk-unit">
+          <span>
+            How many {o.unit.plural}?
+            {o.unit.quoteExtra && (
+              <small className="bk-unit-note">
+                {unitFor(o.id) > 1
+                  ? `${formatGBP(o.price)} covers the first ${o.unit.label}. We agree the price for the other ${unitFor(o.id) - 1} with you on WhatsApp after you book.`
+                  : `Want more than one ${o.unit.label}? Add them here — we agree the price with you on WhatsApp after you book.`}
+              </small>
+            )}
+          </span>
+          <Stepper value={unitFor(o.id)} min={o.unit.min} max={o.unit.max} label={o.unit.plural} onChange={(n) => setUnits((u) => ({ ...u, [o.id]: n }))} />
+        </div>
+      )}
+    </div>
+  )
+
   const unitFor = (id: string) => {
     const o = flow.options.find((x) => x.id === id)
     return o?.unit ? units[id] ?? o.unit.def : 1
@@ -176,13 +237,18 @@ export function BookingPanel({ flow: baseFlow, initialOptionId, onClose }: { flo
 
   function pickOption(id: string) {
     setOptionError('')
-    setOptionIds((cur) => (flow.optionsMulti ? (cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]) : [id]))
+    setOptionIds((cur) => (mainFlow.optionsMulti ? (cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]) : [id]))
   }
 
   function validateStep(): boolean {
     if (step.kind === 'options') {
       if (!optionIds.length) {
         setOptionError('Please choose an option to continue.')
+        return false
+      }
+      const missing = also.map((id) => companionFlows.find((c) => c.id === id)).find((c) => c && !alsoPick[c.id])
+      if (missing) {
+        setOptionError(`Please choose a package for ${missing.title}, or remove it.`)
         return false
       }
       return true
@@ -212,13 +278,13 @@ export function BookingPanel({ flow: baseFlow, initialOptionId, onClose }: { flo
   }
 
   const summaryText = () => {
-    const picked = optionIds.map((id) => flow.options.find((o) => o.id === id)?.label).filter(Boolean)
+    const picked = allOptionIds.map((id) => flow.options.find((o) => o.id === id)?.label).filter(Boolean)
     const lines = [
       `*${flow.kind} — ${site.shortName}*`,
       `Name: ${fields.name}`,
       `Phone: ${fields.phone}`,
       `Email: ${fields.email}`,
-      `${flow.optionsMulti ? 'Interested in' : 'Package'}: ${picked.join(', ')}`,
+      `${flow.optionsMulti ? 'Interested in' : picked.length > 1 ? 'Packages' : 'Package'}: ${picked.join(', ')}`,
       ...flow.steps.flatMap((s) => s.fields.filter((f) => !['name', 'phone', 'email'].includes(f.id) && fields[f.id]).map((f) => `${f.label}: ${fields[f.id]}`)),
       ...quote.lines.map((l) => `• ${l.label} — ${l.amount}`),
       `*${quote.totalText.startsWith('£') ? 'TOTAL' : 'PRICING'}: ${quote.totalText}*`,
@@ -246,7 +312,7 @@ export function BookingPanel({ flow: baseFlow, initialOptionId, onClose }: { flo
       // a failed image never stops the booking: the client is told to send it on WhatsApp instead
       const uploaded = await uploadInspiration(images)
       setImagesFailed(uploaded.failed)
-      const sel: Selection & { website: string; promo?: string } = { flowId: flow.id, optionIds, units, extras, fields, website, promo: promo?.code, inspirationImages: uploaded.keys }
+      const sel: Selection & { website: string; promo?: string } = { flowId: mainFlow.id, also: also.filter((id) => alsoPick[id]), optionIds: allOptionIds, units, extras, fields, website, promo: promo?.code, inspirationImages: uploaded.keys }
       const res = await fetch('/api/booking', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(sel) })
       const data = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string; total?: string }
       if (!res.ok || !data.ok) throw new Error(data.error || `The server did not answer properly (HTTP ${res.status}).`)
@@ -347,43 +413,8 @@ export function BookingPanel({ flow: baseFlow, initialOptionId, onClose }: { flo
               {step.id === 'options' && !step.blurb && i === 0 && <p className="bk-blurb">{flow.intro}</p>}
 
               {step.kind === 'options' && (
-                <div className="bk-options" role={flow.optionsMulti ? 'group' : 'radiogroup'}>
-                  {flow.options.map((o) => {
-                    const on = optionIds.includes(o.id)
-                    return (
-                      <div key={o.id} className={'bk-option' + (on ? ' is-on' : '')}>
-                        <button type="button" className="bk-option-main" aria-pressed={on} onClick={() => pickOption(o.id)}>
-                          <span className="bk-radio" aria-hidden="true" data-multi={flow.optionsMulti ? '1' : undefined} />
-                          <span className="bk-option-text">
-                            <strong>{o.label}</strong>
-                            {o.note && <small>{o.note}</small>}
-                            {o.includes && (
-                              <ul>
-                                {o.includes.map((x) => (
-                                  <li key={x}>{x}</li>
-                                ))}
-                              </ul>
-                            )}
-                          </span>
-                          {o.price > 0 && <span className="bk-price">{formatGBP(o.price)}{o.unit ? <em>/{o.unit.label}</em> : null}</span>}
-                        </button>
-                        {on && o.unit && (
-                          <div className="bk-unit">
-                            <span>
-                              How many {o.unit.plural}?
-                            </span>
-                            <Stepper
-                              value={unitFor(o.id)}
-                              min={o.unit.min}
-                              max={o.unit.max}
-                              label={o.unit.plural}
-                              onChange={(n) => setUnits((u) => ({ ...u, [o.id]: n }))}
-                            />
-                          </div>
-                        )}
-                      </div>
-                    )
-                  })}
+                <div className="bk-options" role={mainFlow.optionsMulti ? 'group' : 'radiogroup'}>
+                  {mainFlow.options.map((o) => renderOption(o, optionIds.includes(o.id), () => pickOption(o.id), !!mainFlow.optionsMulti))}
                   {optionError && <p className="bk-err" role="alert">{optionError}</p>}
                   {flow.optionExtras?.length ? (
                     <div className="bk-inline-extras">
@@ -405,6 +436,37 @@ export function BookingPanel({ flow: baseFlow, initialOptionId, onClose }: { flo
                       ))}
                     </div>
                   ) : null}
+                  {companionFlows.length > 0 && (
+                    <div className="bk-also" data-also>
+                      <p className="bk-inline-title">Add another shoot to this booking</p>
+                      <p className="bk-also-blurb">Book more than one shoot at once, for example maternity and portrait. We agree the timing and the total with you on WhatsApp.</p>
+                      <div className="bk-also-chips">
+                        {companionFlows.map((c) => {
+                          const on = also.includes(c.id)
+                          return (
+                            <button key={c.id} type="button" className={'bk-also-chip' + (on ? ' is-on' : '')} aria-pressed={on} onClick={() => toggleAlso(c)} disabled={!on && also.length >= MAX_EXTRA_SHOOTS}>
+                              {on ? '✓ ' : '+ '}{c.title}
+                            </button>
+                          )
+                        })}
+                      </div>
+                      {also.map((id) => {
+                        const c = companionFlows.find((x) => x.id === id)
+                        if (!c) return null
+                        return (
+                          <div key={id} className="bk-also-shoot" data-also-shoot={id}>
+                            <div className="bk-also-head">
+                              <strong>{c.title}</strong>
+                              <button type="button" className="bk-also-remove" onClick={() => toggleAlso(c)} aria-label={`Remove ${c.title} from this booking`}>Remove</button>
+                            </div>
+                            <div role="radiogroup" aria-label={`${c.title} package`}>
+                              {c.options.map((o) => renderOption(o, alsoPick[id] === o.id, () => { setAlsoPick((p) => ({ ...p, [id]: o.id })); setOptionError('') }, false))}
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -524,7 +586,7 @@ export function BookingPanel({ flow: baseFlow, initialOptionId, onClose }: { flo
         <button type="button" className="bk-btn is-ghost" onClick={() => (i === 0 ? onClose() : go(i - 1))}>
           {i === 0 ? 'Cancel' : 'Back'}
         </button>
-        <div className="bk-foot-total" aria-hidden="true">{optionIds.length ? quote.totalText : ''}</div>
+        <div className="bk-foot-total" aria-hidden="true">{allOptionIds.length ? quote.totalText : ''}</div>
         {last ? (
           <button key="submit" type="submit" className="bk-btn is-light" disabled={sending}>
             {sending ? (images.length ? 'Uploading images and sending…' : 'Sending…') : flow.submitLabel ?? 'Submit booking'}

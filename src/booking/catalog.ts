@@ -29,8 +29,11 @@ export type Option = {
   note?: string
   /** bullet points shown with the option */
   includes?: string[]
-  /** price is multiplied by a quantity the client chooses (looks, hours …) */
-  unit?: { label: string; plural: string; min: number; max: number; def: number }
+  /**
+   * a quantity the client chooses (looks, hours …). The price is multiplied by it, unless `quoteExtra` is set: then the
+   * price covers one and the rest (more looks) are priced with the client on WhatsApp after the booking is sent.
+   */
+  unit?: { label: string; plural: string; min: number; max: number; def: number; quoteExtra?: boolean }
 }
 
 export type Extra = {
@@ -76,6 +79,8 @@ export type Flow = {
   /** headline for the customer email */
   headline: string
   nextSteps: string[]
+  /** set on a booking of several shoots (combineFlows): one package must be chosen from each of these */
+  groups?: { flowId: string; title: string; optionIds: string[] }[]
 }
 
 export type Selection = {
@@ -88,6 +93,8 @@ export type Selection = {
   fields: Record<string, string>
   /** promo code typed by the client (validated again on the server) */
   promo?: string
+  /** other shoots booked together with this one (their flow ids), e.g. maternity with portrait */
+  also?: string[]
 }
 
 export type Quote = {
@@ -100,6 +107,10 @@ export type Quote = {
 export const formatGBP = (n: number) => `£${n.toLocaleString('en-GB', { maximumFractionDigits: 2 })}`
 
 /* --------------------------------- common --------------------------------- */
+
+/** One look with a counter: the client says how many looks, the price is for one, the rest are agreed on WhatsApp. */
+export const LOOKS = (max = 5) => ({ label: 'look', plural: 'looks', min: 1, max, def: 1, quoteExtra: true })
+export const MORE_LOOKS_NOTE = 'Agreed on WhatsApp'
 
 const who = (blurb = 'So we know who to confirm with.'): Step => ({
   id: 'you',
@@ -159,8 +170,7 @@ export const flows: Record<string, Flow> = {
     intro: 'Choose your package, tell us about your session and add any extras. It takes about two minutes.',
     optionTitle: 'Choose your package',
     options: [
-      { id: 'portrait-1', label: '1 Look', price: 170, note: '4 edited pictures' },
-      { id: 'portrait-2', label: '2 Looks', price: 300, note: '8 edited pictures' },
+      { id: 'portrait-1', label: '1 Look', price: 170, note: '4 edited pictures', unit: LOOKS() },
     ],
     steps: [who(), shootDetails([{ id: 'people', label: 'Number of people', type: 'select', options: ['1', '2', '3', '4', '5+'], half: true }])],
     extrasTitle: 'Add-ons & extras',
@@ -176,8 +186,8 @@ export const flows: Record<string, Flow> = {
     intro: 'Celebrate this chapter. Choose a package, then tell us about your session.',
     optionTitle: 'Choose your package',
     options: [
-      { id: 'maternity-1', label: '1 Look', price: 170, note: '4 edited pictures' },
-      { id: 'maternity-couple', label: 'Couple · 1 Look', price: 200, note: '6 edited pictures' },
+      { id: 'maternity-1', label: '1 Look', price: 170, note: '4 edited pictures', unit: LOOKS() },
+      { id: 'maternity-couple', label: 'Couple · 1 Look', price: 200, note: '6 edited pictures', unit: LOOKS() },
     ],
     steps: [
       who(),
@@ -196,8 +206,7 @@ export const flows: Record<string, Flow> = {
     intro: 'Gentle, relaxed sessions. Choose a package and tell us about your little one.',
     optionTitle: 'Choose your package',
     options: [
-      { id: 'baby-1', label: '1 Look', price: 150, note: '4 edited pictures' },
-      { id: 'baby-2', label: '2 Looks', price: 250, note: '8 edited pictures' },
+      { id: 'baby-1', label: '1 Look', price: 150, note: '4 edited pictures', unit: LOOKS() },
     ],
     steps: [
       who(),
@@ -216,9 +225,7 @@ export const flows: Record<string, Flow> = {
     intro: 'Choose how many looks you would like, then tell us about your session.',
     optionTitle: 'Choose your package',
     options: [
-      { id: 'prewedding-1', label: '1 Look', price: 200, note: '7 images per look' },
-      { id: 'prewedding-2', label: '2 Looks', price: 400, note: '7 images per look' },
-      { id: 'prewedding-3', label: '3 Looks', price: 500, note: '7 images per look' },
+      { id: 'prewedding-1', label: '1 Look', price: 200, note: '7 images per look', unit: LOOKS() },
     ],
     steps: [
       who('Whose day is it? Put the name of one partner or both.'),
@@ -279,7 +286,7 @@ export const flows: Record<string, Flow> = {
         label: 'Family of 4',
         price: 250,
         note: '7 pictures per look · up to 4 people',
-        unit: { label: 'look', plural: 'looks', min: 1, max: 4, def: 1 },
+        unit: LOOKS(4),
       },
     ],
     optionExtras: ['family-extra-person'],
@@ -594,6 +601,18 @@ export function computeQuote(flow: Flow, sel: Pick<Selection, 'optionIds' | 'uni
     const o = flow.options.find((x) => x.id === id)
     if (!o) continue
     const qty = o.unit ? clamp(sel.units[id] ?? o.unit.def, o.unit.min, o.unit.max) : 1
+    if (o.unit?.quoteExtra) {
+      // the price is for one look; any more looks are priced with the client on WhatsApp
+      if (o.price === 0) quoted = true
+      total += o.price
+      lines.push({ label: o.label, amount: o.price === 0 ? 'Quoted' : formatGBP(o.price), value: o.price })
+      if (qty > 1) {
+        quoted = true
+        const more = qty - 1
+        lines.push({ label: `${more} more ${more === 1 ? o.unit.label : o.unit.plural} (${qty} ${o.unit.plural} in total)`, amount: MORE_LOOKS_NOTE, value: 0 })
+      }
+      continue
+    }
     const value = o.price * qty
     if (o.price === 0) quoted = true
     total += value
@@ -643,7 +662,13 @@ export function validateField(f: Field, value: string): string {
 export function validateSelection(flow: Flow, sel: Selection): string[] {
   const errors: string[] = []
   if (!sel.optionIds.length) errors.push('Choose an option')
-  if (!flow.optionsMulti && sel.optionIds.length > 1) errors.push('Choose only one option')
+  if (flow.groups) {
+    // several shoots: exactly one package from each
+    for (const g of flow.groups) {
+      const n = sel.optionIds.filter((id) => g.optionIds.includes(id)).length
+      if (n !== 1) errors.push(n ? `Choose only one ${g.title} package` : `Choose a ${g.title} package`)
+    }
+  } else if (!flow.optionsMulti && sel.optionIds.length > 1) errors.push('Choose only one option')
   for (const id of sel.optionIds) if (!flow.options.some((o) => o.id === id)) errors.push(`Unknown option ${id}`)
   for (const step of flow.steps)
     for (const f of step.fields) {
@@ -654,3 +679,46 @@ export function validateSelection(flow: Flow, sel: Selection): string[] {
 }
 
 export const flowOrder = Object.keys(flows)
+
+/* ------------------------ several shoots in one booking ------------------------ */
+
+/** the most extra shoots that can be added to one booking */
+export const MAX_EXTRA_SHOOTS = 4
+
+/** Photo shoots that share the same questions (About you + Your session) can be booked together, e.g. maternity and portrait. */
+export const canCombine = (f: Flow | undefined): f is Flow =>
+  !!f && !f.optionsMulti && !f.payLink && f.options.length > 0 && f.steps.length > 0 && f.steps.every((s) => s.id === 'you' || s.id === 'shoot') && f.steps.some((s) => s.id === 'shoot')
+
+/**
+ * One booking form for several shoots: the first shoot's form, with the other shoots' packages, their add-ons and any
+ * question only they ask (Maternity's "weeks pregnant" …). One package has to be chosen from each shoot. The website
+ * shows and prices it, and the server rebuilds it from the shoot ids to check and price the booking.
+ */
+export function combineFlows(main: Flow, more: Flow[]): Flow {
+  const others = more.filter((m) => m.id !== main.id)
+  if (!others.length) return main
+  const all = [main, ...others]
+  const seen = new Set(main.steps.flatMap((s) => s.fields.map((f) => f.id)))
+  const steps = main.steps.map((s) => {
+    const extra = others.flatMap((m) => m.steps.filter((x) => x.id === s.id).flatMap((x) => x.fields)).filter((f) => !seen.has(f.id) && (seen.add(f.id), true))
+    if (!extra.length) return s
+    // their questions go before the free-text ones at the end of the step
+    const at = s.fields.findIndex((f) => f.id === 'inspiration')
+    return { ...s, fields: at >= 0 ? [...s.fields.slice(0, at), ...extra, ...s.fields.slice(at)] : [...s.fields, ...extra] }
+  })
+  const extraIds = new Set<string>()
+  const extras = all.flatMap((m) => m.extras).filter((e) => !extraIds.has(e.id) && (extraIds.add(e.id), true))
+  const optionExtras = all.flatMap((m) => m.optionExtras ?? [])
+  return {
+    ...main,
+    kind: `${all.map((m) => m.kind.replace(/ booking$/i, '')).join(' + ')} booking`,
+    title: all.map((m) => m.title).join(' + '),
+    options: all.flatMap((m) => m.options.map((o) => ({ ...o, label: `${m.title}: ${o.label}` }))),
+    groups: all.map((m) => ({ flowId: m.id, title: m.title, optionIds: m.options.map((o) => o.id) })),
+    steps,
+    extras,
+    optionExtras: optionExtras.length ? optionExtras : undefined,
+    terms: [...new Set(all.flatMap((m) => m.terms))],
+    nextSteps: [...new Set(all.flatMap((m) => m.nextSteps))],
+  }
+}

@@ -20,10 +20,8 @@ export const PHOTOGRAPHY_CARDS: CardDef[] = [
         optionId: "portrait-1"
       },
       {
-        label: "2 Looks",
-        note: "8 edited pictures",
-        price: "£300",
-        optionId: "portrait-2"
+        label: "More looks?",
+        note: "Choose how many when you book. We agree the price for extra looks with you on WhatsApp."
       }
     ],
     cta: "Book this shoot"
@@ -47,6 +45,10 @@ export const PHOTOGRAPHY_CARDS: CardDef[] = [
         note: "6 edited pictures",
         price: "£200",
         optionId: "maternity-couple"
+      },
+      {
+        label: "More looks?",
+        note: "Choose how many when you book. We agree the price for extra looks with you on WhatsApp."
       }
     ],
     cta: "Book this shoot"
@@ -66,10 +68,8 @@ export const PHOTOGRAPHY_CARDS: CardDef[] = [
         optionId: "baby-1"
       },
       {
-        label: "2 Looks",
-        note: "8 edited pictures",
-        price: "£250",
-        optionId: "baby-2"
+        label: "More looks?",
+        note: "Choose how many when you book. We agree the price for extra looks with you on WhatsApp."
       }
     ],
     cta: "Book this shoot"
@@ -89,14 +89,8 @@ export const PHOTOGRAPHY_CARDS: CardDef[] = [
         optionId: "prewedding-1"
       },
       {
-        label: "2 Looks",
-        price: "£400",
-        optionId: "prewedding-2"
-      },
-      {
-        label: "3 Looks",
-        price: "£500",
-        optionId: "prewedding-3"
+        label: "More looks?",
+        note: "Choose how many when you book. We agree the price for extra looks with you on WhatsApp."
       }
     ],
     cta: "Book this shoot"
@@ -127,7 +121,6 @@ export const PHOTOGRAPHY_CARDS: CardDef[] = [
     image: "/images/ILU6185.webp",
     fromLabel: "From",
     price: "£250",
-    priceNote: "per look",
     rows: [
       {
         label: "Family of 4",
@@ -138,6 +131,10 @@ export const PHOTOGRAPHY_CARDS: CardDef[] = [
       {
         label: "Extra person",
         price: "£20 each"
+      },
+      {
+        label: "More looks?",
+        note: "Choose how many when you book. We agree the price for extra looks with you on WhatsApp."
       }
     ],
     cta: "Book this shoot"

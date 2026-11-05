@@ -8,6 +8,7 @@
  */
 import { useCallback, useEffect, useState } from 'react'
 import { PAGE_CARDS } from '../../booking/cards'
+import { flows } from '../../booking/catalog'
 import { formatGBP } from '../../booking/catalog'
 import { packageItemId, type BookingPackage } from '../../booking/overrides'
 import { safePhoto } from '../../booking/cardPhotos'
@@ -65,8 +66,15 @@ export function useAddedServices() {
 }
 
 type Line = { label: string; note: string; price: string }
-type Form = { page: PageId | ''; title: string; description: string; lines: Line[]; price: string; priceNote: string; includes: string; cta: string; active: boolean }
+type AddOn = { label: string; note: string; price: string; max: string }
+type Form = {
+  page: PageId | ''; title: string; description: string; lines: Line[]; price: string; priceNote: string; includes: string; cta: string; active: boolean
+  maxLooks: string; addOns: AddOn[]; standardExtras: boolean
+}
 const emptyLine = (): Line => ({ label: '', note: '', price: '' })
+const emptyAddOn = (): AddOn => ({ label: '', note: '', price: '', max: '' })
+/** the usual photo add-ons a Photography services package can offer too */
+const STANDARD_EXTRAS = flows.portrait.extras.map((e) => e.label)
 
 /** The form. `service` edits a Photography services package, `pkg` a card added to another page. */
 export function NewPackageForm({ service, pkg, presetPage, services, packages, onSaveService, onSavePackage, onClose }: {
@@ -81,18 +89,21 @@ export function NewPackageForm({ service, pkg, presetPage, services, packages, o
     if (service) return {
       page: 'photography', title: service.title, description: service.description ?? '', price: '', priceNote: '', includes: '', cta: service.cta ?? 'Book this shoot', active: service.active,
       lines: (service.options ?? []).map((o) => ({ label: o.label, note: o.note ?? '', price: String(Number(o.price) || 0) })),
+      maxLooks: String(service.max_looks ?? 5), standardExtras: service.standard_extras !== false,
+      addOns: (service.extras ?? []).map((e) => ({ label: e.label, note: e.note ?? '', price: String(Number(e.price) || 0), max: e.max ? String(e.max) : '' })),
     }
     if (pkg) return {
       page: pageOfFlow(pkg.flow_id)?.id ?? '', title: pkg.label, description: pkg.description ?? '', price: String(Number(pkg.price) || 0), priceNote: pkg.note ?? '',
-      includes: (pkg.includes ?? []).join('\n'), cta: '', lines: [emptyLine()], active: pkg.active,
+      includes: (pkg.includes ?? []).join('\n'), cta: '', lines: [emptyLine()], active: pkg.active, maxLooks: '5', addOns: [], standardExtras: true,
     }
-    return { page: presetPage ?? '', title: '', description: '', lines: [emptyLine()], price: '', priceNote: '', includes: '', cta: 'Book this shoot', active: true }
+    return { page: presetPage ?? '', title: '', description: '', lines: [emptyLine()], price: '', priceNote: '', includes: '', cta: 'Book this shoot', active: true, maxLooks: '5', addOns: [], standardExtras: true }
   })
   const [err, setErr] = useState('')
   const [busy, setBusy] = useState(false)
   const [picking, setPicking] = useState(false)
   const set = <K extends keyof Form>(k: K, v: Form[K]) => { setF((c) => ({ ...c, [k]: v })); setErr('') }
   const setLine = (n: number, p: Partial<Line>) => { setF((c) => ({ ...c, lines: c.lines.map((l, i) => (i === n ? { ...l, ...p } : l)) })); setErr('') }
+  const setAddOn = (n: number, p: Partial<AddOn>) => { setF((c) => ({ ...c, addOns: c.addOns.map((l, i) => (i === n ? { ...l, ...p } : l)) })); setErr('') }
   const page = WEBSITE_PAGES.find((p) => p.id === f.page)
   const isService = f.page === 'photography'
   const editing = !!(service || pkg)
@@ -102,6 +113,20 @@ export function NewPackageForm({ service, pkg, presetPage, services, packages, o
   const [photo, setPhoto] = useState<string | null>(null)
   const ownPhoto = photo ?? savedPhoto
   const shownPhoto = ownPhoto || (page?.flow ? firstPhoto(page.flow) : '')
+
+  /** the add-ons filled in, checked; '' = fine */
+  const addOnProblem = (list: AddOn[]) => {
+    for (const [n, a] of list.entries()) {
+      if (!a.label.trim()) return `Add-on ${n + 1} needs a name, e.g. Gown hire.`
+      const p = a.price.trim() === '' ? 0 : Number(a.price)
+      if (!Number.isFinite(p) || p < 0) return `Add-on ${n + 1}: enter a price of 0 or more (0 means you quote it).`
+      if (a.max.trim() && !(Number.isInteger(Number(a.max)) && Number(a.max) >= 2 && Number(a.max) <= 100)) return `Add-on ${n + 1}: the most a client can choose must be a whole number from 2 to 100 (leave it empty for a tick box).`
+    }
+    return ''
+  }
+  const filledAddOns = () => f.addOns.filter((a) => a.label.trim() || a.price.trim() || a.note.trim())
+  /** add-ons already on the shared booking form of a Wedding / Videography / Academy page */
+  const flowAddOns = page?.flow ? [...(flows[page.flow]?.extras ?? []).map((e) => e.label), ...packages.filter((r) => r.flow_id === page.flow && r.kind === 'extra').map((r) => r.label)] : []
 
   async function submit() {
     if (!page) return setErr('Choose the page this package goes on.')
@@ -116,9 +141,15 @@ export function NewPackageForm({ service, pkg, presetPage, services, packages, o
         const p = l.price.trim() === '' ? 0 : Number(l.price)
         if (!Number.isFinite(p) || p < 0) return setErr(`Price line ${n + 1}: enter a price of 0 or more (0 means you quote it).`)
       }
+      const looks = Number(f.maxLooks)
+      if (!(Number.isInteger(looks) && looks >= 1 && looks <= 20)) return setErr('The most looks a client can choose must be a whole number from 1 to 20 (1 = no looks counter).')
+      const bad = addOnProblem(filledAddOns())
+      if (bad) return setErr(bad)
       const row: Partial<BookingService> = {
         page: 'photography', title: f.title.trim(), description: f.description.trim(), cta: f.cta.trim() || 'Book this shoot', active: f.active,
         options: lines.map((l) => ({ label: l.label.trim(), note: l.note.trim(), price: Math.round((Number(l.price) || 0) * 100) / 100 })),
+        max_looks: looks, standard_extras: f.standardExtras,
+        extras: filledAddOns().map((a) => ({ label: a.label.trim(), note: a.note.trim(), price: Math.round((Number(a.price) || 0) * 100) / 100, max: a.max.trim() ? Number(a.max) : null })),
       }
       if (!service) row.sort_order = Math.max(0, ...services.map((s) => Number(s.sort_order) || 0)) + 1
       setBusy(true)
@@ -132,8 +163,19 @@ export function NewPackageForm({ service, pkg, presetPage, services, packages, o
         price: Math.round(price * 100) / 100, unit: null, max_qty: null, active: f.active,
       }
       if (!pkg) row.sort_order = Math.max(0, ...packages.filter((r) => r.flow_id === page.flow && r.kind === 'option').map((r) => Number(r.sort_order) || 0)) + 1
+      const newAddOns = filledAddOns()
+      const bad = addOnProblem(newAddOns)
+      if (bad) return setErr(bad)
       setBusy(true)
       saved = await onSavePackage(row, pkg?.id)
+      // new add-ons go on the page's booking form, so every package on it offers them
+      if (saved) {
+        let order = Math.max(0, ...packages.filter((r) => r.flow_id === page.flow && r.kind === 'extra').map((r) => Number(r.sort_order) || 0))
+        for (const a of newAddOns) {
+          const ok = await onSavePackage({ flow_id: page.flow!, kind: 'extra', label: a.label.trim(), note: a.note.trim(), includes: [], price: Math.round((Number(a.price) || 0) * 100) / 100, unit: null, max_qty: a.max.trim() ? Number(a.max) : null, active: true, sort_order: ++order })
+          if (!ok) { setBusy(false); return setErr(`The package was saved, but add-on “${a.label.trim()}” was not. Add it again with + Add option.`) }
+        }
+      }
     }
     if (saved && ownPhoto !== savedPhoto) await cp.apply({ [keyOf(saved)]: ownPhoto || null })
     setBusy(false)
@@ -177,7 +219,7 @@ export function NewPackageForm({ service, pkg, presetPage, services, packages, o
             {isService ? (
               <div className="ad-field full">
                 <span>Prices</span>
-                <small style={{ marginBottom: 8 }}>Each line is a choice on the card and in the booking form, like 1 Look and 2 Looks on Portrait.</small>
+                <small style={{ marginBottom: 8 }}>Each line is a choice on the card and in the booking form, priced for one look, like 1 Look and Couple · 1 Look on Maternity.</small>
                 {f.lines.map((l, n) => (
                   <div className="np-line" key={n} data-price-line>
                     <input type="text" aria-label={`Price line ${n + 1} name`} placeholder="e.g. 1 Look" value={l.label} onChange={(e) => setLine(n, { label: e.target.value })} />
@@ -199,6 +241,36 @@ export function NewPackageForm({ service, pkg, presetPage, services, packages, o
                 )}
               </>
             )}
+            {isService && (
+              <Field label="Most looks a client can choose" hint="Each price is for one look. Clients choose how many looks when booking and you agree the price for the extra looks on WhatsApp. 1 = no looks counter.">
+                <input type="number" min="1" max="20" value={f.maxLooks} onChange={(e) => set('maxLooks', e.target.value)} />
+              </Field>
+            )}
+            <div className="ad-field full" data-package-addons>
+              <span>Add-ons</span>
+              {isService ? (
+                <>
+                  <label className="ad-check" style={{ margin: '2px 0 6px' }}><input type="checkbox" checked={f.standardExtras} onChange={(e) => set('standardExtras', e.target.checked)} />Offer the usual photo add-ons too</label>
+                  <small style={{ marginBottom: 8 }}>{STANDARD_EXTRAS.join(', ')}. Add this package’s own add-ons below.</small>
+                </>
+              ) : (
+                <small style={{ marginBottom: 8 }}>
+                  {page.label} packages share one booking form, so add-ons added here are offered with every package on it.
+                  {flowAddOns.length ? ` Already offered: ${flowAddOns.join(', ')}.` : ' None yet.'}
+                </small>
+              )}
+              {f.addOns.map((a, n) => (
+                <div className="np-line np-addon" key={n} data-addon-line>
+                  <input type="text" aria-label={`Add-on ${n + 1} name`} placeholder="e.g. Gown hire" value={a.label} onChange={(e) => setAddOn(n, { label: e.target.value })} />
+                  <input type="text" aria-label={`Add-on ${n + 1} detail`} placeholder="e.g. per gown" value={a.note} onChange={(e) => setAddOn(n, { note: e.target.value })} />
+                  <input type="number" min="0" step="0.01" aria-label={`Add-on ${n + 1} price (£)`} placeholder="£" value={a.price} onChange={(e) => setAddOn(n, { price: e.target.value })} />
+                  <input type="number" min="2" max="100" aria-label={`Add-on ${n + 1} most a client can choose`} placeholder="Most" title="Most a client can choose (empty = a tick box)" value={a.max} onChange={(e) => setAddOn(n, { max: e.target.value })} />
+                  <button type="button" className="ad-btn sm danger" aria-label={`Remove add-on ${n + 1}`} onClick={() => set('addOns', f.addOns.filter((_, i) => i !== n))}>✕</button>
+                </div>
+              ))}
+              <div><button type="button" className="ad-btn sm" onClick={() => set('addOns', [...f.addOns, emptyAddOn()])}>+ Add an add-on</button></div>
+              {f.addOns.length > 0 && <small style={{ marginTop: 6 }}>“Most” lets clients choose how many (e.g. 3 gowns); leave it empty for a simple tick box.</small>}
+            </div>
             {isService && <Field label="Button text" full><input type="text" maxLength={40} value={f.cta} onChange={(e) => set('cta', e.target.value)} /></Field>}
             <label className="ad-check" style={{ gridColumn: '1 / -1' }}><input type="checkbox" checked={f.active} onChange={(e) => set('active', e.target.checked)} />Show it on the page now</label>
           </>

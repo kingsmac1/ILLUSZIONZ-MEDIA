@@ -3,7 +3,8 @@ import { db, dbReady, type DbEnv } from '../../src/server/db'
 import { safePhoto } from '../../src/booking/cardPhotos'
 
 const PACKAGE_COLUMNS = 'select=id,flow_id,kind,label,note,description,includes,price,unit,max_qty,sort_order,active&active=eq.true&order=sort_order.asc'
-const SERVICE_COLUMNS = 'select=id,page,title,description,options,cta,sort_order,active&active=eq.true&order=sort_order.asc'
+// every column, so this keeps working before and after the add-ons and looks columns exist
+const SERVICE_COLUMNS = 'select=*&active=eq.true&order=sort_order.asc'
 
 export const onRequestGet = async ({ env }: { env: DbEnv }) => {
   let rows: unknown[] = []

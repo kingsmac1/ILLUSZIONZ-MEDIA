@@ -1,12 +1,37 @@
 /** NOTE: failures use 424, not 502/5xx — Cloudflare replaces 502/5xx bodies with its own error page, which hides the real reason from the form.
  * POST /api/booking — validates + re-prices a multi-step booking, stores it (+ CRM records) and sends the emails (Cloudflare Pages Function). */
-import { computeQuote, flows, validateSelection, type Selection } from '../../src/booking/catalog'
+import { MAX_EXTRA_SHOOTS, canCombine, combineFlows, computeQuote, flows, validateSelection, type Flow, type Selection } from '../../src/booking/catalog'
 import { applyOverrides, evaluatePromo, type BookingPackage, type PriceOverride, type PromoRow } from '../../src/booking/overrides'
 import { deliver, type MailEnv } from '../../src/server/mail'
 import { buildSummary } from '../../src/server/summary'
 import { db, dbReady, q, type DbEnv } from '../../src/server/db'
 import { isServiceFlowId, serviceFlow, type BookingService } from '../../src/booking/services'
 import { recordBooking } from '../../src/server/crm'
+
+/**
+ * A booking form with the dashboard's prices: a built-in service, or a package added to a page in the dashboard
+ * (Graduate Photography …, read from the database), with its price overrides and added packages applied, so the
+ * browser can never choose its own price. undefined = no such service.
+ */
+async function loadFlow(env: DbEnv, id: string): Promise<Flow | undefined> {
+  let base: Flow | undefined = flows[id]
+  if (!base && isServiceFlowId(id) && dbReady(env)) {
+    try {
+      const row = ((await db.select(env, 'booking_services', `id=eq.${q(id.slice(4))}&active=eq.true&limit=1`)) as BookingService[])[0]
+      if (row) { const f = serviceFlow(row); if (f.options.length) base = f }
+    } catch (err) {
+      console.error('service failed', err)
+    }
+  }
+  if (!base || !dbReady(env)) return base
+  const [o, p] = await Promise.allSettled([
+    db.select(env, 'price_overrides', `flow_id=eq.${q(base.id)}`),
+    db.select(env, 'booking_packages', `flow_id=eq.${q(base.id)}&active=eq.true`),
+  ])
+  if (o.status === 'rejected') console.error('overrides failed', o.reason)
+  if (p.status === 'rejected') console.error('packages failed', p.reason)
+  return applyOverrides(base, o.status === 'fulfilled' ? (o.value as PriceOverride[]) : [], p.status === 'fulfilled' ? (p.value as BookingPackage[]) : [])
+}
 
 const json = (data: unknown, status = 200) =>
   new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } })
@@ -19,28 +44,18 @@ export const onRequestPost = async ({ request, env }: { request: Request; env: M
     return json({ ok: false, error: 'Invalid request.' }, 400)
   }
   if (sel.website) return json({ ok: true }) // honeypot
-  let base = flows[sel.flowId]
-  // a package added to a page in the dashboard (Graduate Photography …): its form and prices come from the database
-  if (!base && isServiceFlowId(sel.flowId) && dbReady(env)) {
-    try {
-      const row = ((await db.select(env, 'booking_services', `id=eq.${q(sel.flowId.slice(4))}&active=eq.true&limit=1`)) as BookingService[])[0]
-      if (row) { const f = serviceFlow(row); if (f.options.length) base = f }
-    } catch (err) {
-      console.error('service failed', err)
-    }
-  }
-  if (!base) return json({ ok: false, error: 'Unknown service.' }, 400)
+  const main = await loadFlow(env, sel.flowId)
+  if (!main) return json({ ok: false, error: 'Unknown service.' }, 400)
 
-  // dashboard price overrides and added packages (re-priced here, so the browser can never choose its own price)
-  let flow = base
-  if (dbReady(env)) {
-    const [o, p] = await Promise.allSettled([
-      db.select(env, 'price_overrides', `flow_id=eq.${q(base.id)}`),
-      db.select(env, 'booking_packages', `flow_id=eq.${q(base.id)}&active=eq.true`),
-    ])
-    if (o.status === 'rejected') console.error('overrides failed', o.reason)
-    if (p.status === 'rejected') console.error('packages failed', p.reason)
-    flow = applyOverrides(base, o.status === 'fulfilled' ? (o.value as PriceOverride[]) : [], p.status === 'fulfilled' ? (p.value as BookingPackage[]) : [])
+  // several shoots in one booking (maternity with portrait …): each is rebuilt here with its own live prices
+  let flow = main
+  const also = [...new Set(Array.isArray(sel.also) ? sel.also.filter((x): x is string => typeof x === 'string') : [])].filter((x) => x !== main.id)
+  if (also.length) {
+    if (also.length > MAX_EXTRA_SHOOTS) return json({ ok: false, error: `Book up to ${MAX_EXTRA_SHOOTS + 1} shoots at once.` }, 422)
+    if (!canCombine(main)) return json({ ok: false, error: 'This service cannot be booked together with others.' }, 422)
+    const more = await Promise.all(also.map((id) => loadFlow(env, id)))
+    if (more.some((m) => !canCombine(m))) return json({ ok: false, error: 'One of the extra shoots cannot be booked together with this one.' }, 422)
+    flow = combineFlows(main, more as Flow[])
   }
   sel = { ...sel, optionIds: sel.optionIds ?? [], units: sel.units ?? {}, extras: sel.extras ?? {}, fields: sel.fields ?? {} }
   const problems = validateSelection(flow, sel)
