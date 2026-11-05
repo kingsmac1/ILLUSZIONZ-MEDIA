@@ -14,6 +14,7 @@
     "postbuild": "node scripts/postbuild.mjs",
     "test:motion": "node tests/motion-e2e.mjs",
     "test:gallery": "node tests/gallery-e2e.mjs",
+    "test:invoices": "node tests/invoice-e2e.mjs",
     "gallery:go-live": "bash scripts/gallery-go-live.sh"
   },
   "dependencies": {
@@ -25,6 +26,7 @@
     "gsap": "^3.15.0",
     "lenis": "^1.3.27",
     "motion": "^14.3.0",
+    "pdf-lib": "^1.17.1",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "react-photo-album": "^3.6.2",

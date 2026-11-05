@@ -8,6 +8,7 @@ import { blocksToHtml, blocksToText, type EmailBlock } from '../../src/server/em
 import { bookingVars, contactVars, renderTemplate, type Template } from '../../src/server/automations'
 import { syncInstagram, type IgEnv } from '../../src/server/instagram'
 import { matchesAudience, type AudienceFilter } from '../../src/server/audience'
+import { EMAIL_HEADING, invoiceTotals, normalizeDoc, pdfFilename } from '../../src/features/invoices/model'
 
 type Env = MailEnv & DbEnv & IgEnv
 const json = (d: unknown, status = 200) => new Response(JSON.stringify(d), { status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } })
@@ -107,6 +108,32 @@ export const onRequestPost = async ({ request, env }: { request: Request; env: E
           if (contact_id) await db.update(env, 'contacts', `id=eq.${contact_id}`, { last_contacted_at: new Date().toISOString(), last_activity_at: new Date().toISOString() })
         }
         return json({ ok: true, ...(dry ? { dryRun: true, email: m } : {}) })
+      }
+
+      /* email an invoice with its PDF (the dashboard builds the PDF, so the client gets exactly what the admin previewed) */
+      case 'invoice_send': {
+        const to = String(body.to ?? '').trim()
+        const subject = String(body.subject ?? '').trim().slice(0, 300)
+        const message = String(body.message ?? '').trim().slice(0, 10_000)
+        const pdf = String(body.pdf ?? '')
+        if (!/^[^\s@,;<>]+@[^\s@,;<>]+\.[^\s@,;<>]+$/.test(to)) return json({ ok: false, error: 'Enter a valid email address.' }, 422)
+        if (!subject || !message) return json({ ok: false, error: 'Enter a subject and a message.' }, 422)
+        if (!pdf.startsWith('JVBERi0') || pdf.length > 7_000_000) return json({ ok: false, error: 'The invoice PDF could not be read. Please try again.' }, 422) // "%PDF-" in base64; about 5 MB at most
+        const [inv] = await db.select(env, 'invoices', `id=eq.${q(body.invoice_id)}&limit=1`)
+        if (!inv) return json({ ok: false, error: 'Save the invoice first: it was not found.' }, 404)
+        const stage = invoiceTotals(normalizeDoc(inv.doc)).stage
+        const m = genericEmail({ siteUrl: cfg.siteUrl, subject, ...EMAIL_HEADING[stage], body: message })
+        const attachment = { filename: pdfFilename(inv.number), content: pdf, content_type: 'application/pdf' }
+        if (dry) return json({ ok: true, dryRun: true, email: m, stage, attachment: { filename: attachment.filename, bytes: Math.floor((pdf.length * 3) / 4) } })
+        await send(env, { to, replyTo: cfg.owner, message: m, attachments: [attachment] })
+        // the email has gone: a failure from here on must not tell the admin to send it again
+        const now = new Date().toISOString()
+        await Promise.allSettled([
+          db.update(env, 'invoices', `id=eq.${inv.id}`, { sent_at: now, sent_to: to, sent_stage: stage, sent_count: Number(inv.sent_count ?? 0) + 1 }),
+          db.insert(env, 'email_log', { template_key: 'invoice', to_email: to, subject, status: 'sent', sent_at: now, booking_id: inv.booking_id ?? null, contact_id: inv.contact_id ?? null }),
+          ...(inv.contact_id ? [db.insert(env, 'activities', { contact_id: inv.contact_id, booking_id: inv.booking_id ?? null, type: 'email', subject: `Sent invoice ${inv.number}`, body: subject, created_by: who })] : []),
+        ])
+        return json({ ok: true, sent_at: now, stage })
       }
 
       case 'audience_count':

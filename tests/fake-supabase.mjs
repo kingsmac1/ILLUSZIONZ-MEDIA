@@ -40,7 +40,8 @@ const DEFAULTS = {
   site_images: () => ({ id: randomUUID(), created_at: now(), thumb_url: '', alt: '', width: 0, height: 0, sort_order: 0 }),
   page_seo: () => ({ title: '', description: '', og_image: '', noindex: false, updated_at: now() }),
   email_sections: () => ({ id: randomUUID(), created_at: now(), blocks: [] }),
-  payments: () => ({ id: randomUUID(), created_at: now(), note: '' }),
+  invoices: () => ({ id: randomUUID(), created_at: now(), updated_at: now(), booking_id: null, contact_id: null, doc: {}, sent_at: null, sent_to: null, sent_stage: null, sent_count: 0 }),
+  payments: () => ({ id: randomUUID(), created_at: now(), paid_at: now().slice(0, 10), method: 'Other', note: '' }),
   expenses: () => ({ id: randomUUID(), created_at: now(), note: '', vendor: '' }),
   other_income: () => ({ id: randomUUID(), created_at: now(), note: '' }),
   promo_codes: () => ({ created_at: now(), used: 0, flows: [], active: true }),
@@ -48,7 +49,7 @@ const DEFAULTS = {
   email_campaigns: () => ({ id: randomUUID(), created_at: now(), status: 'draft', recipients: 0, sent_count: 0, failed_count: 0, audience: {}, blocks: [], sent_at: null }),
 }
 const PK = { page_seo: ['path'], pipeline_stages: ['key'], settings: ['key'], promo_codes: ['code'], price_overrides: ['flow_id', 'kind', 'item_id'], expense_categories: ['name'], admin_users: ['email'], email_templates: ['key'] }
-const UNIQUE = { email_log: ['dedupe_key'], contacts: ['email'], blog_posts: ['slug'] }
+const UNIQUE = { email_log: ['dedupe_key'], contacts: ['email'], blog_posts: ['slug'], invoices: ['number'] }
 
 function cmp(a, b) { return a == null ? (b == null ? 0 : -1) : b == null ? 1 : a < b ? -1 : a > b ? 1 : 0 }
 function matcher(col, expr) {
@@ -96,7 +97,7 @@ http.createServer(async (req, res) => {
   const body = raw ? JSON.parse(raw) : undefined
   const path = url.pathname
 
-  if (path === '/__reset') { for (const k of Object.keys(db)) if (['contacts', 'companies', 'bookings', 'submissions', 'deals', 'activities', 'tasks', 'segments', 'payments', 'expenses', 'other_income', 'promo_codes', 'price_overrides', 'email_log', 'email_campaigns', 'blog_posts', 'store_products', 'testimonials', 'site_images', 'page_seo'].includes(k)) db[k] = []; const cm = T('settings').find((x) => x.key === 'cms_managed'); if (cm) cm.value = {}; const nt = T('settings').find((x) => x.key === 'notice'); if (nt) nt.value = { enabled: false, text: '', link: '', label: '', tone: 'dark' }; return send(res, 200, { ok: true }) }
+  if (path === '/__reset') { for (const k of Object.keys(db)) if (['contacts', 'companies', 'bookings', 'submissions', 'deals', 'activities', 'tasks', 'segments', 'payments', 'expenses', 'other_income', 'promo_codes', 'price_overrides', 'email_log', 'email_campaigns', 'blog_posts', 'store_products', 'testimonials', 'site_images', 'page_seo', 'invoices'].includes(k)) db[k] = []; const cm = T('settings').find((x) => x.key === 'cms_managed'); if (cm) cm.value = {}; const nt = T('settings').find((x) => x.key === 'notice'); if (nt) nt.value = { enabled: false, text: '', link: '', label: '', tone: 'dark' }; return send(res, 200, { ok: true }) }
   if (path === '/__dump') return send(res, 200, db)
   if (path.startsWith('/auth/v1/token')) return body?.password === 'test1234' && body?.email === user.email ? send(res, 200, session()) : send(res, 400, { error: 'invalid_grant', error_description: 'Invalid login credentials', msg: 'Invalid login credentials' })
   if (path === '/auth/v1/user') return (req.headers.authorization ?? '').includes('fake-token') || (req.headers.authorization ?? '').includes('service') ? send(res, 200, user) : send(res, 401, { msg: 'bad token' })

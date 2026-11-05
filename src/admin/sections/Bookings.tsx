@@ -10,6 +10,7 @@ import { byBooking, useGalleryIndex } from '../../features/gallery/admin/useGall
 import { STATUS_TONE, statusLabel } from '../../features/gallery/status'
 import { deleteGalleries, deleteInspiration, galleriesOfBookings } from '../../features/gallery/admin/galleryActions'
 import { callFn } from '../../features/gallery/api'
+import { InvoicePrompt, bookingInvoiceHref } from '../../features/invoices/InvoicePrompt'
 
 const PAGE = 20
 const STATUSES = ['new', 'confirmed', 'completed', 'cancelled']
@@ -25,6 +26,7 @@ export function PaymentModal({ booking, onClose }: { booking: R; onClose: () => 
   const [date, setDate] = useState(todayIso())
   const [note, setNote] = useState('')
   const [receipt, setReceipt] = useState(!!booking.email && booking.source === 'website')
+  const [recorded, setRecorded] = useState<number | null>(null)
   async function save() {
     const n = Number(amount)
     if (!n) return toast('Enter an amount', 'err')
@@ -38,8 +40,9 @@ export function PaymentModal({ booking, onClose }: { booking: R; onClose: () => 
       const res = await adminApi({ action: 'send_template', key: 'payment_receipt', booking_id: booking.id, vars: { amount: gbp(n), balance: gbp(Math.max(0, Number(booking.total) - paid)) } })
       if (!res.ok) toast(res.error ?? 'Receipt email failed', 'err')
     }
-    onClose()
+    setRecorded(paid)
   }
+  if (recorded != null) return <InvoicePrompt bookings={[{ id: booking.id, name: booking.name, paid: recorded, total: Number(booking.total) }]} onClose={onClose} />
   return (
     <Modal title={`Record payment · ${booking.name}`} onClose={onClose}>
       <p className="ad-muted" style={{ marginBottom: 14 }}>Total {gbp(booking.total)} · paid {gbp(booking.amount_paid)} · balance <b>{gbp(balance)}</b></p>
@@ -59,6 +62,7 @@ function ManualBooking({ onClose }: { onClose: () => void }) {
   const { d, toast } = useData()
   const db = useDb()
   const [f, setF] = useState<R>({ flow: 'portrait', name: '', email: '', phone: '', packages: '', total: '', date: '', time: '', notes: '', status: 'confirmed', paid: '' })
+  const [recorded, setRecorded] = useState<{ id: string; name: string; paid: number; total: number } | null>(null)
   const set = (k: string, v: string) => setF((c) => ({ ...c, [k]: v }))
   async function save() {
     if (!f.name.trim()) return toast('Name is required', 'err')
@@ -79,9 +83,13 @@ function ManualBooking({ onClose }: { onClose: () => void }) {
     }, 'Booking added', ['contacts', 'deals'])
     if (!r.ok) return
     await db.insert('deals', { title: `${flow.title} — ${f.name.trim()}`, contact_id: contact!.id, booking_id: r.data[0].id, service: flow.title, value: total, stage: f.status === 'new' ? 'new' : 'booked', source: 'other', event_date: f.date || null })
-    if (paid) await db.insert('payments', { booking_id: r.data[0].id, contact_id: contact!.id, amount: paid, method: 'Other', note: 'Recorded at booking' }, undefined, ['bookings'])
+    if (paid) {
+      await db.insert('payments', { booking_id: r.data[0].id, contact_id: contact!.id, amount: paid, method: 'Other', note: 'Recorded at booking' }, undefined, ['bookings'])
+      return setRecorded({ id: r.data[0].id, name: f.name.trim(), paid, total })
+    }
     onClose()
   }
+  if (recorded) return <InvoicePrompt bookings={[recorded]} onClose={onClose} />
   return (
     <Modal title="Add a booking manually" onClose={onClose} wide>
       <p className="ad-muted" style={{ marginBottom: 14 }}>For walk-ins, calls and WhatsApp bookings. Manual bookings are never announced by email automatically.</p>
@@ -140,6 +148,7 @@ export function BookingDetail({ id, onClose }: { id: string; onClose: () => void
       <div className="ad-actions" style={{ marginBottom: 16 }}>
         <select className="ad-btn sm" style={{ width: 'auto' }} value={b.status} onChange={(e) => setStatus(e.target.value)} aria-label="Status">{STATUSES.map((s) => <option key={s}>{s}</option>)}</select>
         <button className="ad-btn sm" onClick={() => setPay(true)}>+ Record payment</button>
+        <a className="ad-btn sm" href={bookingInvoiceHref(b.id)} onClick={onClose}>Generate invoice</a>
         {b.phone && <a className="ad-btn sm" target="_blank" rel="noreferrer" href={waLink(b.phone, `Hi ${b.name.split(' ')[0]}, this is Illuszionz Media about your ${b.kind.toLowerCase()} (${b.ref}).`)}>WhatsApp</a>}
         {b.contact_id && <button className="ad-btn sm" onClick={() => setContact(true)}>Open in CRM</button>}
         <button className="ad-btn sm" onClick={() => setTask(true)}>+ Task</button>
@@ -215,6 +224,7 @@ export function Bookings() {
   const [page, setPage] = useState(1)
   const [open, setOpen] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
+  const [paidNow, setPaidNow] = useState<{ id: string; name: string; paid: number; total: number }[]>([])
 
   const list = useMemo(() => {
     const today = todayIso()
@@ -267,6 +277,7 @@ export function Bookings() {
       for (let i = 0; i < rows.length; i += 10)
         await Promise.all(rows.slice(i, i + 10).map((b) => supabase!.from('bookings').update({ amount_paid: Number(b.total), payment_status: 'Paid' }).eq('id', b.id)))
       await refresh('bookings', 'payments'); markSaved(); toast(`✓ ${rows.length} booking${rows.length === 1 ? '' : 's'} marked paid`)
+      if (due.length) setPaidNow(due.map((b) => ({ id: b.id, name: b.name, paid: Number(b.total), total: Number(b.total) })))
     } else {
       const ids = rows.map((b) => b.id)
       await db.removeMany('payments', ids, undefined, [], 'booking_id')
@@ -321,7 +332,7 @@ export function Bookings() {
       </BulkBar>
       <div className="ad-tablewrap">
         <table>
-          <thead><tr><th className="sel"><SelectAllBox s={sel} view={view.map((b) => b.id)} /></th><th>Ref</th><th>Client</th><th>Service</th><th>Session</th><th>Status</th><th>Payment</th><th className="num">Total</th><th>Gallery</th></tr></thead>
+          <thead><tr><th className="sel"><SelectAllBox s={sel} view={view.map((b) => b.id)} /></th><th>Ref</th><th>Client</th><th>Service</th><th>Session</th><th>Status</th><th>Payment</th><th className="num">Total</th><th>Gallery</th><th>Invoice</th></tr></thead>
           <tbody>
             {view.map((b) => (
               <tr key={b.id} className={'click' + (sel.has(b.id) ? ' picked' : '')} onClick={() => setOpen(b.id)}>
@@ -344,6 +355,7 @@ export function Bookings() {
                     </a>
                   )
                 })()}</td>
+                <td onClick={(e) => e.stopPropagation()}><a className="ad-btn sm" href={bookingInvoiceHref(b.id)} title="Generate an invoice for this booking">Invoice</a></td>
               </tr>
             ))}
           </tbody>
@@ -353,6 +365,7 @@ export function Bookings() {
       </div>
       {open && <BookingDetail id={open} onClose={() => setOpen(null)} />}
       {adding && <ManualBooking onClose={() => setAdding(false)} />}
+      {paidNow.length > 0 && <InvoicePrompt bookings={paidNow} onClose={() => setPaidNow([])} />}
     </>
   )
 }

@@ -1,0 +1,84 @@
+/* Dashboard → Invoices: the form on the left, the sheet of paper on the right. */
+.iv-bar { position: sticky; top: 0; z-index: 25; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: -14px -36px 20px; padding: 14px 36px; background: var(--bg); border-bottom: 1px solid var(--line); }
+.iv-bar h1 { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 600; line-height: 1.2; }
+.iv-bar .sp { flex: 1; min-width: 12px; }
+.iv-saved { color: var(--mute); font-size: 12.5px; white-space: nowrap; }
+.iv-layout { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); gap: 24px; align-items: start; }
+.iv-form { display: grid; gap: 14px; min-width: 0; }
+.iv-form .ad-card h3 { margin-bottom: 12px; }
+.iv-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.iv-stages { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.iv-stages button { padding: 11px 6px; border: 0; border-right: 1px solid var(--line); background: #fff; font-weight: 600; color: var(--ink2); }
+.iv-stages button:last-child { border-right: 0; }
+.iv-stages button:hover { background: #faf9f6; }
+.iv-stages button[aria-pressed='true'] { background: var(--ink); color: #fff; }
+.iv-hint { margin-top: 10px; color: var(--mute); font-size: 13px; }
+.iv-row { border: 1px solid var(--line); border-radius: 11px; padding: 12px; display: grid; gap: 10px; margin-bottom: 10px; }
+.iv-row-top { display: flex; justify-content: space-between; align-items: center; font-weight: 600; font-size: 12.5px; color: var(--mute); }
+.iv-row-nums { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.iv-pay { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.2fr) minmax(0, .9fr) auto; gap: 8px; align-items: end; margin-bottom: 10px; }
+.iv-sum { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; font-variant-numeric: tabular-nums; }
+.iv-sum.big { font-weight: 700; font-size: 15px; border-top: 1px solid var(--line); margin-top: 4px; padding-top: 10px; }
+.iv-logo-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.iv-logo-row img { display: block; height: 44px; max-width: 170px; object-fit: contain; }
+.iv-preview { position: sticky; top: 76px; max-height: calc(100vh - 92px); overflow-y: auto; border-radius: 12px; background: #dddbd3; padding: 14px; min-width: 0; }
+.iv-tabs { display: none; }
+
+/* the sheet: measured in px at A4 / 96 dpi to match the PDF, then scaled to the column */
+.iv-sheets { display: grid; gap: 14px; min-width: 0; }
+.iv-paper { width: 794px; min-height: 1123px; background: #fff; padding: 66px; color: #222; font: 12.5px/1.45 Helvetica, Arial, sans-serif; box-shadow: 0 8px 24px -14px rgba(0,0,0,.45); overflow-wrap: anywhere; }
+.iv-paper-terms { font-size: 11.3px; line-height: 1.35; }
+.iv-paper-terms h5 { margin: 0 0 12px; font-size: 16px; }
+.iv-pre { white-space: pre-wrap; color: #6b6b6b; }
+.iv-head { display: flex; justify-content: space-between; gap: 20px; min-height: 170px; }
+.iv-logo { display: block; width: auto; height: auto; max-width: 253px; max-height: 83px; }
+.iv-head-r { text-align: right; flex: none; max-width: 60%; }
+.iv-title { font-size: 37px; line-height: 1.1; }
+.iv-number { font-weight: 700; margin-top: 2px; }
+.iv-due-l { font-size: 11px; font-weight: 700; margin-top: 16px; }
+.iv-due { font-size: 17.5px; font-weight: 700; }
+.iv-stamp { display: inline-block; margin-top: 8px; padding: 2px 10px; border: 1.5px solid; font-size: 13px; font-weight: 700; }
+.iv-stamp.paid { color: #17803d; }
+.iv-stamp.part { color: #1c4fd9; }
+.iv-from { margin-bottom: 30px; }
+.iv-parties { display: flex; justify-content: space-between; gap: 24px; margin-bottom: 22px; }
+.iv-bill { min-width: 0; padding-top: 28px; }
+.iv-bill > span:first-child { color: #6b6b6b; font-size: 13.5px; }
+.iv-meta { display: grid; grid-template-columns: auto minmax(90px, auto); gap: 9px 22px; margin: 0; flex: none; align-self: flex-start; max-width: 55%; }
+.iv-meta dt { color: #6b6b6b; font-size: 13.5px; text-align: right; }
+.iv-meta dd { margin: 0; text-align: right; }
+.ad .iv-items { width: 100%; border-collapse: collapse; }
+.ad .iv-items th { background: #3c3c3c; color: #fff; font-size: 12.5px; font-weight: 400; letter-spacing: 0; text-transform: none; padding: 9px 12px; border: 0; }
+.ad .iv-items td { padding: 10px 12px 14px; border: 0; border-bottom: 1px solid #b8b8b8; vertical-align: top; color: #222; }
+.ad .iv-items .r { text-align: right; white-space: nowrap; width: 88px; }
+.ad .iv-items .n { width: 48px; }
+.iv-totals { margin: 14px 0 0 auto; width: 440px; }
+.iv-totals > div { display: flex; justify-content: space-between; gap: 18px; padding: 8px 12px; text-align: right; }
+.iv-totals > div > span:first-child { flex: 1; }
+.iv-totals > div > span:last-child { flex: none; min-width: 80px; }
+.iv-totals .strong { font-weight: 700; }
+.iv-totals .balance { background: #f4f2f0; font-weight: 700; padding: 13px 12px; margin-top: 4px; }
+.iv-notes { margin-top: 34px; font-size: 11.3px; line-height: 1.35; }
+.iv-notes h5 { margin: 0 0 6px; font-size: 13.5px; font-weight: 400; color: #6b6b6b; }
+.iv-notes .iv-pre { color: #222; }
+.iv-gap { height: 10px; }
+.iv-term.head { font-weight: 700; }
+.iv-term.bullet { position: relative; padding-left: 32px; }
+.iv-term.bullet::before { content: '•'; position: absolute; left: 16px; }
+
+@media (max-width: 1240px) {
+  .iv-layout { grid-template-columns: minmax(0, 1fr); }
+  .iv-tabs { display: grid; grid-template-columns: 1fr 1fr; margin-bottom: 14px; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: #fff; }
+  .iv-tabs button { padding: 11px; border: 0; background: none; font-weight: 600; color: var(--ink2); }
+  .iv-tabs button[aria-selected='true'] { background: var(--ink); color: #fff; }
+  .iv-layout[data-view='edit'] .iv-preview, .iv-layout[data-view='preview'] .iv-form { display: none; }
+  .iv-preview { position: static; max-height: none; padding: 8px; }
+}
+@media (max-width: 860px) {
+  .iv-bar { position: static; margin: -8px -14px 16px; padding: 10px 14px; }
+  .iv-bar h1 { width: 100%; font-size: 20px; }
+  .iv-bar .sp { display: none; }
+  .iv-grid { grid-template-columns: minmax(0, 1fr); }
+  .iv-pay { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .iv-form input, .iv-form select, .iv-form textarea { font-size: 16px; }
+}

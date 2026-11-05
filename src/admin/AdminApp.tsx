@@ -33,6 +33,8 @@ import './admin.css'
 
 const GalleriesSection = lazy(() => import('../features/gallery/admin/GalleriesSection').then((m) => ({ default: m.GalleriesSection })))
 const GalleryManager = lazy(() => import('../features/gallery/admin/GalleryManager').then((m) => ({ default: m.GalleryManager })))
+const InvoicesSection = lazy(() => import('../features/invoices/InvoicesSection').then((m) => ({ default: m.InvoicesSection })))
+const InvoiceEditor = lazy(() => import('../features/invoices/InvoiceEditor').then((m) => ({ default: m.InvoiceEditor })))
 
 const I: Record<string, string> = {
   overview: 'M3 12l9-9 9 9M5 10v10h14V10',
@@ -44,6 +46,7 @@ const I: Record<string, string> = {
   tasks: 'M9 11l3 3 8-8M20 12v7H4V5h10',
   companies: 'M4 21V7l8-4 8 4v14M9 21v-6h6v6M9 10h.01M15 10h.01',
   reports: 'M4 20V10M10 20V4M16 20v-8M22 20H2',
+  invoices: 'M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6',
   finance: 'M12 3v18M16 7H10a3 3 0 000 6h4a3 3 0 010 6H7',
   prices: 'M3 12l9-9h9v9l-9 9zM16 8h.01',
   promos: 'M4 8h16v3a2 2 0 000 4v3H4v-3a2 2 0 000-4zM10 8v10',
@@ -156,6 +159,7 @@ function Shell({ session }: { session: Session }) {
       { id: 'cms/seo', label: 'Page SEO', icon: 'seo' },
     ] },
     { title: 'Business', items: [
+      { id: 'invoices', label: 'Invoices', icon: 'invoices' },
       { id: 'finance', label: 'Finance', icon: 'finance' },
       { id: 'prices', label: 'Prices', icon: 'prices' },
       { id: 'promos', label: 'Promo codes', icon: 'promos' },
@@ -187,6 +191,7 @@ function Shell({ session }: { session: Session }) {
     case 'cms/images': page = <ImagesCms />; break
     case 'cms/banner': page = <BannerCms />; break
     case 'cms/seo': page = <SeoCms />; break
+    case 'invoices': page = <Suspense fallback={<p className="ad-muted">Loading…</p>}>{rest.length ? <InvoiceEditor key={rest.join('/')} path={rest} /> : <InvoicesSection />}</Suspense>; break
     case 'finance': page = <Finance />; break
     case 'prices': page = <Prices />; break
     case 'promos': page = <Promos />; break
