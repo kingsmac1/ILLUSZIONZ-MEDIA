@@ -5,7 +5,7 @@
 # Reads .env.local (never prints a secret). Steps:
 #   1. database migrations (supabase/migrations)      4. accounts: site URL, password sign-up with a confirmation
 #   2. Edge Function secrets (R2 keys, owner details)     link, forgot-password, branded emails sent through Resend
-#   3. deploy the 11 gallery Edge Functions            5. daily clean-up of old previews (pg_cron)
+#   3. deploy the gallery Edge Functions            5. daily clean-up of old previews (pg_cron)
 #                                                      6. R2 upload rules (CORS) — needs an R2-enabled API token
 # RESEND_API_KEY + EMAIL_FROM in .env.local make every account email come from Illuszionz Media (via Resend SMTP).
 # =====================================================================================================
@@ -56,6 +56,8 @@ echo "  ✓ secrets stored in Supabase (values not shown)"
 [ -n "${RESEND_API_KEY:-}" ] || echo "  ! RESEND_API_KEY not in .env.local — gallery emails stay off until you add it (see TODO_FOR_MACAULEY.md)"
 
 echo "→ 3/6 Deploying Edge Functions"
+# clients no longer send feedback on final photos: take the old function down if it is there
+$SB functions delete gallery-feedback --project-ref "$REF" > /dev/null 2>&1 || true
 for dir in supabase/functions/gallery-*/; do
   name=$(basename "$dir")
   $SB functions deploy "$name" --project-ref "$REF" > /dev/null && echo "  ✓ $name"

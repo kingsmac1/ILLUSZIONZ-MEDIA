@@ -1,4 +1,4 @@
-import { Fragment, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useState } from 'react'
 import { flows } from '../../booking/catalog'
 import { adminApi, supabase } from '../supabase'
 import { useData, useDb, type R } from '../data'
@@ -8,7 +8,8 @@ import { ContactDrawer } from '../crm/ContactDrawer'
 import { TaskModal } from '../crm/shared'
 import { byBooking, useGalleryIndex } from '../../features/gallery/admin/useGalleryIndex'
 import { STATUS_TONE, statusLabel } from '../../features/gallery/status'
-import { deleteGalleries, galleriesOfBookings } from '../../features/gallery/admin/galleryActions'
+import { deleteGalleries, deleteInspiration, galleriesOfBookings } from '../../features/gallery/admin/galleryActions'
+import { callFn } from '../../features/gallery/api'
 
 const PAGE = 20
 const STATUSES = ['new', 'confirmed', 'completed', 'cancelled']
@@ -155,6 +156,7 @@ export function BookingDetail({ id, onClose }: { id: string; onClose: () => void
           <dl className="ad-kv" style={{ marginBottom: 18 }}><dt>Name</dt><dd>{b.name}</dd><dt>Phone</dt><dd>{b.phone || '—'}</dd><dt>Email</dt><dd>{b.email || '—'}</dd><dt>Source</dt><dd>{b.source}</dd><dt>Received</dt><dd>{fmtDate(b.created_at, true)}</dd></dl>
           <h4 style={{ marginBottom: 10 }}>Booking details</h4>
           <dl className="ad-kv">{details.map(([k, v]) => <Fragment key={k + v}><dt>{k}</dt><dd>{v}</dd></Fragment>)}</dl>
+          <InspirationGallery bookingRef={b.ref} />
         </div>
         <div>
           <h4 style={{ marginBottom: 10 }}>Priced items</h4>
@@ -169,13 +171,36 @@ export function BookingDetail({ id, onClose }: { id: string; onClose: () => void
       <h4 style={{ margin: '18px 0 8px' }}>Internal notes</h4>
       <textarea value={notes} onChange={(e) => setNotes(e.target.value)} />
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10 }}>
-        <Confirm text="Delete this booking permanently? Its photo galleries and their photos are deleted too." onYes={async () => { await deleteGalleries(await galleriesOfBookings([id])); const r = await db.remove('bookings', { id }, 'Booking deleted', ['deals', 'payments']); if (r.ok) onClose() }}>Delete booking</Confirm>
+        <Confirm text="Delete this booking permanently? Its photo galleries and their photos are deleted too." onYes={async () => { await deleteGalleries(await galleriesOfBookings([id])); await deleteInspiration([b.ref]); const r = await db.remove('bookings', { id }, 'Booking deleted', ['deals', 'payments']); if (r.ok) onClose() }}>Delete booking</Confirm>
         <button className="ad-btn primary sm" onClick={() => db.update('bookings', { id }, { payment_status: b.payment_status, notes }, 'Notes saved')}>Save notes</button>
       </div>
       {pay && <PaymentModal booking={b} onClose={() => setPay(false)} />}
       {task && <TaskModal defaults={{ contact_id: b.contact_id, booking_id: b.id, deal_id: deal?.id, title: `${b.kind} — ${b.name}: ` }} onClose={() => setTask(false)} />}
       {contact && b.contact_id && <ContactDrawer id={b.contact_id} onClose={() => setContact(false)} />}
     </Modal>
+  )
+}
+
+/** The inspiration images the client uploaded with the booking form (private files: the links are signed and short-lived). */
+function InspirationGallery({ bookingRef }: { bookingRef: string }) {
+  const [images, setImages] = useState<{ key: string; url: string }[]>([])
+  useEffect(() => {
+    let live = true
+    callFn<{ images: { key: string; url: string }[] }>('gallery-inspiration', { action: 'view', booking_ref: bookingRef }).then((r) => { if (live && r.ok) setImages(r.images) })
+    return () => { live = false }
+  }, [bookingRef])
+  if (!images.length) return null
+  return (
+    <>
+      <h4 style={{ margin: '18px 0 10px' }}>Inspiration images</h4>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(96px, 1fr))', gap: 8 }}>
+        {images.map((i, n) => (
+          <a key={i.key} href={i.url} target="_blank" rel="noreferrer" aria-label={`Open inspiration image ${n + 1}`}>
+            <img src={i.url} alt="" loading="lazy" style={{ display: 'block', width: '100%', aspectRatio: '1', objectFit: 'cover', borderRadius: 8 }} />
+          </a>
+        ))}
+      </div>
+    </>
   )
 }
 
@@ -254,6 +279,7 @@ export function Bookings() {
     if (!confirmN('Permanently delete', rows.length, 'booking', 'Their payments, pipeline deals and photo galleries (with all their photos) are deleted too. This cannot be undone.')) return
     const ids = rows.map((b) => b.id)
     await deleteGalleries(await galleriesOfBookings(ids))
+    await deleteInspiration(rows.map((b) => b.ref))
     await db.removeMany('deals', ids, undefined, [], 'booking_id')
     const r = await db.removeMany('bookings', ids, `${rows.length} booking${rows.length === 1 ? '' : 's'} deleted`, ['deals', 'payments', 'tasks'])
     if (r.ok) sel.clear()

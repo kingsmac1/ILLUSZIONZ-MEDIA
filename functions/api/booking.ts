@@ -58,9 +58,25 @@ export const onRequestPost = async ({ request, env }: { request: Request; env: M
 
   try {
     const summary = buildSummary(flow, sel, promo)
+    // inspiration images: only files that were really uploaded through our function and aren't attached to another booking
+    let imageKeys: string[] = []
+    const asked = (Array.isArray(sel.inspirationImages) ? sel.inspirationImages : []).filter((k) => /^inspiration\/[0-9a-f-]{36}\.jpg$/.test(k)).slice(0, 6)
+    if (asked.length && dbReady(env)) {
+      try {
+        const rows = await db.select(env, 'booking_inspiration_images', `select=key&booking_ref=is.null&key=in.(${asked.map((k) => q(`"${k}"`)).join(',')})`)
+        imageKeys = rows.map((r) => String(r.key))
+      } catch (err) {
+        console.error('inspiration lookup failed', err)
+      }
+    }
+    sel = { ...sel, inspirationImages: imageKeys }
+    if (imageKeys.length) summary.details.push(['Inspiration images', `${imageKeys.length} uploaded with this booking`])
     const packages = sel.optionIds.map((id) => flow.options.find((o) => o.id === id)!.label).join(', ')
     const ref = await recordBooking(env, flow, sel, summary, quote, { discount: promo?.amount, promo: promo?.code, packages })
     if (ref) summary.details.unshift(['Reference', ref])
+    if (ref && imageKeys.length) {
+      await db.update(env, 'booking_inspiration_images', `key=in.(${imageKeys.map((k) => q(`"${k}"`)).join(',')})`, { booking_ref: ref }).catch((err) => console.error('inspiration claim failed', err))
+    }
     const result = await deliver(env, summary)
     return json({ ok: true, total: summary.total, ref, ...(result.dryRun ? { dryRun: true, emails: { customer: result.customer, owner: result.owner } } : {}) })
   } catch (err) {

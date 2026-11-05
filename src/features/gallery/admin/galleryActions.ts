@@ -43,3 +43,8 @@ export async function extendPreviewsMany(rows: { id: string; previews_purge_at: 
   await refreshGalleries()
   return { done: rows.length - errors.length, errors }
 }
+
+/** Removes the inspiration images clients uploaded with these bookings. */
+export async function deleteInspiration(bookingRefs: string[]) {
+  if (bookingRefs.length) await callFn('gallery-inspiration', { action: 'delete', booking_refs: bookingRefs })
+}

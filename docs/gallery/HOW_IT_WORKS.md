@@ -81,10 +81,14 @@ The "Storage used" card shows how much space your galleries take up. The **Overv
   and you will fit roughly 3× more shoots.
 - Delete old galleries you no longer need from the Gallery Manager (**Delete gallery**). This removes the files from storage too.
 
-## Feedback on the final photos
-In the finals gallery the client can open any edited photo and tap **👍**, **👎** or the comment button, then press **Send feedback**.
-You get an email listing the 👎 photos with their comments (plus a Lightroom filter for them), the comments and the 👍 photos;
-the Finals tab shows the same in **Client feedback**. They can change their mind and send again.
+## Reviews from final photos
+The finals gallery has a **Leave a review** button (and the delivery email a link) that opens your `/review/` page. Clients can't react
+to or comment on final photos; hearts and notes are only on the previews. Any feedback sent before this change still shows on the Finals tab.
+
+## Inspiration images on bookings
+The booking form's session step takes up to 6 images next to the inspiration links. They are resized on the client's device and upload
+when they submit. You'll see them on the booking in Dashboard → Bookings (click one to open it full size); the email only says how many
+came. They are deleted with the booking. If one fails, the booking still goes through and the client is asked to send it on WhatsApp.
 
 ## Test before going live
 1. Upload 10 previews. Open one: small faint logos run diagonally across the whole photo.

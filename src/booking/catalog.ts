@@ -4,7 +4,7 @@
  * Function (to re-price and validate the submission), so the two can never disagree.
  */
 
-export type FieldType = 'text' | 'tel' | 'email' | 'date' | 'time' | 'textarea' | 'select' | 'chips' | 'number'
+export type FieldType = 'text' | 'tel' | 'email' | 'date' | 'time' | 'textarea' | 'select' | 'chips' | 'number' | 'images'
 
 export type Field = {
   id: string
@@ -79,6 +79,8 @@ export type Flow = {
 }
 
 export type Selection = {
+  /** storage keys from the inspiration image upload (checked by /api/booking) */
+  inspirationImages?: string[]
   flowId: string
   optionIds: string[]
   units: Record<string, number>
@@ -121,6 +123,7 @@ const shootDetails = (extra: Field[] = []): Step => ({
     { id: 'location', label: 'Location / area', type: 'text', placeholder: 'Postcode or area (for outdoor / venue shoots)' },
     ...extra,
     { id: 'inspiration', label: 'Inspiration links or ideas', type: 'textarea', placeholder: 'Pinterest, Instagram, colours, mood …' },
+    { id: 'inspiration_images', label: 'Upload inspiration images', type: 'images' },
     { id: 'notes', label: 'Anything else we should know?', type: 'textarea' },
   ],
 })

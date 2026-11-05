@@ -6,7 +6,9 @@ export const onRequestGet = async ({ request, env, params }: { request: Request;
   const info = await galleryShareInfo(env, request, String(params.id ?? ''), url.searchParams.get('k'))
   const image = info?.cover ? await fetch(info.cover).catch(() => null) : null
   if (!image?.ok) return Response.redirect(`${url.origin}/og-image.jpg`, 302)
-  return new Response(image.body, {
-    headers: { 'Content-Type': image.headers.get('content-type') ?? 'image/jpeg', 'Cache-Control': 'public, max-age=3600', 'X-Robots-Tag': 'noindex, nofollow' },
+  // whole file with its length: some apps' preview fetchers skip images sent without one
+  const bytes = await image.arrayBuffer()
+  return new Response(bytes, {
+    headers: { 'Content-Type': image.headers.get('content-type') ?? 'image/jpeg', 'Content-Length': String(bytes.byteLength), 'Cache-Control': 'public, max-age=3600', 'X-Robots-Tag': 'noindex, nofollow' },
   })
 }

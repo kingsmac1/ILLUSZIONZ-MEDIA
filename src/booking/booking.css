@@ -124,3 +124,13 @@
   .bk-steps span { display: none; }
   .bk-steps .is-current span { display: inline; }
 }
+
+/* inspiration image upload */
+.bk-upload-pick { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; width: 100%; min-height: 96px; padding: 18px; border: 1px dashed var(--bk-line); background: transparent; color: #fff; font: inherit; text-align: center; cursor: pointer; transition: border-color 0.2s, background 0.2s; }
+.bk-upload-pick:hover, .bk-upload-pick:focus-visible { border-color: #fff; background: rgba(255, 255, 255, 0.05); }
+.bk-upload-pick b { font-weight: 600; font-size: 15px; }
+.bk-upload-pick small { font-size: 13px; color: var(--bk-mute); }
+.bk-upload-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 10px; margin: 10px 0 0; padding: 0; list-style: none; }
+.bk-upload-list li { position: relative; aspect-ratio: 1; border: 1px solid var(--bk-line); }
+.bk-upload-list img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.bk-upload-list button { position: absolute; top: 4px; right: 4px; width: 34px; height: 34px; border: 0; border-radius: 50%; background: rgba(0, 0, 0, 0.78); color: #fff; font-size: 18px; line-height: 1; cursor: pointer; }

@@ -165,30 +165,11 @@ export function finalsReady(o: Base & { count: number; unedited?: number; messag
     ${o.message ? quote(o.message) : ''}
     <div style="margin-top:34px;">${button(o.link, 'Download your photos')}</div>
     ${o.previewsExpire ? small(`Your watermarked previews will be removed on ${esc(fmtDay(o.previewsExpire))}. Your final photos stay in your account.`) : ''}
-    ${small('Tell us what you think: give any photo a 👍 or 👎, add a comment, then press “Send feedback”. We read every one.')}
+    ${small(`Happy with your photos? <a href="${esc(o.siteUrl)}/review/" style="color:${INK};font-weight:600;">Leave us a review</a>. It helps others find us.`)}
     ${small('We would love to see them shared — tag us on Instagram. Thank you for choosing us!')}`
   return {
     subject: `Your photos are ready · ${o.title}`,
     html: layout({ siteUrl: o.siteUrl, preheader: `${o.count} edited photos ready to download.`, eyebrow: 'Final photos', title: 'Your photos are ready', body }),
     text: [`Hi ${first(o.clientName)},`, '', `Your ${o.count} edited photos from "${o.title}" are ready to download.`, ...(o.message ? ['', o.message] : []), '', o.link, '', BRAND.name].join('\n'),
-  }
-}
-
-/** 6. Feedback on the final photos (to the photographer) */
-export function feedbackReceived(o: Base & { clientEmail: string; adminLink: string; liked: string[]; disliked: { file: string; comment: string }[]; comments: { file: string; comment: string }[]; lightroom: string }): RenderedEmail {
-  const total = o.liked.length + o.disliked.length + o.comments.length
-  const body = `
-    ${p(`<b>${esc(o.clientName)}</b> (${esc(o.clientEmail)}) sent feedback on <b>${esc(o.title)}</b>: <b>${o.liked.length}</b> 👍, <b>${o.disliked.length}</b> 👎${o.comments.length ? `, ${o.comments.length} other comment${o.comments.length === 1 ? '' : 's'}` : ''}.`)}
-    <div style="margin-top:30px;">${button(o.adminLink, 'Open the feedback')}</div>
-    ${o.disliked.length ? `<div style="margin-top:30px;">${label(`👎 Needs another look (${o.disliked.length})`)}</div>${rows(o.disliked.map((d) => [d.file, d.comment || '—']))}<div style="margin-top:18px;">${label('Lightroom filter for these')}</div>${mono(o.lightroom)}` : ''}
-    ${o.comments.length ? `<div style="margin-top:30px;">${label(`Comments (${o.comments.length})`)}</div>${rows(o.comments.map((c) => [c.file, c.comment]))}` : ''}
-    ${o.liked.length ? `<div style="margin-top:30px;">${label(`👍 Loved (${o.liked.length})`)}</div>${mono(o.liked.join('\n'))}` : ''}`
-  return {
-    subject: `Feedback on the finals: ${o.disliked.length ? `${o.disliked.length} 👎 · ` : ''}${o.clientName}`,
-    html: layout({ siteUrl: o.siteUrl, preheader: `${total} reactions and comments from ${o.clientName}.`, eyebrow: 'Client feedback', title: o.disliked.length ? `${o.disliked.length} photo${o.disliked.length === 1 ? '' : 's'} to look at again` : 'Feedback on the finals', body }),
-    text: [`${o.clientName} (${o.clientEmail}) sent feedback on "${o.title}".`, `Open: ${o.adminLink}`, '',
-      ...(o.disliked.length ? ['Thumbs down:', ...o.disliked.map((d) => `- ${d.file}${d.comment ? `: ${d.comment}` : ''}`), '', 'Lightroom filter:', o.lightroom, ''] : []),
-      ...(o.comments.length ? ['Comments:', ...o.comments.map((c) => `- ${c.file}: ${c.comment}`), ''] : []),
-      ...(o.liked.length ? ['Thumbs up:', ...o.liked] : [])].join('\n'),
   }
 }

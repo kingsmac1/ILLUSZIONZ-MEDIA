@@ -68,10 +68,6 @@ Deno.serve(handle(async (req, body) => {
     display: r.display_key && !purged ? await signGet(r.display_key) : null,
   })))
 
-  // finals: the client's 👍 / 👎 and comments
-  const { data: feedback } = page === 0 && g.kind === 'final'
-    ? await service().from('gallery_feedback').select('image_id, reaction, comment, updated_at').eq('gallery_id', g.id).eq('client_email', g.client_email)
-    : { data: null }
   const { data: selections } = page === 0 && g.kind === 'proof'
     ? await service().from('gallery_selections').select('image_id, note, created_at').eq('gallery_id', g.id).eq('client_email', g.client_email)
     : { data: null }
@@ -95,6 +91,6 @@ Deno.serve(handle(async (req, body) => {
       unedited_price: g.unedited_price, wants_unedited: g.wants_unedited, unedited_included: g.unedited_included, feedback_sent_at: g.feedback_sent_at, previews_purged: purged, cover_image_id: coverImg?.id ?? null, client_name: g.client_name,
     },
     cover, images, total: count ?? images.length, page, pages: Math.max(1, Math.ceil((count ?? 0) / PAGE_SIZE)),
-    selections: selections ?? undefined, feedback: feedback ?? undefined, related: visibleRelated,
+    selections: selections ?? undefined, related: visibleRelated,
   })
 }))

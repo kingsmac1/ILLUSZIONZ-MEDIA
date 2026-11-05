@@ -25,7 +25,7 @@ const images = (kind) => [...SAMPLES.map((f, i) => img(f, i, kind)), ...(kind ==
 const gallery = (id, kind, extra = {}) => ({ id, title: kind === 'proof' ? 'Maternity — 20 Nov 2026' : 'Maternity — Final photos', kind, client_first_name: 'Elena', client_name: 'Elena Test', event_date: '2026-11-20', shoot: 'Maternity', status: kind === 'proof' ? 'selecting' : 'delivered', selection_limit: kind === 'proof' ? 4 : null, allow_extra_selections: false, extra_price_note: null, message_to_client: kind === 'proof' ? 'It was a joy photographing you both. Pick your four favourites and we will edit them with care.' : null, cover_image_id: uuid(102), previews_purge_at: kind === 'proof' ? '2026-12-20T10:00:00Z' : null, unedited_price: kind === 'proof' ? 50 : null, ...extra })
 const KEY = 'a'.repeat(64)
 const picksSent = []
-const sent = { submit: null, feedback: [], deleted: [] }
+const sent = { submit: null, deleted: [] }
 const view = (body, signedIn) => {
   if (body.gallery_id === LOCKED || (!signedIn && body.key !== KEY)) return { ok: true, access: 'signin', gallery: gallery(LOCKED, 'proof'), cover: { url: `${BASE}/images/ILU0061.webp`, width: 1600, height: 2000 }, email_hint: 'e•••••@example.com' }
   const kind = body.gallery_id === FINAL ? 'final' : 'proof'
@@ -51,7 +51,6 @@ async function mockSupabase(page, { admin = false } = {}) {
     if (p.endsWith('/auth/v1/verify')) return json(JSON.parse(fakeSession('elena@example.com')))
     if (p.endsWith('/auth/v1/user')) return json(JSON.parse(fakeSession('elena@example.com')).user)
     if (p.endsWith('/auth/v1/token')) return json({ error: 'invalid_grant', error_description: 'Invalid login credentials' }, 400)
-    if (p.endsWith('/functions/v1/gallery-feedback')) { sent.feedback.push(body); return json(body.action === 'send' ? { ok: true, sent_at: new Date().toISOString(), whatsapp_text: 'x' } : { ok: true }) }
     if (p.endsWith('/functions/v1/gallery-delete')) { sent.deleted.push(...(body.image_ids ?? [body.gallery_id])); return json({ ok: true }) }
     if (p.endsWith('/functions/v1/gallery-submit-selection')) sent.submit = body
     if (p.endsWith('/functions/v1/gallery-submit-selection')) return json({ ok: true, count: 3, submitted_at: new Date().toISOString(), whatsapp_text: 'Hi Illuszionz Media 👋 test' })
@@ -216,27 +215,15 @@ for (const vp of [{ width: 375, height: 812 }, { width: 1440, height: 900 }]) {
   ok(`finals: no hearts, download buttons (${vp.width})`, (await page.locator('.cg-heart').count()) === 0 && (await page.locator('.cg-dl').count()) === 12)
   ok(`finals: "Download all" (${vp.width})`, await page.isVisible('text=Download all'))
   ok(`finals: switch to the unedited set (${vp.width})`, await page.isVisible('.cg-sets button:has-text("All unedited (3)")'))
-  ok(`finals: feedback bar (${vp.width})`, await page.isVisible('.cg-fb-bar >> text=What do you think?'))
-  sent.feedback.length = 0
+  ok(`finals: no thumbs or comments anywhere (${vp.width})`, !(await page.isVisible('text=What do you think?')))
+  ok(`finals: Leave a review goes to the review page (${vp.width})`, (await page.getAttribute('.cg-leave-review a', 'href')) === '/review/')
   await page.locator('.cg-open').nth(1).click()
-  await page.waitForSelector('.cg-lb-up')
-  await page.click('.cg-lb-down')
-  await page.click('.yarl__toolbar .cg-lb-note')
-  await page.fill('.cg-sheet textarea', 'A little brighter please')
-  await page.click('.cg-sheet .cg-btn.solid')
-  await page.waitForTimeout(300)
-  await shot(page, `8-finals-lightbox-${vp.width}`)
+  await page.waitForSelector('.yarl__slide_image')
+  ok(`finals lightbox: download only (${vp.width})`, (await page.locator('.cg-lb-up, .cg-lb-down, .cg-lb-note').count()) === 0 && (await page.locator('.yarl__toolbar button[aria-label^="Download"]').count()) === 1)
   await page.keyboard.press('Escape'); await page.waitForTimeout(300)
-  ok(`👎 and a comment save through gallery-feedback (${vp.width})`, sent.feedback.some((f) => f.action === 'react' && f.reaction === -1) && sent.feedback.some((f) => f.action === 'comment' && f.comment === 'A little brighter please'))
-  await page.click('.cg-fb-bar .cg-btn')
-  await page.waitForSelector('.cg-sheet >> text=Send your feedback?')
-  await shot(page, `8-finals-feedback-${vp.width}`)
-  await page.click('.cg-sheet .cg-btn.solid')
-  await page.waitForTimeout(400)
-  ok(`feedback is sent to the photographer (${vp.width})`, sent.feedback.some((f) => f.action === 'send') && (await page.isVisible('.cg-fb-bar >> text=Thank you for your feedback')))
   await page.click('.cg-sets button:has-text("All unedited")')
   await page.waitForTimeout(300)
-  ok(`unedited set shows its photos, without feedback buttons (${vp.width})`, (await page.locator('.cg-dl').count()) === 3 && !(await page.isVisible('.cg-fb-bar')))
+  ok(`unedited set shows its photos (${vp.width})`, (await page.locator('.cg-dl').count()) === 3)
   await shot(page, `8-finals-${vp.width}`)
   await page.context().close()
 }
@@ -396,6 +383,74 @@ for (const vp of [{ width: 375, height: 812 }, { width: 1440, height: 900 }]) {
   await page.goto(`${BASE}/dashboard/`)
   await page.waitForURL(/\/account\//, { timeout: 8000 }).then(() => ok('a client opening /dashboard is sent to /account', true), () => ok('a client opening /dashboard is sent to /account', false))
   await page.context().close()
+}
+
+/* ── 6. booking form: inspiration images next to the links ── */
+async function bookingWithImages(vp, { failUpload }) {
+  const page = await newPage(vp)
+  const seen = { uploads: [], booking: null }
+  await page.route(/functions\/v1\/gallery-inspiration/, async (route) => {
+    const r = route.request()
+    const headers = { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': '*' }
+    if (r.method() === 'OPTIONS') return route.fulfill({ status: 200, headers })
+    if (failUpload) return route.fulfill({ status: 500, contentType: 'application/json', headers, body: '{"ok":false}' })
+    seen.uploads.push({ type: r.headers()['content-type'], body: r.postDataBuffer() })
+    return route.fulfill({ status: 200, contentType: 'application/json', headers, body: JSON.stringify({ ok: true, key: `inspiration/${uuid(700 + seen.uploads.length)}.jpg` }) })
+  })
+  await page.route('**/api/prices', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: '{"overrides":[]}' }))
+  await page.route('**/api/booking', (route) => { seen.booking = route.request().postDataJSON(); return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, total: '£100', ref: 'ABC123' }) }) })
+  await page.goto(`${BASE}/photography-services/`, { waitUntil: 'load' })
+  await page.waitForFunction(() => document.documentElement.classList.contains('ilz-ready'), null, { timeout: 15000 }).catch(() => {})
+  await page.waitForTimeout(700)
+  await page.getByRole('button', { name: /Book this shoot/ }).first().click()
+  await page.locator('.bk-panel').waitFor({ timeout: 15000 })
+  for (let guard = 0; guard < 8 && !(await page.locator('.bk-done').count()); guard++) {
+    if (await page.locator('.bk-agree').count()) {
+      await page.locator('.bk-agree input').check()
+      await page.getByRole('button', { name: /Submit|Request|Continue to payment/ }).last().click()
+      await page.locator('.bk-done').waitFor({ timeout: 20000 }).catch(() => {})
+      break
+    }
+    if ((await page.locator('.bk-options').count()) && !(await page.locator('.bk-option.is-on').count())) await page.locator('.bk-option-main').first().click()
+    for (const el of await page.$$('.bk-fields input[required]')) {
+      const type = await el.getAttribute('type')
+      await el.fill(type === 'email' ? 'test@example.com' : type === 'tel' ? '+447000000000' : type === 'date' ? '2027-03-20' : type === 'time' ? '14:00' : 'Test')
+    }
+    for (const grp of await page.$$('.bk-fields .bk-field')) {
+      const chips = await grp.$$('.bk-chips button')
+      if ((await grp.$('label i')) && chips.length && !(await grp.$('.bk-chips button.is-on'))) await chips[0].click()
+    }
+    if (await page.locator('#bk-inspiration-images').count()) {
+      await page.setInputFiles('#bk-inspiration-images', [SAMPLES[0], SAMPLES[2], SAMPLES[7]].map((f) => `public/images/${f}`))
+      await page.waitForSelector('.bk-upload-list li')
+      seen.previews = await page.locator('.bk-upload-list li').count()
+      seen.withLinks = await page.locator('textarea[name="inspiration"]').count()
+      await page.locator('.bk-upload-list button').first().click()
+      seen.afterRemove = await page.locator('.bk-upload-list li').count()
+      await page.locator('.bk-upload-list').scrollIntoViewIfNeeded().catch(() => {})
+      await shot(page, `18-booking-upload-${vp.width}`)
+      seen.noHScroll = await noHScroll(page)
+    }
+    await page.getByRole('button', { name: 'Continue' }).click()
+    await page.waitForTimeout(450)
+  }
+  seen.done = (await page.locator('.bk-done').count()) === 1
+  seen.alert = seen.done ? await page.locator('.bk-done .bk-err').count() : 0
+  await page.context().close()
+  return seen
+}
+for (const vp of [{ width: 375, height: 812 }, { width: 1440, height: 900 }]) {
+  const r = await bookingWithImages(vp, {})
+  ok(`booking form has the upload next to the links (${vp.width})`, r.previews === 3 && r.withLinks === 1, `previews ${r.previews}`)
+  ok(`an image can be removed before sending (${vp.width})`, r.afterRemove === 2)
+  ok(`upload field has no horizontal scroll (${vp.width})`, r.noHScroll === true)
+  ok(`booking completes with the image keys (${vp.width})`, r.done && r.booking?.inspirationImages?.length === 2, JSON.stringify(r.booking?.inspirationImages))
+  const metas = await Promise.all(r.uploads.map((u) => sharp(u.body).metadata()))
+  ok(`images are sent as JPEGs, resized (${vp.width})`, r.uploads.length === 2 && r.uploads.every((u) => u.type === 'image/jpeg') && metas.every((m) => m.format === 'jpeg' && Math.max(m.width, m.height) <= 2000), metas.map((m) => `${m.width}x${m.height}`).join(','))
+}
+{
+  const r = await bookingWithImages({ width: 1280, height: 800 }, { failUpload: true })
+  ok('a failed image upload does not stop the booking, and the client is told', r.done && r.booking?.inspirationImages?.length === 0 && r.alert === 1)
 }
 
 ok('no JavaScript errors on any page', !errors.length, errors.slice(0, 5).join(' | '))

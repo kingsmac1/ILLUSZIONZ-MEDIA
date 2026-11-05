@@ -59,6 +59,12 @@ export async function head(key: string): Promise<number | null> {
   return Number(res.headers.get('content-length') ?? 0)
 }
 
+/** Stores bytes the server already checked (the inspiration uploads; gallery photos use signed PUTs from the browser). */
+export async function put(key: string, body: ArrayBuffer, contentType: string) {
+  const res = await client().fetch(objectUrl(key), { method: 'PUT', body, headers: { 'Content-Type': contentType } })
+  if (!res.ok) throw new Error(`R2 PUT ${res.status}`)
+}
+
 export async function remove(key: string) {
   const res = await client().fetch(objectUrl(key), { method: 'DELETE' })
   if (!res.ok && res.status !== 404) throw new Error(`R2 DELETE ${res.status}`)

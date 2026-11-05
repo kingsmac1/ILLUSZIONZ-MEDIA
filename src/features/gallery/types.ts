@@ -122,7 +122,6 @@ export type ViewResponse = {
   page?: number
   pages?: number
   selections?: { image_id: string; note: string | null; created_at: string }[]
-  feedback?: FeedbackRow[]
   related?: { id: string; kind: GalleryKind; status: GalleryStatus; delivered_at: string | null; key?: string }[]
 }
 

@@ -21,9 +21,8 @@ import { usePicks } from './usePicks'
 import { galleryHref } from './links'
 import { Preloader, useReleasePreloader } from '../../../components/Preloader'
 import { Lightbox } from './Lightbox'
-import { SubmitSheet, NoteSheet, SuccessScreen, SaveSheet, CommentSheet, FeedbackSheet, ZipNoticeSheet } from './Sheets'
-import { useFeedback } from './useFeedback'
-import { CommentIcon, DownloadIcon, Heart } from './icons'
+import { SubmitSheet, NoteSheet, SuccessScreen, SaveSheet, ZipNoticeSheet } from './Sheets'
+import { DownloadIcon, Heart } from './icons'
 import './gallery.css'
 
 type GPhoto = Photo & { img: ViewImage; tw: number; dw: number }
@@ -146,10 +145,6 @@ function GalleryView({ data, linkKey, reload }: { data: ViewResponse; linkKey: s
   const noticeTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
   const say = useCallback((m: string) => { setNotice(m); clearTimeout(noticeTimer.current); noticeTimer.current = setTimeout(() => setNotice(''), 4500) }, [])
   const { picks, toggle, setNote } = usePicks(g.id, linkKey, data.selections ?? [], { limit: g.selection_limit ?? null, extras: !!g.allow_extra_selections, locked, onMessage: say })
-  const fb = useFeedback(g.id, linkKey, data.feedback ?? [], g.feedback_sent_at ?? null, say)
-  const canFeedback = !proof && set === 'edited' && !data.is_admin && status === 'delivered'
-  const [commentFor, setCommentFor] = useState<string | null>(null)
-  const [fbOpen, setFbOpen] = useState(false)
   const [filter, setFilter] = useState<'all' | 'picked'>('all')
   const [open, setOpen] = useState<number | null>(null)
   const [noteFor, setNoteFor] = useState<string | null>(null)
@@ -167,7 +162,7 @@ function GalleryView({ data, linkKey, reload }: { data: ViewResponse; linkKey: s
     const t = setTimeout(() => setSaveDue(true), SAVE_DELAY)
     return () => clearTimeout(t)
   }, [canSave])
-  const busy = open !== null || !!noteFor || review || !!success || !!commentFor || fbOpen
+  const busy = open !== null || !!noteFor || review || !!success
   useEffect(() => { if (saveDue && !busy) { setSaveDue(false); setSaveOpen(true) } }, [saveDue, busy])
   const closeSave = () => { setSaveOpen(false); try { localStorage.setItem('cg-save-later', String(Date.now())) } catch { /* private mode */ } }
 
@@ -247,21 +242,14 @@ function GalleryView({ data, linkKey, reload }: { data: ViewResponse; linkKey: s
         {proof && status === 'submitted' && <p className="cg-banner">Selection submitted on {fmtDay(submittedAt)}. We’re editing your photos ✨ {count ? `(${count} picked${g.wants_unedited ? ', plus all the unedited images' : ''})` : ''}</p>}
         {proof && status === 'archived' && <p className="cg-banner">The previews were removed after your final photos were delivered.{finals ? <> <a href={galleryHref(finals.id, finals.key)}>Open your final photos</a></> : null}</p>}
         {proof && finals && status !== 'archived' && <p className="cg-banner strong">Your final photos are ready. <a href={galleryHref(finals.id, finals.key)}>Open and download them</a></p>}
-        {!proof && proofsOf && <p className="cg-banner">These are your edited photos in full resolution, without a watermark.</p>}
+        {!proof && proofsOf && set === 'edited' && <p className="cg-banner">These are your edited photos in full resolution, without a watermark.</p>}
         {g.previews_purge_at && proof && OPEN.includes(status) && !data.is_admin && <p className="cg-banner strong">Please make your selection by {fmtDay(g.previews_purge_at)}. The previews are deleted after that.</p>}
         {g.previews_purge_at && proof && !OPEN.includes(status) && status !== 'archived' && <p className="cg-banner muted">Previews are available until {fmtDay(g.previews_purge_at)}.</p>}
         {!proof && set === 'unedited' && <p className="cg-banner">Every photo from your shoot, as shot, in full resolution.</p>}
-        {canFeedback && (
-          <div className="cg-fb-bar">
-            <p>
-              <b>{fb.sent && !fb.dirty ? 'Thank you for your feedback' : 'What do you think?'}</b>
-              {fb.sent && !fb.dirty
-                ? `Sent on ${fmtDay(fb.sent)}. Changed your mind about a photo? Update it and send again.`
-                : 'Open a photo and tap 👍 or 👎, or add a comment, then send it all to us in one go.'}
-            </p>
-            <button className="cg-btn solid" disabled={!fb.fb.size || (!!fb.sent && !fb.dirty)} onClick={() => setFbOpen(true)}>
-              {fb.sent && !fb.dirty ? 'Feedback sent' : `Send feedback${fb.fb.size ? ` (${fb.fb.size})` : ''}`}
-            </button>
+        {!proof && status === 'delivered' && (
+          <div className="cg-leave-review">
+            <p><b>Happy with your photos?</b>We’d love to hear about your experience. Your review helps others find us.</p>
+            <a className="cg-btn solid" href="/review/" target="_blank" rel="noopener">Leave a review</a>
           </div>
         )}
         {canSave && (
@@ -309,13 +297,6 @@ function GalleryView({ data, linkKey, reload }: { data: ViewResponse; linkKey: s
                     </button>
                   )}
                   {proof && picks.get(photo.img.id) && <span className="cg-has-note" title={picks.get(photo.img.id)!}>Note</span>}
-                  {canFeedback && fb.fb.get(photo.img.id) && (
-                    <span className="cg-fb-mini" aria-hidden="true">
-                      {fb.fb.get(photo.img.id)!.reaction === 1 && <span>👍</span>}
-                      {fb.fb.get(photo.img.id)!.reaction === -1 && <span>👎</span>}
-                      {fb.fb.get(photo.img.id)!.comment && <span><CommentIcon filled /></span>}
-                    </span>
-                  )}
                   {!proof && (
                     <button className="cg-dl" aria-label={`Download ${photo.img.filename}`} onClick={(e) => { e.stopPropagation(); downloadOne(g.id, photo.img.id, linkKey).catch((err) => say(err.message)) }}>
                       <DownloadIcon />
@@ -350,9 +331,6 @@ function GalleryView({ data, linkKey, reload }: { data: ViewResponse; linkKey: s
           onToggle={toggle}
           onNote={(id) => setNoteFor(id)}
           onDownload={proof ? undefined : (id) => downloadOne(g.id, id, linkKey).catch((err) => say(err.message))}
-          feedback={canFeedback ? fb.fb : undefined}
-          onReact={canFeedback ? fb.react : undefined}
-          onComment={canFeedback ? (id) => setCommentFor(id) : undefined}
         />
       )}
       {noteFor && (
@@ -367,22 +345,6 @@ function GalleryView({ data, linkKey, reload }: { data: ViewResponse; linkKey: s
       )}
       {review && (
         <SubmitSheet images={images.filter((i) => picks.has(i.id))} picks={picks} limit={limit} extrasNote={g.allow_extra_selections ? g.extra_price_note ?? null : null} uneditedPrice={g.unedited_price ?? null} onClose={() => setReview(false)} onSubmit={submit} onNote={setNoteFor} />
-      )}
-      {commentFor && (
-        <CommentSheet
-          filename={edited.find((i) => i.id === commentFor)?.filename ?? ''}
-          initial={fb.fb.get(commentFor)?.comment ?? ''}
-          inside={open !== null ? document.querySelector('.yarl__root') : null}
-          onClose={() => setCommentFor(null)}
-          onSave={async (t) => { if (await fb.comment(commentFor, t)) setCommentFor(null) }}
-        />
-      )}
-      {fbOpen && (
-        <FeedbackSheet
-          images={edited} feedback={fb.fb} sentAt={fb.sent} onComment={setCommentFor}
-          onClose={() => setFbOpen(false)}
-          onSend={async () => { const r = await fb.send(); if (r) { setFbOpen(false); say('Feedback sent — thank you! We’ll be in touch.') } return !!r }}
-        />
       )}
       {saveOpen && <SaveSheet email={data.client_email ?? ''} kind={proof ? 'proof' : 'final'} onClose={closeSave} onSignedIn={() => { setSaveOpen(false); reload() }} />}
       {success && <SuccessScreen count={success.count} whatsappUrl={success.url} onClose={() => { setSuccess(null); reload() }} />}

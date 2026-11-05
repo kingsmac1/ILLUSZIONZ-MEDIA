@@ -20,8 +20,8 @@ export const onRequestGet = async ({ request, env, params }: { request: Request;
   const title = esc(info?.title ?? `Your gallery · ${site.name}`)
   const description = esc(`Your photos from ${site.name}. Open the link to view them.`)
   const image = esc(info?.cover ? `${site.url}/gallery/${id.toLowerCase()}/cover?k=${encodeURIComponent(key!)}` : `${site.url}/og-image.jpg`)
-  const share = `<meta name="description" content="${description}"/><meta property="og:type" content="website"/><meta property="og:site_name" content="${esc(site.name)}"/><meta property="og:title" content="${title}"/><meta property="og:description" content="${description}"/><meta property="og:image" content="${image}"/><meta name="twitter:card" content="summary_large_image"/><meta name="twitter:title" content="${title}"/><meta name="twitter:description" content="${description}"/><meta name="twitter:image" content="${image}"/>`
-  const text = (await shell.text()).replace(/__gallery__/g, valid ? id.toLowerCase() : 'not-found').replace('</head>', () => `${share}</head>`)
+  const share = `<meta name="description" content="${description}"/><meta property="og:type" content="website"/><meta property="og:url" content="${esc(url.href)}"/><meta property="og:site_name" content="${esc(site.name)}"/><meta property="og:title" content="${title}"/><meta property="og:description" content="${description}"/><meta property="og:image" content="${image}"/><meta name="twitter:card" content="summary_large_image"/><meta name="twitter:title" content="${title}"/><meta name="twitter:description" content="${description}"/><meta name="twitter:image" content="${image}"/>`
+  const text = (await shell.text()).replace(/__gallery__/g, valid ? id.toLowerCase() : 'not-found').replace('<head>', () => `<head>${share}`)
   return new Response(text, {
     status: 200,
     headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow', 'Referrer-Policy': 'same-origin' },

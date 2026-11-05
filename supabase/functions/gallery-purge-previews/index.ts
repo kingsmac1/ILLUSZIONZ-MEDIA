@@ -27,5 +27,10 @@ Deno.serve(handle(async (req) => {
     await logActivity({ client_email: g.client_email, booking_id: g.booking_id, gallery_id: g.id, actor: 'system', event: 'previews_purged', meta: { title: g.title, objects: objectKeys.length } })
     done.push({ id: g.id, objects: objectKeys.length })
   }
+  // inspiration images from booking forms that were never completed
+  const { data: stale } = await service().from('booking_inspiration_images').select('key').is('booking_ref', null).lt('created_at', new Date(Date.now() - 7 * 86_400_000).toISOString()).limit(200)
+  for (const r of stale ?? []) {
+    if (await remove(r.key).then(() => true, () => false)) await service().from('booking_inspiration_images').delete().eq('key', r.key)
+  }
   return json({ ok: true, purged: done, more: (due ?? []).length === GALLERIES_PER_RUN })
 }))

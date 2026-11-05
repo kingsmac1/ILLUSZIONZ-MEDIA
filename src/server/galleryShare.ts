@@ -15,7 +15,7 @@ export async function galleryShareInfo(env: ShareEnv, request: Request, id: stri
       headers: { 'Content-Type': 'application/json', apikey: pub.anon, Authorization: `Bearer ${pub.anon}` },
       // cover_only: not counted as the client's visit
       body: JSON.stringify({ gallery_id: id, key, cover_only: true }),
-      signal: AbortSignal.timeout(2500),
+      signal: AbortSignal.timeout(4000),
     })
     const data = (await res.json()) as { ok?: boolean; access?: string; gallery?: { title?: string }; cover?: { url?: string } | null }
     if (!data.ok || data.access !== 'full') return null

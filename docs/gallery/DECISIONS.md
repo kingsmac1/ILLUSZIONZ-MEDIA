@@ -127,3 +127,13 @@ Each item: what was decided, and why. Change any of them later if you prefer oth
 48. **Deleting a booking now deletes its galleries and their photos** (single and bulk delete, and the confirm text says so). Before, the
     galleries stayed behind without a booking; any that are already like that show a "Booking deleted" badge and can be deleted from the
     Galleries page.
+
+## Update — 5 Nov 2026: share previews, inspiration uploads, no feedback on finals
+49. **Share previews:** `robots.txt` no longer blocks `/gallery/`, because that also stopped apps that respect it from reading the page and its
+    cover image. Search engines are still kept out by the `noindex` header, and the links are unguessable. The tags now come first in `<head>` and
+    the cover is sent with its length. Apps remember a preview per link, so an already-shared link may keep its old preview.
+50. **Inspiration images go through a function, not presigned uploads**, since the booking form is public: `gallery-inspiration` takes JPEGs only,
+    up to 5 MB, 30 per visitor per hour and 1,000 a day overall. Files are under `inspiration/` in the private bucket; those never attached to a booking
+    go after 7 days. The billing purge now only clears `galleries/`, because these belong to bookings, not the gallery plan.
+51. **Feedback removed from final photos** at the client's request, replaced by a Leave a review button. `gallery_feedback` is kept for what was already sent.
+

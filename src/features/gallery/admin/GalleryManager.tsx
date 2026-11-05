@@ -440,7 +440,7 @@ function FinalsTab({ gallery: g, proof, ensure }: { booking: R; gallery?: Galler
 }
 type ProofImg = { id: string; original_filename: string }
 
-/** The client's 👍 / 👎 and comments on the finals. */
+/** Feedback clients sent before it was removed from the finals page (shown only if there is any). */
 function FeedbackPanel({ g, images }: { g: GalleryRow; images: ViewImage[] }) {
   const { toast } = useData()
   const [rows, setRows] = useState<FeedbackRow[] | null>(null)
@@ -453,14 +453,14 @@ function FeedbackPanel({ g, images }: { g: GalleryRow; images: ViewImage[] }) {
   const down = list.filter((r) => r.reaction === -1)
   const up = list.filter((r) => r.reaction === 1)
   const comments = list.filter((r) => r.comment)
+  if (!list.length) return null
   return (
     <div className={'ad-card' + (down.length ? ' gm-sel' : '')} style={{ marginBottom: 16 }}>
       <div className="gm-card-h">
-        <h3>Client feedback <small>{up.length} 👍 · {down.length} 👎 · {comments.length} comment{comments.length === 1 ? '' : 's'}</small></h3>
+        <h3>Earlier client feedback <small>{up.length} 👍 · {down.length} 👎 · {comments.length} comment{comments.length === 1 ? '' : 's'}</small></h3>
         <small className="ad-muted">{g.feedback_sent_at ? `Sent ${fmtDate(g.feedback_sent_at, true)}` : list.length ? 'Not sent yet (still deciding)' : 'Nothing yet'}</small>
       </div>
-      {!list.length ? <p className="ad-muted">When the client gives a photo a 👍 or 👎 or adds a comment, it shows here. You get an email when they press “Send feedback”.</p> : (
-        <>
+      <>
           {down.length > 0 && <div className="ad-actions" style={{ marginBottom: 10 }}><button className="ad-btn primary" onClick={() => copy(lightroomFilter(down.map((d) => d.file)), toast, 'Lightroom filter for the 👎 photos')}>Copy Lightroom filter (👎)</button></div>}
           <div className="gm-sel-list">
             {[...down, ...list.filter((r) => r.reaction !== -1)].map((r) => (
@@ -468,7 +468,6 @@ function FeedbackPanel({ g, images }: { g: GalleryRow; images: ViewImage[] }) {
             ))}
           </div>
         </>
-      )}
     </div>
   )
 }

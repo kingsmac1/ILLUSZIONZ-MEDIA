@@ -4,6 +4,7 @@ import { computeQuote, formatGBP, validateField, type Field, type Flow, type Sel
 import { applyOverrides, type PriceOverride } from './overrides'
 import { site, whatsappLink } from '../site'
 import { smoothScrollTo } from '../motion/scroll'
+import { InspirationImages, uploadInspiration } from './InspirationImages'
 import './booking.css'
 
 const STORE_KEY = 'illuszionz:contact'
@@ -148,6 +149,8 @@ export function BookingPanel({ flow: baseFlow, initialOptionId, onClose }: { flo
   const [optionError, setOptionError] = useState('')
   const [agree, setAgree] = useState(false)
   const [website, setWebsite] = useState('')
+  const [images, setImages] = useState<File[]>([])
+  const [imagesFailed, setImagesFailed] = useState(0)
   const [sending, setSending] = useState(false)
   const [error, setError] = useState('')
   const [done, setDone] = useState<null | { total: string }>(null)
@@ -258,7 +261,10 @@ export function BookingPanel({ flow: baseFlow, initialOptionId, onClose }: { flo
       /* ignore */
     }
     try {
-      const sel: Selection & { website: string; promo?: string } = { flowId: flow.id, optionIds, units, extras, fields, website, promo: promo?.code }
+      // a failed image never stops the booking: the client is told to send it on WhatsApp instead
+      const uploaded = await uploadInspiration(images)
+      setImagesFailed(uploaded.failed)
+      const sel: Selection & { website: string; promo?: string } = { flowId: flow.id, optionIds, units, extras, fields, website, promo: promo?.code, inspirationImages: uploaded.keys }
       const res = await fetch('/api/booking', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(sel) })
       const data = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string; total?: string }
       if (!res.ok || !data.ok) throw new Error(data.error || `The server did not answer properly (HTTP ${res.status}).`)
@@ -302,6 +308,7 @@ export function BookingPanel({ flow: baseFlow, initialOptionId, onClose }: { flo
             To finish, send us your details on WhatsApp{flow.payLink ? ' and complete payment below' : ''}.
           </p>
           <p className="bk-done-total">{done.total}</p>
+          {imagesFailed > 0 && <p className="bk-err" role="alert">{imagesFailed} of your inspiration images could not be uploaded. Please send {imagesFailed === 1 ? 'it' : 'them'} to us on WhatsApp.</p>}
           <ol>
             {flow.nextSteps.map((n) => (
               <li key={n}>{n}</li>
@@ -422,7 +429,7 @@ export function BookingPanel({ flow: baseFlow, initialOptionId, onClose }: { flo
               {step.kind === 'fields' && (
                 <div className="bk-fields">
                   {step.fields?.map((f) => (
-                    <FieldInput
+                    f.type === 'images' ? <InspirationImages key={f.id} label={f.label} files={images} onChange={setImages} /> : <FieldInput
                       key={f.id}
                       f={f}
                       value={fields[f.id] ?? ''}
@@ -538,7 +545,7 @@ export function BookingPanel({ flow: baseFlow, initialOptionId, onClose }: { flo
         <div className="bk-foot-total" aria-hidden="true">{optionIds.length ? quote.totalText : ''}</div>
         {last ? (
           <button key="submit" type="submit" className="bk-btn is-light" disabled={sending}>
-            {sending ? 'Sending…' : flow.submitLabel ?? 'Submit booking'}
+            {sending ? (images.length ? 'Uploading images and sending…' : 'Sending…') : flow.submitLabel ?? 'Submit booking'}
           </button>
         ) : (
           <button key="next" type="button" className="bk-btn is-light" onClick={next}>

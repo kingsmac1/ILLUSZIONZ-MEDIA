@@ -19,7 +19,7 @@ async function purgeBucket() {
   let objects = Number(prog?.purge_objects ?? 0)
   let bytes = Number(prog?.purge_bytes ?? 0)
   while (Date.now() - started < BUDGET_MS) {
-    const page = await listObjects('', 1000)
+    const page = await listObjects('galleries/', 1000) // gallery files only: clients' booking inspiration images are not part of the gallery plan
     if (!page.length) {
       // bucket is empty: clear the rows that pointed at it, then confirm to the dashboard
       const db = service()
