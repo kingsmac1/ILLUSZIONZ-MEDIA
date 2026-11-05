@@ -5,6 +5,7 @@ import { BookingPanel } from '../booking/BookingPanel'
 import { useLivePrices } from '../booking/livePrices'
 import { withAddedPackages } from '../booking/addedCards'
 import { applyCardPhotos } from '../booking/cardPhotos'
+import { serviceFlow, servicesFor, withServices } from '../booking/services'
 import { smoothScrollTo } from '../motion/scroll'
 import './service-cards.css'
 
@@ -39,10 +40,12 @@ type Open = { flowId: string; optionId?: string; key: number } | null
  * A grid of price cards. Choosing a card (or one of its price rows) slides a multi-step booking
  * form open directly underneath and scrolls to it.
  */
-export function BookableGrid({ cards: pageCards, columns = 3, id, children }: { cards: CardDef[]; columns?: 2 | 3 | 4; id?: string; children?: ReactNode }) {
+export function BookableGrid({ cards: pageCards, columns = 3, id, page, children }: { cards: CardDef[]; columns?: 2 | 3 | 4; id?: string; /** which page, for packages added to it in the dashboard */ page?: string; children?: ReactNode }) {
   // packages added in Dashboard → Prices join the page's own cards
-  const { packages, cardPhotos } = useLivePrices()
-  const cards = useMemo(() => applyCardPhotos(withAddedPackages(pageCards, packages), cardPhotos), [pageCards, packages, cardPhotos])
+  const { packages, cardPhotos, services } = useLivePrices()
+  const cards = useMemo(() => applyCardPhotos(withAddedPackages(withServices(pageCards, page, services, cardPhotos), packages), cardPhotos), [pageCards, page, packages, cardPhotos, services])
+  // booking forms of packages added to this page (their ids start with "svc-")
+  const addedFlows = useMemo(() => Object.fromEntries(servicesFor(page, services).map((s) => { const f = serviceFlow(s); return [f.id, f] })), [page, services])
   const [open, setOpen] = useState<Open>(null)
   const slotRef = useRef<HTMLDivElement>(null)
 
@@ -78,7 +81,7 @@ export function BookableGrid({ cards: pageCards, columns = 3, id, children }: { 
     return () => clearTimeout(t)
   }, [open?.key]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const flow = open ? flows[open.flowId] : null
+  const flow = open ? flows[open.flowId] ?? addedFlows[open.flowId] ?? null : null
 
   return (
     <div className="sc-wrap" id={id}>

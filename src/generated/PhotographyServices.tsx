@@ -31,7 +31,7 @@ export default function PhotographyServices() {
       </div>
       <div className="sc-section">
         <div className="sc-section-inner">
-          <BookableGrid id="book" columns={3} cards={PHOTOGRAPHY_CARDS}></BookableGrid>
+          <BookableGrid id="book" columns={3} page="photography" cards={PHOTOGRAPHY_CARDS}></BookableGrid>
         </div>
       </div>
       <div className="pho-27">

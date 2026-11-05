@@ -4,7 +4,9 @@ import { useData, useDb } from '../data'
 import { BulkBar, BulkBtn, BulkSelect, RowBox, SelectAllBox, confirmN, useSelection } from '../bulk'
 import { Badge, PageHead, gbp } from '../ui'
 import { PackageForm, useAddedPackages } from './AddedPackages'
-import { CardPhotoStrip } from './CardPhotos'
+import { CardPhotoStrip, cardPerPackage, useCardPhotos } from './CardPhotos'
+import { AddedServicesList, NewPackageForm, useAddedServices } from './NewPackage'
+import type { BookingService } from '../../booking/services'
 import type { BookingPackage } from '../../booking/overrides'
 
 export function Prices() {
@@ -13,6 +15,10 @@ export function Prices() {
   const [drafts, setDrafts] = useState<Record<string, string>>({})
   const added = useAddedPackages()
   const [form, setForm] = useState<null | { flowId?: string; row?: BookingPackage }>(null)
+  const services = useAddedServices()
+  const cardPhotos = useCardPhotos()
+  // "+ Add package": a new package card on a website page (Photography services, Wedding …) with its cover photo
+  const [newPkg, setNewPkg] = useState<null | { service?: BookingService; pkg?: BookingPackage }>(null)
   const ov = (flow: string, kind: string, id: string) => d.price_overrides.find((o) => o.flow_id === flow && o.kind === kind && o.item_id === id)
   const k = (a: string, b: string, c: string) => `${a}|${b}|${c}`
 
@@ -58,8 +64,9 @@ export function Prices() {
 
   return (
     <>
-      <PageHead title="Prices" sub="Change a package or add-on price once and it updates on every booking form, email and total" actions={<button className="ad-btn primary" onClick={() => setForm({})}>+ Add package</button>} />
-      {added.error && <div className="ad-note" style={{ marginBottom: 14 }} role="alert">{added.error}</div>}
+      <PageHead title="Prices" sub="Change a package or add-on price once and it updates on every booking form, email and total" actions={<button className="ad-btn primary" onClick={() => setNewPkg({})}>+ Add package</button>} />
+      {(added.error || services.error) && <div className="ad-note" style={{ marginBottom: 14 }} role="alert">{services.error || added.error}</div>}
+      <AddedServicesList rows={services.rows} photos={cardPhotos.photos} onEdit={(s) => setNewPkg({ service: s })} onToggle={(s) => services.setActive(s.id, !s.active)} onDelete={(s) => { if (window.confirm(`Delete ${s.title} from the Photography services page? Bookings already made keep it.`)) services.remove(s.id) }} />
       <div className="ad-note" style={{ marginBottom: 18 }}>Prices set here apply to the <b>booking forms</b> and are re-checked on the server, so totals always match. Headline “from £…” text printed on the pages themselves is page content and is edited in the code. Packages you add with <b>+ Add package</b> appear on the page’s price cards and its booking form.</div>
       <BulkBar s={sel} noun="item">
         <BulkBtn onClick={() => bulkActive(false)}>Hide</BulkBtn>
@@ -69,7 +76,7 @@ export function Prices() {
       </BulkBar>
       {Object.values(flows).map((flow) => (
         <div className="ad-card" key={flow.id} style={{ marginBottom: 16 }}>
-          <h3>{flow.title}<span style={{ display: 'flex', alignItems: 'center', gap: 10 }}><small>{flow.kind}</small>{flow.id !== 'store' && <button className="ad-btn sm" onClick={() => setForm({ flowId: flow.id })} aria-label={`Add a package to ${flow.title}`}>+ Add here</button>}</span></h3>
+          <h3>{flow.title}<span style={{ display: 'flex', alignItems: 'center', gap: 10 }}><small>{flow.kind}</small>{flow.id !== 'store' && <button className="ad-btn sm" onClick={() => setForm({ flowId: flow.id })} aria-label={`Add a price option or add-on to ${flow.title}`}>+ Add option</button>}</span></h3>
           <div className="ad-tablewrap" style={{ border: 0 }}>
             <table><thead><tr><th className="sel"><SelectAllBox s={sel} view={items.filter((x) => x.flow === flow.id).map((x) => x.key)} /></th><th>Item</th><th>Type</th><th className="num">Standard</th><th style={{ width: 150 }}>Current price (£)</th><th /></tr></thead><tbody>
               {[...flow.options.map((o) => ({ kind: 'option' as const, id: o.id, label: o.label, note: o.note, price: o.price })), ...flow.extras.map((e) => ({ kind: 'extra' as const, id: e.id, label: e.label, note: e.note, price: e.price }))].map((it) => {
@@ -109,7 +116,7 @@ export function Prices() {
                         if (!Number.isFinite(v) || v < 0) return
                         if (await added.setPrice(r.id, Math.round(v * 100) / 100)) setDrafts((x) => { const n = { ...x }; delete n[key]; return n })
                       }}>Save</button>}{' '}
-                      <button className="ad-btn sm" onClick={() => setForm({ row: r })}>Edit</button>{' '}
+                      <button className="ad-btn sm" onClick={() => (r.kind === 'option' && cardPerPackage(r.flow_id) ? setNewPkg({ pkg: r }) : setForm({ row: r }))}>Edit</button>{' '}
                       <button className="ad-btn sm" onClick={() => added.setActive(r.id, !r.active)}>{r.active ? 'Hide' : 'Show'}</button>{' '}
                       <button className="ad-btn sm danger" onClick={() => { if (window.confirm(`Delete ${r.label} from ${flow.title}? Bookings already made keep it.`)) added.remove(r.id) }}>Delete</button>
                     </td>
@@ -122,6 +129,7 @@ export function Prices() {
         </div>
       ))}
       {form && <PackageForm initial={form.row} flowId={form.flowId} rows={added.rows} onSave={added.save} onClose={() => setForm(null)} />}
+      {newPkg && <NewPackageForm service={newPkg.service} pkg={newPkg.pkg} services={services.rows} packages={added.rows} onSaveService={services.save} onSavePackage={added.save} onClose={() => setNewPkg(null)} />}
     </>
   )
 }

@@ -4,7 +4,7 @@
  *  - a page with one card per package (Wedding: Silver, Gold …) gets one more card, with the page's first photo
  */
 import { formatGBP, type Option } from './catalog'
-import { addedFor, packageToOption, type BookingPackage } from './overrides'
+import { addedFor, packageItemId, packageToOption, type BookingPackage } from './overrides'
 import type { CardDef } from '../components/BookableGrid'
 
 const priceText = (o: Option) => (o.price > 0 ? `${formatGBP(o.price)}${o.unit ? ` / ${o.unit.label}` : ''}` : undefined)
@@ -26,6 +26,7 @@ export function withAddedPackages(cards: CardDef[], packages: BookingPackage[] |
     }
     const first = mine[0].c
     const at = mine[mine.length - 1].i + 1
+    const descriptionOf = (id: string) => packages.find((p) => packageItemId(p) === id)?.description?.trim() || undefined
     const extra: CardDef[] = added.map((o) => ({
       flowId,
       optionId: o.id,
@@ -35,7 +36,7 @@ export function withAddedPackages(cards: CardDef[], packages: BookingPackage[] |
       price: priceText(o),
       priceNote: o.price > 0 && !o.unit ? o.note : undefined,
       quoteLabel: o.price > 0 ? undefined : first.quoteLabel || 'Price on request',
-      description: o.price > 0 && !o.unit ? undefined : o.note,
+      description: descriptionOf(o.id) ?? (o.price > 0 && !o.unit ? undefined : o.note),
       bullets: o.includes?.length ? o.includes : undefined,
       cta: o.price > 0 ? genericCta(first.cta, first.title) : first.quoteLabel ? first.cta : 'Get a quote',
     }))

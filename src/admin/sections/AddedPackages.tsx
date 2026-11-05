@@ -9,7 +9,8 @@ import type { BookingPackage } from '../../booking/overrides'
 import { supabase } from '../supabase'
 import { useData } from '../data'
 import { Field, Modal, gbp } from '../ui'
-import { PhotoPicker, cardPerPackage, photoCardsFor, useCardPhotos } from './CardPhotos'
+import { PhotoPicker, cardPerPackage, firstPhoto, rowCardTitle, useCardPhotos } from './CardPhotos'
+import { safePhoto } from '../../booking/cardPhotos'
 import { packageItemId } from '../../booking/overrides'
 
 /** the pages a package can be added to: every booking form except the shop (its products live under Store) */
@@ -75,18 +76,22 @@ export function PackageForm({ initial, flowId, rows, onSave, onClose }: {
   const set = <K extends keyof Form>(k: K, v: Form[K]) => { setF((c) => ({ ...c, [k]: v })); setErr('') }
   const page = flows[f.flow_id]
   const isPackage = f.kind === 'option'
-  // pages with one card per package (Wedding, Videography, Academy …) give an added package its own card and photo
-  const hasPhoto = isPackage && !!page && cardPerPackage(f.flow_id)
-  const photoCard = hasPhoto ? photoCardsFor(f.flow_id, initial ? [initial] : [{ id: 'new', flow_id: f.flow_id, kind: 'option', label: f.label || 'this package', price: 0, active: true }]).find((c) => c.added) : undefined
-  const savedPhoto = initial && photoCard ? cp.current(photoCard) : ''
-  const [photo, setPhoto] = useState('')
+  // on pages with one card per package (Wedding, Videography, Academy) a package is a card with a cover photo; on
+  // Photography services a package here is a price line on an existing card (Portrait …), so it has no photo
+  const rowPage = !!page && !cardPerPackage(f.flow_id)
+  const keyFor = (flowId: string, id: string) => `${flowId}:${packageItemId({ id })}`
+  const savedPhoto = initial ? safePhoto(cp.photos[keyFor(initial.flow_id, initial.id)]) : ''
+  const [photo, setPhoto] = useState<string | null>(null) // null = not changed in this form, '' = removed
   const [picking, setPicking] = useState(false)
-  const shownPhoto = photo || savedPhoto || photoCard?.original || ''
+  const ownPhoto = photo ?? savedPhoto
+  const fallback = page && !rowPage ? firstPhoto(f.flow_id) : ''
+  const shownPhoto = ownPhoto || fallback
+  const photoHint = ownPhoto ? 'The cover photo on this package’s card.' : 'Uses the page’s first photo until you choose one.'
 
   async function submit() {
     const price = f.price.trim() === '' ? 0 : Number(f.price)
     const min = Number(f.unitMin), max = Number(f.unitMax)
-    if (!page) return setErr('Choose the page this package goes on.')
+    if (!page) return setErr('Choose the booking form.')
     if (!f.label.trim()) return setErr('Enter a name.')
     if (!Number.isFinite(price) || price < 0) return setErr('Enter a price of 0 or more (0 means you quote it).')
     if (isPackage && f.perUnit) {
@@ -109,17 +114,25 @@ export function PackageForm({ initial, flowId, rows, onSave, onClose }: {
     if (!initial) row.sort_order = Math.max(0, ...rows.filter((r) => r.flow_id === f.flow_id && r.kind === f.kind).map((r) => Number(r.sort_order) || 0)) + 1
     setBusy(true)
     const savedId = await onSave(row, initial?.id)
-    if (savedId && hasPhoto && photo && photo !== savedPhoto) await cp.set(`${f.flow_id}:${packageItemId({ id: savedId })}`, photo)
+    if (savedId) {
+      const key = keyFor(f.flow_id, savedId)
+      const oldKey = initial ? keyFor(initial.flow_id, initial.id) : key
+      const want = isPackage && !rowPage ? ownPhoto : ''
+      const changes: Record<string, string | null> = {}
+      if (oldKey !== key && savedPhoto) changes[oldKey] = null // moved to another page
+      if (want !== (oldKey === key ? savedPhoto : '')) changes[key] = want || null
+      if (Object.keys(changes).length) await cp.apply(changes)
+    }
     setBusy(false)
     if (savedId) onClose()
   }
 
   return (
-    <Modal title={initial ? `Edit ${initial.label}` : 'Add a package'} onClose={onClose}>
+    <Modal title={initial ? `Edit ${initial.label}` : 'Add a price option or add-on'} onClose={onClose}>
       <div className="ad-form">
-        <Field label="Page" full hint={initial ? undefined : 'The page and booking form this package is added to.'}>
+        <Field label="Booking form" full hint={initial ? undefined : 'The booking form this option or add-on is added to.'}>
           <select value={f.flow_id} autoFocus={!initial} onChange={(e) => set('flow_id', e.target.value)}>
-            <option value="">Choose a page…</option>
+            <option value="">Choose a booking form…</option>
             {PACKAGE_PAGES.map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
           </select>
         </Field>
@@ -161,19 +174,24 @@ export function PackageForm({ initial, flowId, rows, onSave, onClose }: {
             <textarea rows={4} value={f.includes} onChange={(e) => set('includes', e.target.value)} placeholder={'All pictures in an online gallery\nA photo frame'} />
           </Field>
         )}
-        {hasPhoto && photoCard && (
-          <div className="ad-field full">
-            <span>Card photo</span>
+        {isPackage && rowPage && (
+          <p className="ad-note" style={{ gridColumn: '1 / -1' }}>
+            This adds a price line to the <b>{rowCardTitle(f.flow_id)}</b> card. To add a new package card with its own cover photo to the Photography services page (like Graduate Photography), use <b>+ Add package</b> at the top of the Prices page.
+          </p>
+        )}
+        {isPackage && page && !rowPage && (
+          <div className="ad-field full" data-package-photo>
+            <span>Cover photo</span>
             <div className="cp-field">
-              <img src={shownPhoto} alt="" />
+              {shownPhoto ? <img src={shownPhoto} alt={`Photo for ${f.label.trim() || 'this package'}`} /> : <div className="cp-empty" aria-hidden="true">No photo</div>}
               <div>
-                <button type="button" className="ad-btn sm" onClick={() => setPicking(true)}>Choose photo</button>
-                <small style={{ display: 'block', marginTop: 6 }}>{photo || (initial && cp.changed(photoCard)) ? 'Your photo for this card.' : `Starts with the page’s first photo until you choose one.`}</small>
+                <button type="button" className="ad-btn sm" onClick={() => setPicking(true)}>{ownPhoto ? 'Change photo' : '⬆ Add a photo'}</button>{' '}
+                {ownPhoto && <button type="button" className="ad-btn sm" onClick={() => setPhoto('')}>Remove photo</button>}
+                <small style={{ display: 'block', marginTop: 6 }}>{photoHint}</small>
               </div>
             </div>
           </div>
         )}
-        {isPackage && page && !cardPerPackage(f.flow_id) && <p className="ad-muted" style={{ gridColumn: '1 / -1' }}>On {page.title} packages are rows on one card, so this package has no photo of its own. Change the card’s photo under Card photos.</p>}
         <label className="ad-check" style={{ gridColumn: '1 / -1' }}><input type="checkbox" checked={f.active} onChange={(e) => set('active', e.target.checked)} />Show it on the page now</label>
         {err && <p className="ad-err full" role="alert" style={{ gridColumn: '1 / -1' }}>{err}</p>}
         {page && f.label.trim() && (
@@ -187,7 +205,7 @@ export function PackageForm({ initial, flowId, rows, onSave, onClose }: {
           <button className="ad-btn primary" disabled={busy} onClick={submit}>{busy ? 'Saving…' : initial ? 'Save package' : 'Add package'}</button>
         </div>
       </div>
-      {picking && photoCard && <PhotoPicker card={{ ...photoCard, title: f.label.trim() || 'this package' }} current={shownPhoto} photos={cp.photos} onPick={async (u) => setPhoto(u)} onClose={() => setPicking(false)} />}
+      {picking && <PhotoPicker card={{ key: 'form', title: f.label.trim() || 'this package', original: '' }} current={ownPhoto} photos={cp.photos} onPick={async (u) => setPhoto(u)} onClose={() => setPicking(false)} />}
     </Modal>
   )
 }

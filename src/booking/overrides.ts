@@ -10,6 +10,8 @@ export type BookingPackage = {
   kind: 'option' | 'extra'
   label: string
   note?: string | null
+  /** a short description shown on the package's card (Wedding, Videography, Academy) */
+  description?: string | null
   includes?: string[] | null
   price: number | string
   unit?: { label?: string; plural?: string; min?: number; max?: number; def?: number } | null

@@ -298,3 +298,19 @@
   .cp-now { grid-template-columns: minmax(0, 1fr); }
   .cp-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+.cp-empty { display: grid; place-items: center; width: 96px; aspect-ratio: 4 / 3; border: 1px dashed #c9c8c0; border-radius: 8px; background: #f7f6f2; color: var(--mute); font-size: 12px; font-weight: 600; flex: none; }
+.cp-empty-lg { width: 100%; font-size: 13px; }
+/* Prices → "+ Add package" */
+.np-line { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.4fr) 110px auto; gap: 8px; margin-bottom: 8px; }
+.np-list { display: grid; gap: 10px; }
+.np-item { display: grid; grid-template-columns: 96px minmax(0, 1fr) auto; gap: 14px; align-items: center; padding: 10px; border: 1px solid var(--line); border-radius: 10px; }
+.np-item img { width: 96px; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 8px; }
+.np-text .sub { display: block; color: var(--mute); font-size: 12.5px; margin-top: 2px; }
+.np-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+@media (max-width: 640px) {
+  .np-line { grid-template-columns: minmax(0, 1fr) 96px auto; }
+  .np-line input:nth-child(2) { grid-column: 1 / -1; grid-row: 2; }
+  .np-item { grid-template-columns: 72px minmax(0, 1fr); }
+  .np-item img, .np-item .cp-empty { width: 72px; }
+  .np-actions { grid-column: 1 / -1; }
+}

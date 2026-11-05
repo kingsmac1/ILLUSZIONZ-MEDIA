@@ -18,14 +18,18 @@ export const cardPerPackage = (flowId: string) => {
   const mine = PAGE_CARDS.flatMap((p) => p.cards).filter((c) => c.flowId === flowId && !c.href)
   return mine.length > 0 && !mine.some((c) => c.rows?.length)
 }
-const firstPhoto = (flowId: string) => PAGE_CARDS.flatMap((p) => p.cards).find((c) => c.flowId === flowId && c.image)?.image ?? ''
+export const firstPhoto = (flowId: string) => PAGE_CARDS.flatMap((p) => p.cards).find((c) => c.flowId === flowId && c.image)?.image ?? ''
+/** the card whose rows list a page's packages, e.g. "Portrait Photography" */
+export const rowCardTitle = (flowId: string) => PAGE_CARDS.flatMap((p) => p.cards).find((c) => c.flowId === flowId && c.rows?.length)?.title ?? 'page'
 
 /** the cards with a photo for one page (booking form), built-in first, then added packages that get a card */
-export function photoCardsFor(flowId: string, added: BookingPackage[]): PhotoCard[] {
+export function photoCardsFor(flowId: string, added: BookingPackage[], photos: CardPhotos = {}): PhotoCard[] {
   const builtIn = PAGE_CARDS.flatMap((p) => p.cards).filter((c) => c.flowId === flowId && c.image && !c.href).map((c) => ({ key: cardKey(c), title: c.title, original: c.image! }))
-  const extra = cardPerPackage(flowId)
-    ? added.filter((r) => r.flow_id === flowId && r.kind === 'option').map((r) => ({ key: `${flowId}:${packageItemId(r)}`, title: r.label, original: firstPhoto(flowId), added: true }))
-    : []
+  const perPackage = cardPerPackage(flowId)
+  // on row pages only the added packages that were given a photo have a card (and so a photo to change)
+  const extra = added
+    .filter((r) => r.flow_id === flowId && r.kind === 'option' && (perPackage || safePhoto(photos[`${flowId}:${packageItemId(r)}`])))
+    .map((r) => ({ key: `${flowId}:${packageItemId(r)}`, title: r.label, original: perPackage ? firstPhoto(flowId) : '', added: true }))
   return [...builtIn, ...extra]
 }
 
@@ -40,6 +44,12 @@ export function useCardPhotos() {
     changed: (c: PhotoCard) => !!safePhoto(photos[c.key]),
     set: (key: string, url: string) => save({ ...photos, [key]: url }, 'Photo changed, live on the page'),
     reset: (key: string) => { const next = { ...photos }; delete next[key]; return save(next, 'Original photo back on the page') },
+    /** several keys at once: a url sets it, null removes it */
+    apply: (changes: Record<string, string | null>) => {
+      const next = { ...photos }
+      for (const [k, v] of Object.entries(changes)) if (v) next[k] = v; else delete next[k]
+      return save(next, 'Package photo saved')
+    },
   }
 }
 
@@ -80,9 +90,9 @@ export function PhotoPicker({ card, current, photos, onPick, onReset, onClose }:
     <Modal title={`Photo for ${card.title}`} onClose={onClose} wide>
       <div className="cp-picker">
         <div className="cp-now">
-          <img src={chosen} alt={`Chosen photo for ${card.title}`} />
+          {chosen ? <img src={chosen} alt={`Chosen photo for ${card.title}`} /> : <div className="cp-empty cp-empty-lg">No photo yet</div>}
           <div>
-            <p className="ad-muted" style={{ marginBottom: 10 }}>{chosen === current ? 'On the card now.' : 'Not saved yet. Press Use this photo.'}</p>
+            <p className="ad-muted" style={{ marginBottom: 10 }}>{!chosen ? 'Upload one, choose one below or paste a link.' : chosen === current ? 'On the card now.' : 'Not saved yet. Press Use this photo.'}</p>
             <button type="button" className="ad-btn" disabled={!!busy} onClick={() => file.current?.click()}>{busy === 'upload' ? 'Uploading…' : '⬆ Upload a photo'}</button>
             <input ref={file} type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) upload(f) }} />
             <div className="cp-link">
@@ -103,7 +113,7 @@ export function PhotoPicker({ card, current, photos, onPick, onReset, onClose }:
         <div className="ad-formfoot" style={{ marginTop: 16 }}>
           {onReset && <button type="button" className="ad-btn" style={{ marginRight: 'auto' }} disabled={!!busy} onClick={async () => { setBusy('save'); await onReset(); setBusy(''); onClose() }}>Use the original photo</button>}
           <button type="button" className="ad-btn" onClick={onClose}>Cancel</button>
-          <button type="button" className="ad-btn primary" disabled={!!busy || chosen === current} onClick={async () => { setBusy('save'); await onPick(chosen); setBusy(''); onClose() }}>{busy === 'save' ? 'Saving…' : 'Use this photo'}</button>
+          <button type="button" className="ad-btn primary" disabled={!!busy || !chosen || chosen === current} onClick={async () => { setBusy('save'); await onPick(chosen); setBusy(''); onClose() }}>{busy === 'save' ? 'Saving…' : 'Use this photo'}</button>
         </div>
       </div>
     </Modal>
@@ -113,7 +123,7 @@ export function PhotoPicker({ card, current, photos, onPick, onReset, onClose }:
 /** One page's card photos, shown in its section of the Prices page. */
 export function CardPhotoStrip({ flowId, added }: { flowId: string; added: BookingPackage[] }) {
   const cp = useCardPhotos()
-  const cards = photoCardsFor(flowId, added)
+  const cards = photoCardsFor(flowId, added, cp.photos)
   const [open, setOpen] = useState<PhotoCard | null>(null)
   if (!cards.length) return null
   return (

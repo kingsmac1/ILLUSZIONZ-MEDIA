@@ -5,6 +5,7 @@ import { applyOverrides, evaluatePromo, type BookingPackage, type PriceOverride,
 import { deliver, type MailEnv } from '../../src/server/mail'
 import { buildSummary } from '../../src/server/summary'
 import { db, dbReady, q, type DbEnv } from '../../src/server/db'
+import { isServiceFlowId, serviceFlow, type BookingService } from '../../src/booking/services'
 import { recordBooking } from '../../src/server/crm'
 
 const json = (data: unknown, status = 200) =>
@@ -18,7 +19,16 @@ export const onRequestPost = async ({ request, env }: { request: Request; env: M
     return json({ ok: false, error: 'Invalid request.' }, 400)
   }
   if (sel.website) return json({ ok: true }) // honeypot
-  const base = flows[sel.flowId]
+  let base = flows[sel.flowId]
+  // a package added to a page in the dashboard (Graduate Photography …): its form and prices come from the database
+  if (!base && isServiceFlowId(sel.flowId) && dbReady(env)) {
+    try {
+      const row = ((await db.select(env, 'booking_services', `id=eq.${q(sel.flowId.slice(4))}&active=eq.true&limit=1`)) as BookingService[])[0]
+      if (row) { const f = serviceFlow(row); if (f.options.length) base = f }
+    } catch (err) {
+      console.error('service failed', err)
+    }
+  }
   if (!base) return json({ ok: false, error: 'Unknown service.' }, 400)
 
   // dashboard price overrides and added packages (re-priced here, so the browser can never choose its own price)
