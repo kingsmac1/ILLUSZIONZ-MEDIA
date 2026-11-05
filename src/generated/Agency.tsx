@@ -1,5 +1,6 @@
 import { A } from '../components/A'
 import { BookableGrid, BookNow } from '../components/BookableGrid'
+import { AGENCY_CARDS } from '../booking/cards'
 import './agency.css'
 
 
@@ -33,64 +34,7 @@ export default function Agency() {
       </div>
       <div className="sc-section">
         <div className="sc-section-inner">
-          <BookableGrid id="consult" columns={4} cards={[
-  {
-    "flowId": "agency",
-    "optionId": "ag-location",
-    "title": "Location Scouting",
-    "description": "Find the perfect backdrop for your shoot, film or campaign.",
-    "cta": "Enquire"
-  },
-  {
-    "flowId": "agency",
-    "optionId": "ag-influencer",
-    "title": "Influencer Scouting & Liaison",
-    "description": "Match your brand with the right creators and manage the relationship.",
-    "cta": "Enquire"
-  },
-  {
-    "flowId": "agency",
-    "optionId": "ag-artists",
-    "title": "Artists & Crew Scouting",
-    "description": "Casting and crew sourcing for productions of every size.",
-    "cta": "Enquire"
-  },
-  {
-    "flowId": "agency",
-    "optionId": "ag-creative-crew",
-    "title": "Creative Crew Scouting",
-    "description": "Stylists, make-up artists, set designers and more.",
-    "cta": "Enquire"
-  },
-  {
-    "flowId": "agency",
-    "optionId": "ag-premiere",
-    "title": "Movie Premiere Consulting",
-    "description": "Planning and delivery support for premieres and screenings.",
-    "cta": "Enquire"
-  },
-  {
-    "flowId": "agency",
-    "optionId": "ag-creative-use",
-    "title": "Creative Use Consultation",
-    "description": "Make the most of your content, locations and assets.",
-    "cta": "Enquire"
-  },
-  {
-    "flowId": "agency",
-    "optionId": "ag-sponsor",
-    "title": "Sponsorship Consultation",
-    "description": "Structure and pitch sponsorship deals that work.",
-    "cta": "Enquire"
-  },
-  {
-    "flowId": "agency",
-    "optionId": "ag-airport",
-    "title": "Airport Welcome Paparazzi Crew",
-    "description": "A red-carpet welcome with a photo and video crew.",
-    "cta": "Enquire"
-  }
-]}></BookableGrid>
+          <BookableGrid id="consult" columns={4} cards={AGENCY_CARDS}></BookableGrid>
         </div>
       </div>
       <div className="age-25">

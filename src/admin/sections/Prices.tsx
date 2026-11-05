@@ -4,6 +4,7 @@ import { useData, useDb } from '../data'
 import { BulkBar, BulkBtn, BulkSelect, RowBox, SelectAllBox, confirmN, useSelection } from '../bulk'
 import { Badge, PageHead, gbp } from '../ui'
 import { PackageForm, useAddedPackages } from './AddedPackages'
+import { CardPhotoStrip } from './CardPhotos'
 import type { BookingPackage } from '../../booking/overrides'
 
 export function Prices() {
@@ -117,6 +118,7 @@ export function Prices() {
               })}
             </tbody></table>
           </div>
+          <CardPhotoStrip flowId={flow.id} added={added.rows} />
         </div>
       ))}
       {form && <PackageForm initial={form.row} flowId={form.flowId} rows={added.rows} onSave={added.save} onClose={() => setForm(null)} />}

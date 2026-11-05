@@ -4,6 +4,7 @@ import { flows } from '../booking/catalog'
 import { BookingPanel } from '../booking/BookingPanel'
 import { useLivePrices } from '../booking/livePrices'
 import { withAddedPackages } from '../booking/addedCards'
+import { applyCardPhotos } from '../booking/cardPhotos'
 import { smoothScrollTo } from '../motion/scroll'
 import './service-cards.css'
 
@@ -28,6 +29,8 @@ export type CardDef = {
   cta: string
   /** CMS products without a booking form: the CTA is an external link (e.g. Selar) */
   href?: string
+  /** which dashboard photo belongs to this card, when it is not the page + title (packages added in the dashboard) */
+  photoKey?: string
 }
 
 type Open = { flowId: string; optionId?: string; key: number } | null
@@ -38,8 +41,8 @@ type Open = { flowId: string; optionId?: string; key: number } | null
  */
 export function BookableGrid({ cards: pageCards, columns = 3, id, children }: { cards: CardDef[]; columns?: 2 | 3 | 4; id?: string; children?: ReactNode }) {
   // packages added in Dashboard → Prices join the page's own cards
-  const { packages } = useLivePrices()
-  const cards = useMemo(() => withAddedPackages(pageCards, packages), [pageCards, packages])
+  const { packages, cardPhotos } = useLivePrices()
+  const cards = useMemo(() => applyCardPhotos(withAddedPackages(pageCards, packages), cardPhotos), [pageCards, packages, cardPhotos])
   const [open, setOpen] = useState<Open>(null)
   const slotRef = useRef<HTMLDivElement>(null)
 

@@ -14,6 +14,7 @@
     "postbuild": "node scripts/postbuild.mjs",
     "test:motion": "node tests/motion-e2e.mjs",
     "test:gallery": "node tests/gallery-e2e.mjs",
+    "test:photos": "node tests/card-photos-e2e.mjs",
     "test:packages": "node tests/packages-e2e.mjs",
     "test:invoices": "node tests/invoice-e2e.mjs",
     "gallery:go-live": "bash scripts/gallery-go-live.sh"

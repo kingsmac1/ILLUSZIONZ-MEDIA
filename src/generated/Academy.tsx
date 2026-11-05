@@ -1,4 +1,5 @@
 import { BookableGrid, BookNow } from '../components/BookableGrid'
+import { ACADEMY_CARDS } from '../booking/cards'
 import './academy.css'
 
 
@@ -39,105 +40,7 @@ export default function Academy() {
             </div>
             <blockquote>“Our courses are built on real-world agency experience, not just theory.”</blockquote>
           </div>
-          <BookableGrid id="courses" columns={3} cards={[
-  {
-    "flowId": "academy",
-    "optionId": "ac-zero",
-    "title": "Zero to Pro Photography",
-    "image": "/images/ILZ_8962.jpg",
-    "price": "£1,500",
-    "priceNote": "9 months",
-    "description": "A comprehensive masterclass designed for absolute beginners aiming for professional mastery.",
-    "bullets": [
-      "Mastering your camera and gear",
-      "Lighting & studio setup",
-      "Editing & retouching",
-      "Outdoor sessions & workflow",
-      "3-month class with 6-month mentorship"
-    ],
-    "rows": [
-      {
-        "label": "Format",
-        "note": "2x a week · online and physical"
-      }
-    ],
-    "cta": "Enrol now"
-  },
-  {
-    "flowId": "academy",
-    "optionId": "ac-intro-photo",
-    "title": "Introduction to Photography",
-    "image": "/images/ILZ_8904.jpg",
-    "price": "£499",
-    "priceNote": "2 months",
-    "description": "Master the fundamentals of your camera.",
-    "bullets": [
-      "Exposure",
-      "Composition",
-      "Basic editing to start your journey",
-      "5 weeks class + 2 months mentorship"
-    ],
-    "rows": [
-      {
-        "label": "Format",
-        "note": "2x a week · online and physical"
-      }
-    ],
-    "cta": "Enrol now"
-  },
-  {
-    "flowId": "academy",
-    "optionId": "ac-intro-video",
-    "title": "Introduction to Videography",
-    "image": "/images/ILZ_8923.jpg",
-    "price": "£600",
-    "priceNote": "2 months",
-    "description": "Capture life in motion.",
-    "bullets": [
-      "Framing",
-      "Sound recording",
-      "The basics of cinematic storytelling",
-      "6 weeks class + 2 months mentorship"
-    ],
-    "rows": [
-      {
-        "label": "Format",
-        "note": "2x a week · online and physical"
-      }
-    ],
-    "cta": "Enrol now"
-  },
-  {
-    "flowId": "academy",
-    "optionId": "ac-upgrade",
-    "title": "Upgrade Classes",
-    "image": "/images/ILZ_8996.jpg",
-    "price": "£250",
-    "priceNote": "1 week",
-    "description": "For active professionals. Deep dive into:",
-    "bullets": [
-      "Advanced studio lighting",
-      "Complex retouching",
-      "High-end client management",
-      "3hrs class over 2 days + 1 week mentorship"
-    ],
-    "cta": "Enrol now"
-  },
-  {
-    "flowId": "academy",
-    "optionId": "ac-ai",
-    "title": "Creative AI Classes for Juniors",
-    "image": "/images/ILZ_8966.jpg",
-    "price": "£400",
-    "priceNote": "1 month",
-    "description": "Empowering the next generation with future-ready skills.",
-    "bullets": [
-      "Combine photography with generative AI tools safely and creatively",
-      "2x a week class"
-    ],
-    "cta": "Enrol now"
-  }
-]}></BookableGrid>
+          <BookableGrid id="courses" columns={3} cards={ACADEMY_CARDS}></BookableGrid>
         </div>
       </div>
       <div className="aca-2">

@@ -271,3 +271,30 @@
 .ad-pw button { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 36px; height: 36px; display: grid; place-items: center; background: none; border: 0; border-radius: 8px; color: #7a7a82; cursor: pointer; }
 .ad-pw button:hover { color: #0b0b0c; background: #f0efea; }
 .ad-pw svg { width: 20px; height: 20px; }
+
+/* Prices → card photos (strip under each page, and the picker) */
+.cp-strip { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); }
+.cp-label { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--mute); margin-bottom: 10px; }
+.cp-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+.cp-thumb { display: flex; flex-direction: column; gap: 6px; padding: 0; border: 1px solid var(--line); border-radius: 10px; background: #fff; overflow: hidden; text-align: left; }
+.cp-thumb img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; background: #f0efea; }
+.cp-thumb span { padding: 0 10px; font-weight: 600; font-size: 13px; line-height: 1.3; }
+.cp-thumb span em { display: block; font-style: normal; font-weight: 600; font-size: 11px; color: var(--blue, #2563eb); }
+.cp-thumb b { padding: 0 10px 10px; font-size: 12px; font-weight: 600; color: var(--mute); }
+.cp-thumb:hover { border-color: #b9b8b0; }
+.cp-thumb:hover b { color: var(--ink); }
+.cp-thumb:focus-visible, .cp-grid button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.cp-now { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 18px; align-items: start; margin-bottom: 18px; }
+.cp-now img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 10px; border: 1px solid var(--line); background: #f0efea; }
+.cp-link { display: flex; gap: 8px; margin-top: 12px; }
+.cp-link input { flex: 1; min-width: 0; }
+.cp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; max-height: 320px; overflow-y: auto; padding: 2px; }
+.cp-grid button { padding: 0; border: 2px solid transparent; border-radius: 8px; overflow: hidden; background: #f0efea; }
+.cp-grid button.on { border-color: var(--ink); }
+.cp-grid img { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; }
+.cp-field { display: flex; align-items: center; gap: 12px; }
+.cp-field img { width: 96px; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); }
+@media (max-width: 640px) {
+  .cp-now { grid-template-columns: minmax(0, 1fr); }
+  .cp-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

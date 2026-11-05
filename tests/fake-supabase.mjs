@@ -82,6 +82,7 @@ function filters(params) {
   for (const [k, v] of params) if (!['select', 'order', 'limit', 'offset', 'on_conflict', 'columns'].includes(k)) fs_.push(matcher(k, v))
   return (r) => fs_.every((f) => f(r))
 }
+const files = new Map()
 const send = (res, status, body, headers = {}) => {
   res.writeHead(status, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*', 'Access-Control-Allow-Methods': '*', 'Access-Control-Expose-Headers': 'Content-Range', ...headers })
   res.end(body === undefined ? '' : JSON.stringify(body))
@@ -94,11 +95,37 @@ http.createServer(async (req, res) => {
   if (req.method === 'OPTIONS') return send(res, 204)
   const chunks = []
   for await (const c of req) chunks.push(c)
+  const path = url.pathname
+  // storage: uploads to the public site-media bucket (dashboard image uploads) and serving them back
+  const up = /^\/storage\/v1\/object\/(site-media)\/(.+)$/.exec(path)
+  if (up && req.method === 'POST') {
+    let type = req.headers['content-type'] || 'application/octet-stream'
+    let bytes = Buffer.concat(chunks)
+    // supabase-js sends a File as multipart form data: keep only the file part, as Supabase does
+    const boundary = /multipart\/form-data;\s*boundary=(.+)$/i.exec(type)?.[1]
+    if (boundary) {
+      const parts = bytes.toString('latin1').split(`--${boundary}`)
+      const file = parts.find((x) => /filename=/i.test(x.split('\r\n\r\n')[0]))
+      if (file) {
+        const [head, ...rest] = file.split('\r\n\r\n')
+        type = /content-type:\s*([^\r\n]+)/i.exec(head)?.[1] ?? 'application/octet-stream'
+        bytes = Buffer.from(rest.join('\r\n\r\n').replace(/\r\n$/, ''), 'latin1')
+      }
+    }
+    files.set(`${up[1]}/${decodeURIComponent(up[2])}`, { type, bytes })
+    return send(res, 200, { Key: `${up[1]}/${up[2]}`, Id: randomUUID() })
+  }
+  const pub = /^\/storage\/v1\/object\/public\/(site-media)\/(.+)$/.exec(path)
+  if (pub && req.method === 'GET') {
+    const f = files.get(`${pub[1]}/${decodeURIComponent(pub[2])}`)
+    if (!f) return send(res, 404, { error: 'not found' })
+    res.writeHead(200, { 'Content-Type': f.type, 'Access-Control-Allow-Origin': '*' })
+    return res.end(f.bytes)
+  }
   const raw = Buffer.concat(chunks).toString()
   const body = raw ? JSON.parse(raw) : undefined
-  const path = url.pathname
 
-  if (path === '/__reset') { for (const k of Object.keys(db)) if (['contacts', 'companies', 'bookings', 'submissions', 'deals', 'activities', 'tasks', 'segments', 'payments', 'expenses', 'other_income', 'promo_codes', 'price_overrides', 'email_log', 'email_campaigns', 'blog_posts', 'store_products', 'testimonials', 'site_images', 'page_seo', 'invoices', 'booking_packages'].includes(k)) db[k] = []; const cm = T('settings').find((x) => x.key === 'cms_managed'); if (cm) cm.value = {}; const nt = T('settings').find((x) => x.key === 'notice'); if (nt) nt.value = { enabled: false, text: '', link: '', label: '', tone: 'dark' }; return send(res, 200, { ok: true }) }
+  if (path === '/__reset') { for (const k of Object.keys(db)) if (['contacts', 'companies', 'bookings', 'submissions', 'deals', 'activities', 'tasks', 'segments', 'payments', 'expenses', 'other_income', 'promo_codes', 'price_overrides', 'email_log', 'email_campaigns', 'blog_posts', 'store_products', 'testimonials', 'site_images', 'page_seo', 'invoices', 'booking_packages'].includes(k)) db[k] = []; const cm = T('settings').find((x) => x.key === 'cms_managed'); if (cm) cm.value = {}; db.settings = T('settings').filter((x) => x.key !== 'card_photos'); const nt = T('settings').find((x) => x.key === 'notice'); if (nt) nt.value = { enabled: false, text: '', link: '', label: '', tone: 'dark' }; return send(res, 200, { ok: true }) }
   if (path === '/__dump') return send(res, 200, db)
   if (path.startsWith('/auth/v1/token')) return body?.password === 'test1234' && body?.email === user.email ? send(res, 200, session()) : send(res, 400, { error: 'invalid_grant', error_description: 'Invalid login credentials', msg: 'Invalid login credentials' })
   if (path === '/auth/v1/user') return (req.headers.authorization ?? '').includes('fake-token') || (req.headers.authorization ?? '').includes('service') ? send(res, 200, user) : send(res, 401, { msg: 'bad token' })

@@ -1,5 +1,6 @@
 import { Gallery } from '../components/Gallery'
 import { BookableGrid, BookNow } from '../components/BookableGrid'
+import { WEDDING_CARDS } from '../booking/cards'
 import { useContent, toGallery } from '../cms/content'
 import { weddingGallery } from '../cms/builtin'
 import './wedding.css'
@@ -37,71 +38,7 @@ export default function Wedding() {
       </div>
       <div className="sc-section">
         <div className="sc-section-inner">
-          <BookableGrid id="book" columns={2} cards={[
-  {
-    "flowId": "wedding",
-    "optionId": "wedding-silver",
-    "title": "Silver Package",
-    "image": "/images/imgi_13_325350223_167249076020601_2069285591843222161_n.jpg",
-    "price": "£1,100",
-    "priceNote": "8 hours",
-    "bullets": [
-      "All softcopies in Google Drive, downloadable",
-      "All soft copies also on a Flash Drive",
-      "A photo frame"
-    ],
-    "cta": "Book Silver"
-  },
-  {
-    "flowId": "wedding",
-    "optionId": "wedding-gold",
-    "title": "Gold Package",
-    "image": "/images/ILU6448.webp",
-    "price": "£1,300",
-    "priceNote": "10 hours",
-    "bullets": [
-      "All softcopies in Google Drive (downloadable)",
-      "All softcopies in a customized webpage",
-      "All soft copies on a Flash Drive",
-      "1 look complimentary prewedding",
-      "A mini photobook",
-      "A wall frame"
-    ],
-    "cta": "Book Gold"
-  },
-  {
-    "flowId": "wedding",
-    "optionId": "wedding-diamond",
-    "title": "Diamond Package",
-    "image": "/images/ILU3195.webp",
-    "price": "£1,700",
-    "priceNote": "12 hours",
-    "bullets": [
-      "All pictures in Google Drive (downloadable)",
-      "All softcopies in a customized webpage",
-      "All soft copies on a Flash Drive",
-      "2 hours complimentary prewedding",
-      "2 wall frames",
-      "A complimentary large photobook (200 pictures)",
-      "Extra photographer"
-    ],
-    "cta": "Book Diamond"
-  },
-  {
-    "flowId": "wedding",
-    "optionId": "wedding-traditional",
-    "title": "Traditional Weddings",
-    "image": "/images/ILU6151.webp",
-    "price": "£900",
-    "priceNote": "8 hours",
-    "bullets": [
-      "Softcopies in Google Drive (downloadable)",
-      "All soft copies on a Flash Drive",
-      "All softcopies in a customized webpage"
-    ],
-    "cta": "Book Traditional"
-  }
-]}><div className="sc-extras">
+          <BookableGrid id="book" columns={2} cards={WEDDING_CARDS}><div className="sc-extras">
             <h3>Add to any package</h3>
             <ul>
               <li><span>Extra photographer<small>up to 10 hours</small></span><b>£350</b></li>

@@ -9,6 +9,8 @@ import type { BookingPackage } from '../../booking/overrides'
 import { supabase } from '../supabase'
 import { useData } from '../data'
 import { Field, Modal, gbp } from '../ui'
+import { PhotoPicker, cardPerPackage, photoCardsFor, useCardPhotos } from './CardPhotos'
+import { packageItemId } from '../../booking/overrides'
 
 /** the pages a package can be added to: every booking form except the shop (its products live under Store) */
 export const PACKAGE_PAGES = Object.values(flows).filter((f) => f.id !== 'store')
@@ -37,8 +39,13 @@ export function useAddedPackages() {
   const now = () => new Date().toISOString()
   return {
     rows, error,
-    save: (row: Partial<BookingPackage>, id?: string) =>
-      run(id ? supabase!.from('booking_packages').update({ ...row, updated_at: now() }).eq('id', id) : supabase!.from('booking_packages').insert(row), id ? 'Package saved, live on the page' : 'Package added, live on the page'),
+    /** returns the package's id, or null when it could not be saved */
+    save: async (row: Partial<BookingPackage>, id?: string): Promise<string | null> => {
+      const q = id ? supabase!.from('booking_packages').update({ ...row, updated_at: now() }).eq('id', id).select('id').single() : supabase!.from('booking_packages').insert(row).select('id').single()
+      let savedId: string | null = null
+      const ok = await run(q.then((r) => { savedId = (r.data as { id?: string } | null)?.id ?? null; return r }), id ? 'Package saved, live on the page' : 'Package added, live on the page')
+      return ok ? savedId ?? id ?? null : null
+    },
     setPrice: (id: string, price: number) => run(supabase!.from('booking_packages').update({ price, updated_at: now() }).eq('id', id), 'Price saved, live on the page'),
     setActive: (id: string, active: boolean) => run(supabase!.from('booking_packages').update({ active, updated_at: now() }).eq('id', id), active ? 'Shown again' : 'Hidden from the page'),
     remove: (id: string) => run(supabase!.from('booking_packages').delete().eq('id', id), 'Package deleted'),
@@ -59,14 +66,22 @@ const fromRow = (r: BookingPackage): Form => ({
 /** The "+ Add package" form (also used to edit one). */
 export function PackageForm({ initial, flowId, rows, onSave, onClose }: {
   initial?: BookingPackage; flowId?: string; rows: BookingPackage[]
-  onSave: (row: Partial<BookingPackage>, id?: string) => Promise<boolean>; onClose: () => void
+  onSave: (row: Partial<BookingPackage>, id?: string) => Promise<string | null>; onClose: () => void
 }) {
+  const cp = useCardPhotos()
   const [f, setF] = useState<Form>(initial ? fromRow(initial) : blank(flowId))
   const [err, setErr] = useState('')
   const [busy, setBusy] = useState(false)
   const set = <K extends keyof Form>(k: K, v: Form[K]) => { setF((c) => ({ ...c, [k]: v })); setErr('') }
   const page = flows[f.flow_id]
   const isPackage = f.kind === 'option'
+  // pages with one card per package (Wedding, Videography, Academy …) give an added package its own card and photo
+  const hasPhoto = isPackage && !!page && cardPerPackage(f.flow_id)
+  const photoCard = hasPhoto ? photoCardsFor(f.flow_id, initial ? [initial] : [{ id: 'new', flow_id: f.flow_id, kind: 'option', label: f.label || 'this package', price: 0, active: true }]).find((c) => c.added) : undefined
+  const savedPhoto = initial && photoCard ? cp.current(photoCard) : ''
+  const [photo, setPhoto] = useState('')
+  const [picking, setPicking] = useState(false)
+  const shownPhoto = photo || savedPhoto || photoCard?.original || ''
 
   async function submit() {
     const price = f.price.trim() === '' ? 0 : Number(f.price)
@@ -93,9 +108,10 @@ export function PackageForm({ initial, flowId, rows, onSave, onClose }: {
     }
     if (!initial) row.sort_order = Math.max(0, ...rows.filter((r) => r.flow_id === f.flow_id && r.kind === f.kind).map((r) => Number(r.sort_order) || 0)) + 1
     setBusy(true)
-    const ok = await onSave(row, initial?.id)
+    const savedId = await onSave(row, initial?.id)
+    if (savedId && hasPhoto && photo && photo !== savedPhoto) await cp.set(`${f.flow_id}:${packageItemId({ id: savedId })}`, photo)
     setBusy(false)
-    if (ok) onClose()
+    if (savedId) onClose()
   }
 
   return (
@@ -145,6 +161,19 @@ export function PackageForm({ initial, flowId, rows, onSave, onClose }: {
             <textarea rows={4} value={f.includes} onChange={(e) => set('includes', e.target.value)} placeholder={'All pictures in an online gallery\nA photo frame'} />
           </Field>
         )}
+        {hasPhoto && photoCard && (
+          <div className="ad-field full">
+            <span>Card photo</span>
+            <div className="cp-field">
+              <img src={shownPhoto} alt="" />
+              <div>
+                <button type="button" className="ad-btn sm" onClick={() => setPicking(true)}>Choose photo</button>
+                <small style={{ display: 'block', marginTop: 6 }}>{photo || (initial && cp.changed(photoCard)) ? 'Your photo for this card.' : `Starts with the page’s first photo until you choose one.`}</small>
+              </div>
+            </div>
+          </div>
+        )}
+        {isPackage && page && !cardPerPackage(f.flow_id) && <p className="ad-muted" style={{ gridColumn: '1 / -1' }}>On {page.title} packages are rows on one card, so this package has no photo of its own. Change the card’s photo under Card photos.</p>}
         <label className="ad-check" style={{ gridColumn: '1 / -1' }}><input type="checkbox" checked={f.active} onChange={(e) => set('active', e.target.checked)} />Show it on the page now</label>
         {err && <p className="ad-err full" role="alert" style={{ gridColumn: '1 / -1' }}>{err}</p>}
         {page && f.label.trim() && (
@@ -158,6 +187,7 @@ export function PackageForm({ initial, flowId, rows, onSave, onClose }: {
           <button className="ad-btn primary" disabled={busy} onClick={submit}>{busy ? 'Saving…' : initial ? 'Save package' : 'Add package'}</button>
         </div>
       </div>
+      {picking && photoCard && <PhotoPicker card={{ ...photoCard, title: f.label.trim() || 'this package' }} current={shownPhoto} photos={cp.photos} onPick={async (u) => setPhoto(u)} onClose={() => setPicking(false)} />}
     </Modal>
   )
 }

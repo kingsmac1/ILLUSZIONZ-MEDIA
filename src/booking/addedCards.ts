@@ -29,6 +29,7 @@ export function withAddedPackages(cards: CardDef[], packages: BookingPackage[] |
     const extra: CardDef[] = added.map((o) => ({
       flowId,
       optionId: o.id,
+      photoKey: `${flowId}:${o.id}`,
       title: o.label,
       image: first.image,
       price: priceText(o),
