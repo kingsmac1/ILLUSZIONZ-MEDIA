@@ -100,7 +100,7 @@
 .hom-4{width:43.7%}
 .hom-5{width:min(186px, 100%)}
 .hom-8{font-size:50px;line-height:50px}
-.hom-17{width:81%}
+.hom-17{white-space:nowrap}
 .hom-20{width:100%}
 .hom-21{width:43.7%}
 .hom-23{margin-right:0px;margin-left:0px;max-width:min(100%, 1024px);width:min(760px, 100%)}
@@ -161,3 +161,7 @@
 .svc-link:hover .hom-36, .svc-link:focus-visible .hom-36 { background-color: #000; transform: translateY(-4px); }
 .svc-link:hover .hom-37, .svc-link:focus-visible .hom-37 { stroke: #fff; }
 .svc-link:hover .hom-38 { text-decoration: underline; text-underline-offset: 6px; }
+
+/* hero buttons: labels stay on one line; the second button drops below the first when the column is narrow */
+.hom-12{flex-wrap:wrap}
+.hom-17,.hom-20{white-space:nowrap}
