@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { computeQuote, formatGBP, validateField, type Field, type Flow, type Selection } from './catalog'
-import { applyOverrides, type PriceOverride } from './overrides'
+import { applyOverrides } from './overrides'
+import { useLivePrices } from './livePrices'
 import { site, whatsappLink } from '../site'
 import { smoothScrollTo } from '../motion/scroll'
 import { InspirationImages, uploadInspiration } from './InspirationImages'
@@ -28,18 +29,6 @@ function stepsFor(flow: Flow): StepDef[] {
   return out
 }
 
-let overrideCache: PriceOverride[] | null = null
-const loadOverrides = async (): Promise<PriceOverride[]> => {
-  if (overrideCache) return overrideCache
-  try {
-    const res = await fetch('/api/prices')
-    const data = (await res.json()) as { overrides?: PriceOverride[] }
-    overrideCache = data.overrides ?? []
-  } catch {
-    overrideCache = []
-  }
-  return overrideCache
-}
 
 const todayIso = () => new Date().toISOString().slice(0, 10)
 
@@ -123,15 +112,8 @@ function FieldInput({ f, value, error, onChange }: { f: Field; value: string; er
 }
 
 export function BookingPanel({ flow: baseFlow, initialOptionId, onClose }: { flow: Flow; initialOptionId?: string; onClose: () => void }) {
-  const [overrides, setOverrides] = useState<PriceOverride[]>(overrideCache ?? [])
-  useEffect(() => {
-    let live = true
-    loadOverrides().then((o) => live && setOverrides(o))
-    return () => {
-      live = false
-    }
-  }, [])
-  const flow = useMemo(() => applyOverrides(baseFlow, overrides), [baseFlow, overrides])
+  const { overrides, packages } = useLivePrices()
+  const flow = useMemo(() => applyOverrides(baseFlow, overrides, packages), [baseFlow, overrides, packages])
   const [promoInput, setPromoInput] = useState('')
   const [promo, setPromo] = useState<null | { code: string; discount: number; label: string }>(null)
   const [promoMsg, setPromoMsg] = useState('')

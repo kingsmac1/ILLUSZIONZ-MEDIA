@@ -1,7 +1,7 @@
 /** NOTE: failures use 424, not 502/5xx — Cloudflare replaces 502/5xx bodies with its own error page, which hides the real reason from the form.
  * POST /api/booking — validates + re-prices a multi-step booking, stores it (+ CRM records) and sends the emails (Cloudflare Pages Function). */
 import { computeQuote, flows, validateSelection, type Selection } from '../../src/booking/catalog'
-import { applyOverrides, evaluatePromo, type PriceOverride, type PromoRow } from '../../src/booking/overrides'
+import { applyOverrides, evaluatePromo, type BookingPackage, type PriceOverride, type PromoRow } from '../../src/booking/overrides'
 import { deliver, type MailEnv } from '../../src/server/mail'
 import { buildSummary } from '../../src/server/summary'
 import { db, dbReady, q, type DbEnv } from '../../src/server/db'
@@ -21,14 +21,16 @@ export const onRequestPost = async ({ request, env }: { request: Request; env: M
   const base = flows[sel.flowId]
   if (!base) return json({ ok: false, error: 'Unknown service.' }, 400)
 
-  // dashboard price overrides (re-priced here, so the browser can never choose its own price)
+  // dashboard price overrides and added packages (re-priced here, so the browser can never choose its own price)
   let flow = base
   if (dbReady(env)) {
-    try {
-      flow = applyOverrides(base, (await db.select(env, 'price_overrides', `flow_id=eq.${q(base.id)}`)) as PriceOverride[])
-    } catch (err) {
-      console.error('overrides failed', err)
-    }
+    const [o, p] = await Promise.allSettled([
+      db.select(env, 'price_overrides', `flow_id=eq.${q(base.id)}`),
+      db.select(env, 'booking_packages', `flow_id=eq.${q(base.id)}&active=eq.true`),
+    ])
+    if (o.status === 'rejected') console.error('overrides failed', o.reason)
+    if (p.status === 'rejected') console.error('packages failed', p.reason)
+    flow = applyOverrides(base, o.status === 'fulfilled' ? (o.value as PriceOverride[]) : [], p.status === 'fulfilled' ? (p.value as BookingPackage[]) : [])
   }
   sel = { ...sel, optionIds: sel.optionIds ?? [], units: sel.units ?? {}, extras: sel.extras ?? {}, fields: sel.fields ?? {} }
   const problems = validateSelection(flow, sel)

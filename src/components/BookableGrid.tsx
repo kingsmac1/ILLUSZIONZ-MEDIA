@@ -1,7 +1,9 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { flows } from '../booking/catalog'
 import { BookingPanel } from '../booking/BookingPanel'
+import { useLivePrices } from '../booking/livePrices'
+import { withAddedPackages } from '../booking/addedCards'
 import { smoothScrollTo } from '../motion/scroll'
 import './service-cards.css'
 
@@ -34,7 +36,10 @@ type Open = { flowId: string; optionId?: string; key: number } | null
  * A grid of price cards. Choosing a card (or one of its price rows) slides a multi-step booking
  * form open directly underneath and scrolls to it.
  */
-export function BookableGrid({ cards, columns = 3, id, children }: { cards: CardDef[]; columns?: 2 | 3 | 4; id?: string; children?: ReactNode }) {
+export function BookableGrid({ cards: pageCards, columns = 3, id, children }: { cards: CardDef[]; columns?: 2 | 3 | 4; id?: string; children?: ReactNode }) {
+  // packages added in Dashboard → Prices join the page's own cards
+  const { packages } = useLivePrices()
+  const cards = useMemo(() => withAddedPackages(pageCards, packages), [pageCards, packages])
   const [open, setOpen] = useState<Open>(null)
   const slotRef = useRef<HTMLDivElement>(null)
 
@@ -78,7 +83,7 @@ export function BookableGrid({ cards, columns = 3, id, children }: { cards: Card
         {cards.map((c) => {
           const active = open?.flowId === c.flowId
           return (
-            <article key={c.title} className={'sc-card' + (active ? ' is-active' : '')}>
+            <article key={`${c.title}-${c.optionId ?? ''}`} className={'sc-card' + (active ? ' is-active' : '')}>
               {c.image && (
                 c.href ? (
                   <a className="sc-img" href={c.href} target="_blank" rel="noreferrer" aria-label={`${c.cta}: ${c.title}`} tabIndex={-1}>

@@ -3,11 +3,15 @@ import { flows } from '../../booking/catalog'
 import { useData, useDb } from '../data'
 import { BulkBar, BulkBtn, BulkSelect, RowBox, SelectAllBox, confirmN, useSelection } from '../bulk'
 import { Badge, PageHead, gbp } from '../ui'
+import { PackageForm, useAddedPackages } from './AddedPackages'
+import type { BookingPackage } from '../../booking/overrides'
 
 export function Prices() {
   const { d } = useData()
   const db = useDb()
   const [drafts, setDrafts] = useState<Record<string, string>>({})
+  const added = useAddedPackages()
+  const [form, setForm] = useState<null | { flowId?: string; row?: BookingPackage }>(null)
   const ov = (flow: string, kind: string, id: string) => d.price_overrides.find((o) => o.flow_id === flow && o.kind === kind && o.item_id === id)
   const k = (a: string, b: string, c: string) => `${a}|${b}|${c}`
 
@@ -53,8 +57,9 @@ export function Prices() {
 
   return (
     <>
-      <PageHead title="Prices" sub="Change a package or add-on price once and it updates on every booking form, email and total" />
-      <div className="ad-note" style={{ marginBottom: 18 }}>Prices set here apply to the <b>booking forms</b> and are re-checked on the server, so totals always match. Headline “from £…” text printed on the pages themselves is page content and is edited in the code.</div>
+      <PageHead title="Prices" sub="Change a package or add-on price once and it updates on every booking form, email and total" actions={<button className="ad-btn primary" onClick={() => setForm({})}>+ Add package</button>} />
+      {added.error && <div className="ad-note" style={{ marginBottom: 14 }} role="alert">{added.error}</div>}
+      <div className="ad-note" style={{ marginBottom: 18 }}>Prices set here apply to the <b>booking forms</b> and are re-checked on the server, so totals always match. Headline “from £…” text printed on the pages themselves is page content and is edited in the code. Packages you add with <b>+ Add package</b> appear on the page’s price cards and its booking form.</div>
       <BulkBar s={sel} noun="item">
         <BulkBtn onClick={() => bulkActive(false)}>Hide</BulkBtn>
         <BulkBtn onClick={() => bulkActive(true)}>Show</BulkBtn>
@@ -63,7 +68,7 @@ export function Prices() {
       </BulkBar>
       {Object.values(flows).map((flow) => (
         <div className="ad-card" key={flow.id} style={{ marginBottom: 16 }}>
-          <h3>{flow.title}<small>{flow.kind}</small></h3>
+          <h3>{flow.title}<span style={{ display: 'flex', alignItems: 'center', gap: 10 }}><small>{flow.kind}</small>{flow.id !== 'store' && <button className="ad-btn sm" onClick={() => setForm({ flowId: flow.id })} aria-label={`Add a package to ${flow.title}`}>+ Add here</button>}</span></h3>
           <div className="ad-tablewrap" style={{ border: 0 }}>
             <table><thead><tr><th className="sel"><SelectAllBox s={sel} view={items.filter((x) => x.flow === flow.id).map((x) => x.key)} /></th><th>Item</th><th>Type</th><th className="num">Standard</th><th style={{ width: 150 }}>Current price (£)</th><th /></tr></thead><tbody>
               {[...flow.options.map((o) => ({ kind: 'option' as const, id: o.id, label: o.label, note: o.note, price: o.price })), ...flow.extras.map((e) => ({ kind: 'extra' as const, id: e.id, label: e.label, note: e.note, price: e.price }))].map((it) => {
@@ -86,10 +91,35 @@ export function Prices() {
                   </tr>
                 )
               })}
+              {added.rows.filter((r) => r.flow_id === flow.id).sort((x, y) => (x.kind === y.kind ? (Number(x.sort_order) || 0) - (Number(y.sort_order) || 0) : x.kind === 'option' ? -1 : 1)).map((r) => {
+                const key = `added|${r.id}`
+                const shown = drafts[key] ?? String(Number(r.price) || 0)
+                const dirty = drafts[key] !== undefined
+                return (
+                  <tr key={key} data-added-package style={!r.active ? { opacity: .5 } : undefined}>
+                    <td className="sel" />
+                    <td><b>{r.label}</b><span className="sub">{[r.note, r.unit?.label ? `per ${r.unit.label}` : '', r.max_qty ? `up to ${r.max_qty}` : ''].filter(Boolean).join(' · ')}</span></td>
+                    <td><Badge tone="grey">{r.kind === 'option' ? 'package' : 'add-on'}</Badge> <Badge tone="blue">added</Badge></td>
+                    <td className="num"><span className="ad-muted">—</span></td>
+                    <td><input type="number" min="0" step="0.01" aria-label={`Price of ${r.label}`} value={shown} onChange={(e) => setDrafts({ ...drafts, [key]: e.target.value })} /></td>
+                    <td className="num" style={{ whiteSpace: 'nowrap' }}>
+                      {dirty && <button className="ad-btn primary sm" onClick={async () => {
+                        const v = Number(drafts[key])
+                        if (!Number.isFinite(v) || v < 0) return
+                        if (await added.setPrice(r.id, Math.round(v * 100) / 100)) setDrafts((x) => { const n = { ...x }; delete n[key]; return n })
+                      }}>Save</button>}{' '}
+                      <button className="ad-btn sm" onClick={() => setForm({ row: r })}>Edit</button>{' '}
+                      <button className="ad-btn sm" onClick={() => added.setActive(r.id, !r.active)}>{r.active ? 'Hide' : 'Show'}</button>{' '}
+                      <button className="ad-btn sm danger" onClick={() => { if (window.confirm(`Delete ${r.label} from ${flow.title}? Bookings already made keep it.`)) added.remove(r.id) }}>Delete</button>
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody></table>
           </div>
         </div>
       ))}
+      {form && <PackageForm initial={form.row} flowId={form.flowId} rows={added.rows} onSave={added.save} onClose={() => setForm(null)} />}
     </>
   )
 }
