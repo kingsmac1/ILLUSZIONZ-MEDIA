@@ -168,7 +168,7 @@ export function PackageForm({ initial, flowId, rows, onSave, onClose }: {
           </Field>
         )}
         {isPackage && f.looks && (
-          <Field label="Most looks a client can choose" hint="The price is for one look. Clients say how many looks they want; you agree the price for the extra looks on WhatsApp.">
+          <Field label="Most looks a client can choose" hint="The price is for one look. Clients choose how many looks; the form multiplies the price and says a discount on multiple looks is taken off on the invoice.">
             <input type="number" min="2" max="20" value={f.maxLooks} onChange={(e) => set('maxLooks', e.target.value)} />
           </Field>
         )}

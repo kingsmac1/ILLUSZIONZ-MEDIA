@@ -30,8 +30,9 @@ export type Option = {
   /** bullet points shown with the option */
   includes?: string[]
   /**
-   * a quantity the client chooses (looks, hours …). The price is multiplied by it, unless `quoteExtra` is set: then the
-   * price covers one and the rest (more looks) are priced with the client on WhatsApp after the booking is sent.
+   * a quantity the client chooses (looks, hours …). The price is multiplied by it. `quoteExtra` marks a looks counter:
+   * the form and the summary also say a discount on multiple looks is taken off on the invoice.
+   * (The name is kept because packages already saved in the database carry it.)
    */
   unit?: { label: string; plural: string; min: number; max: number; def: number; quoteExtra?: boolean }
 }
@@ -108,9 +109,12 @@ export const formatGBP = (n: number) => `£${n.toLocaleString('en-GB', { maximum
 
 /* --------------------------------- common --------------------------------- */
 
-/** One look with a counter: the client says how many looks, the price is for one, the rest are agreed on WhatsApp. */
+/** One look with a counter: the price is per look, and a discount on multiple looks is taken off on the invoice. */
 export const LOOKS = (max = 5) => ({ label: 'look', plural: 'looks', min: 1, max, def: 1, quoteExtra: true })
-export const MORE_LOOKS_NOTE = 'Agreed on WhatsApp'
+export const MORE_LOOKS_NOTE = 'On your invoice'
+export const MORE_LOOKS_LINE = 'Multi-look discount'
+/** under the counter, the cards and the dashboard */
+export const LOOKS_DISCOUNT_TEXT = 'Discount applies to multiple looks, taken off on your invoice.'
 
 const who = (blurb = 'So we know who to confirm with.'): Step => ({
   id: 'you',
@@ -602,15 +606,12 @@ export function computeQuote(flow: Flow, sel: Pick<Selection, 'optionIds' | 'uni
     if (!o) continue
     const qty = o.unit ? clamp(sel.units[id] ?? o.unit.def, o.unit.min, o.unit.max) : 1
     if (o.unit?.quoteExtra) {
-      // the price is for one look; any more looks are priced with the client on WhatsApp
+      // looks: the price per look × the number of looks; the multi-look discount is taken off on the invoice
+      const value = o.price * qty
       if (o.price === 0) quoted = true
-      total += o.price
-      lines.push({ label: o.label, amount: o.price === 0 ? 'Quoted' : formatGBP(o.price), value: o.price })
-      if (qty > 1) {
-        quoted = true
-        const more = qty - 1
-        lines.push({ label: `${more} more ${more === 1 ? o.unit.label : o.unit.plural} (${qty} ${o.unit.plural} in total)`, amount: MORE_LOOKS_NOTE, value: 0 })
-      }
+      total += value
+      lines.push({ label: qty > 1 ? `${o.label} × ${qty} ${o.unit.plural}` : o.label, amount: o.price === 0 ? 'Quoted' : formatGBP(value), value })
+      if (qty > 1 && o.price > 0) lines.push({ label: MORE_LOOKS_LINE, amount: MORE_LOOKS_NOTE, value: 0 })
       continue
     }
     const value = o.price * qty

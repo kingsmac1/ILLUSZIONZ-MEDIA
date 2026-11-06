@@ -1,4 +1,4 @@
-// One look with a looks counter (extra looks priced on WhatsApp), several shoots in one booking, add-ons when adding a
+// One look with a looks counter (price × looks, multi-look discount taken off on the invoice), several shoots in one booking, add-ons when adding a
 // package, and the dashboard's forms on a phone. Against the fake Supabase + Cloudflare runtime, in a fresh browser.
 // Run: same servers as tests/packages-e2e.mjs, then  node tests/looks-multi-e2e.mjs
 import { chromium } from 'playwright'
@@ -35,18 +35,18 @@ const fresh = async (viewport = { width: 1440, height: 900 }) => {
   await portrait.waitFor({ timeout: 20000 })
   const pt = await portrait.innerText()
   ok('the Portrait card offers 1 Look and no longer 2 Looks', /1 Look[\s\S]*£170/.test(pt) && !/2 Looks/.test(pt))
-  ok('…and says more looks are chosen when booking and priced on WhatsApp', /More looks\?/.test(pt) && /agree the price for extra looks with you on WhatsApp/.test(pt))
+  ok('…and says more looks are chosen when booking, with a discount on the invoice', /More looks\?/.test(pt) && /Discount applies to multiple looks, taken off on your invoice/.test(pt))
   ok('Prewedding no longer lists 2 and 3 Looks', !/[23] Looks/.test(await page.locator('.sc-card', { hasText: 'Prewedding' }).innerText()))
   await portrait.locator('button:has-text("1 Look")').click()
   const panel = page.locator('.bk-slot-inner')
   await panel.waitFor()
   const look = panel.locator('.bk-option.is-on').first()
-  ok('the form opens on 1 Look with a “How many looks?” counter', /How many looks\?/.test(await look.innerText()) && /Want more than one look\?/.test(await look.innerText()))
+  ok('the form opens on 1 Look with a “How many looks?” counter', /How many looks\?/.test(await look.innerText()) && /Discount applies to multiple looks, taken off on your invoice/.test(await look.innerText()))
   ok('the price shows as £170, not per look', /£170/.test(await look.locator('.bk-price').innerText()) && !/\/look/.test(await look.locator('.bk-price').innerText()))
   await look.getByRole('button', { name: 'Increase looks' }).click()
   await look.getByRole('button', { name: 'Increase looks' }).click()
-  ok('3 looks: it explains £170 covers the first and the other 2 are agreed on WhatsApp', /£170 covers the first look\. We agree the price for the other 2 with you on WhatsApp/.test(await look.innerText()))
-  ok('the total stays £170, marked + for the looks still to agree', (await panel.locator('.bk-foot-total').innerText()).trim() === '£170+')
+  ok('3 looks: the price becomes 3 × £170 = £510, with the discount note', /3 looks × £170 = £510/.test(await look.innerText()) && /£510/.test(await look.locator('.bk-price').innerText()) && /Discount applies to multiple looks/.test(await look.innerText()))
+  ok('the total is £510', (await panel.locator('.bk-foot-total').innerText()).trim() === '£510')
 
   /* ---- several shoots in one booking ---- */
   const also = panel.locator('[data-also]')
@@ -59,7 +59,7 @@ const fresh = async (viewport = { width: 1440, height: 900 }) => {
   await panel.getByRole('button', { name: 'Continue' }).click()
   ok('it asks for a Maternity package before going on', /Please choose a package for Maternity Photography/.test(await panel.innerText()))
   await mat.locator('button.bk-option-main:has-text("Couple · 1 Look")').click()
-  ok('the total adds the two shoots: £170 + £200', (await panel.locator('.bk-foot-total').innerText()).trim() === '£370+')
+  ok('the total adds the two shoots: 3 × £170 + £200', (await panel.locator('.bk-foot-total').innerText()).trim() === '£710')
   await panel.screenshot({ path: path.join(SHOTS, 'two-shoots.png') })
   await panel.getByRole('button', { name: 'Continue' }).click()
 
@@ -80,7 +80,7 @@ const fresh = async (viewport = { width: 1440, height: 900 }) => {
     await page.waitForTimeout(400)
   }
   const review = await panel.innerText() // the review step and the price summary beside it
-  ok('the review lists both shoots and the extra looks', /Portrait Photography: 1 Look/.test(review) && /Maternity Photography: Couple · 1 Look/.test(review) && /2 more looks \(3 looks in total\)/.test(review) && /Agreed on WhatsApp/.test(review), review.replace(/\s+/g, ' ').slice(0, 300))
+  ok('the review lists both shoots and the extra looks', /Portrait Photography: 1 Look/.test(review) && /Maternity Photography: Couple · 1 Look/.test(review) && /1 Look × 3 looks/.test(review) && /Multi-look discount/.test(review) && /On your invoice/.test(review), review.replace(/\s+/g, ' ').slice(0, 300))
   await panel.locator('input[type=checkbox]').last().check()
   const [req] = await Promise.all([
     page.waitForRequest((r) => r.url().endsWith('/api/booking') && r.method() === 'POST'),
@@ -89,18 +89,18 @@ const fresh = async (viewport = { width: 1440, height: 900 }) => {
   const body = req.postDataJSON()
   ok('the booking sends both shoots', JSON.stringify(body.also) === '["maternity"]' && body.optionIds.join() === 'portrait-1,maternity-couple' && body.units['portrait-1'] === 3)
   await panel.locator('.bk-done').waitFor({ timeout: 15000 })
-  ok('it is accepted, with the total for both shoots', /£370\+/.test(await panel.locator('.bk-done').innerText()))
+  ok('it is accepted, with the total for both shoots', /£710/.test(await panel.locator('.bk-done').innerText()))
   const wa = decodeURIComponent((await panel.getByRole('link', { name: /Continue on WhatsApp/ }).getAttribute('href')) ?? '')
-  ok('the WhatsApp message lists both shoots and the looks to agree', /Packages: Portrait Photography: 1 Look, Maternity Photography: Couple · 1 Look/.test(wa) && /2 more looks \(3 looks in total\) — Agreed on WhatsApp/.test(wa) && /Weeks pregnant: 30/.test(wa), wa.slice(0, 400))
+  ok('the WhatsApp message lists both shoots, the looks and the discount note', /Packages: Portrait Photography: 1 Look, Maternity Photography: Couple · 1 Look/.test(wa) && /1 Look × 3 looks — £510/.test(wa) && /Multi-look discount — On your invoice/.test(wa) && /Weeks pregnant: 30/.test(wa), wa.slice(0, 400))
   const saved = (await dump()).bookings.find((b) => b.email === fields.email)
-  ok('saved as one booking of both shoots, priced £370', !!saved && Number(saved.total) === 370 && /Portrait.*Maternity/i.test(saved.kind) && /Couple · 1 Look/.test(saved.packages), `${saved?.kind} · ${saved?.packages} · ${saved?.total}`)
+  ok('saved as one booking of both shoots, priced £710', !!saved && Number(saved.total) === 710 && /Portrait.*Maternity/i.test(saved.kind) && /Couple · 1 Look/.test(saved.packages), `${saved?.kind} · ${saved?.packages} · ${saved?.total}`)
   await ctx.close()
 }
 
 /* ============================== the server checks combined bookings ============================== */
 {
   const one = await post({ flowId: 'baby', optionIds: ['baby-1'], units: { 'baby-1': 4 }, extras: {}, fields: { ...fields, email: 'baby@example.com' } })
-  ok('a single shoot with 4 looks is priced for one look (£150+)', one.ok && one.total === '£150+', one.total)
+  ok('a single shoot with 4 looks is priced 4 × £150 (£600)', one.ok && one.total === '£600', one.total)
   const r1 = await post({ flowId: 'portrait', also: ['events'], optionIds: ['portrait-1', 'events-hourly'], units: {}, extras: {}, fields })
   ok('Events cannot be added to a portrait booking', !r1.ok && /cannot be booked together/.test(r1.error ?? ''))
   const r2 = await post({ flowId: 'portrait', also: ['maternity'], optionIds: ['portrait-1'], units: {}, extras: {}, fields })
@@ -129,7 +129,7 @@ const fresh = async (viewport = { width: 1440, height: 900 }) => {
   await mfield('Page').selectOption('photography')
   const addons = modal.locator('[data-package-addons]')
   ok('a new Photography services package has an Add-ons section', await addons.isVisible() && /Offer the usual photo add-ons too/.test(await addons.innerText()) && /Extra edited pictures/.test(await addons.innerText()))
-  ok('…and a most-looks setting, explaining extra looks are agreed on WhatsApp', /agree the price for the extra looks on WhatsApp/.test(await modal.innerText()) && (await mfield('Most looks a client can choose').inputValue()) === '5')
+  ok('…and a most-looks setting, explaining the multi-look discount', /discount on multiple looks is taken off on the invoice/.test(await modal.innerText()) && (await mfield('Most looks a client can choose').inputValue()) === '5')
   await mfield('Package name').fill('Graduate Photography')
   await modal.locator('[data-price-line] input').nth(0).fill('1 Look')
   await modal.locator('[data-price-line] input').nth(1).fill('4 edited pictures')
@@ -157,13 +157,13 @@ const fresh = async (viewport = { width: 1440, height: 900 }) => {
   const grad = (await dump()).booking_services.find((s) => s.title === 'Graduate Photography')
   ok('the package is saved with its add-on and looks setting', grad?.max_looks === 4 && grad.standard_extras === true && grad.extras?.[0]?.label === 'Gown hire' && grad.extras[0].max === 3 && grad.extras[0].price === 30)
   const g = await post({ flowId: `svc-${grad.id}`, optionIds: [`svc-${grad.id}-1`], units: { [`svc-${grad.id}-1`]: 2 }, extras: { [`svc-${grad.id}-x1`]: 2, 'express-24': 1 }, fields: { ...fields, email: 'grad@example.com' } })
-  ok('its booking: 1 look £150 + 2 gowns £60 + express £50, the extra look agreed on WhatsApp', g.ok && g.total === '£260+', g.total)
+  ok('its booking: 2 looks × £150 + 2 gowns £60 + express £50', g.ok && g.total === '£410', g.total)
   {
     const { ctx: c2, page: gp } = await fresh()
     await gp.goto(`${BASE}/photography-services`, { waitUntil: 'load' })
     const gcard = gp.locator('.sc-card', { has: gp.locator('h3:text-is("Graduate Photography")') })
     await gcard.waitFor({ timeout: 15000 })
-    ok('its card says more looks are agreed on WhatsApp', /More looks\?/.test(await gcard.innerText()))
+    ok('its card says more looks can be chosen', /More looks\?/.test(await gcard.innerText()))
     await gcard.locator('button:has-text("1 Look")').click()
     const gpanel = gp.locator('.bk-slot-inner')
     await gpanel.waitFor()

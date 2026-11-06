@@ -14,7 +14,7 @@ export type BookingPackage = {
   description?: string | null
   includes?: string[] | null
   price: number | string
-  /** quoteExtra: the price covers one look and more looks are agreed on WhatsApp */
+  /** quoteExtra: a looks counter (price per look, multi-look discount taken off on the invoice) */
   unit?: { label?: string; plural?: string; min?: number; max?: number; def?: number; quoteExtra?: boolean } | null
   max_qty?: number | null
   sort_order?: number | null

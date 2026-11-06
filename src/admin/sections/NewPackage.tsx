@@ -242,7 +242,7 @@ export function NewPackageForm({ service, pkg, presetPage, services, packages, o
               </>
             )}
             {isService && (
-              <Field label="Most looks a client can choose" hint="Each price is for one look. Clients choose how many looks when booking and you agree the price for the extra looks on WhatsApp. 1 = no looks counter.">
+              <Field label="Most looks a client can choose" hint="Each price is for one look. Clients choose how many looks; the form multiplies the price and says a discount on multiple looks is taken off on the invoice. 1 = no looks counter.">
                 <input type="number" min="1" max="20" value={f.maxLooks} onChange={(e) => set('maxLooks', e.target.value)} />
               </Field>
             )}

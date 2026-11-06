@@ -3,7 +3,7 @@
  * Each becomes a card like Portrait or Maternity and a booking form with the same questions, add-ons and terms as the
  * other photo shoots. Used by the website (cards + form) and by the server (to re-price the booking), so they agree.
  */
-import { LOOKS, flows, formatGBP, type Extra, type Flow } from './catalog'
+import { LOOKS, LOOKS_DISCOUNT_TEXT, flows, formatGBP, type Extra, type Flow } from './catalog'
 import type { CardDef } from '../components/BookableGrid'
 import { safePhoto } from './cardPhotos'
 
@@ -90,7 +90,7 @@ export function serviceCard(s: BookingService, photo: string | undefined): CardD
     description: s.description?.trim() || undefined,
     rows: [
       ...flow.options.map((o) => ({ label: o.label, note: o.note, price: o.price > 0 ? formatGBP(o.price) : 'Quoted', optionId: o.id })),
-      ...(maxLooks(s) > 1 ? [{ label: 'More looks?', note: 'Choose how many when you book. We agree the price for extra looks with you on WhatsApp.' }] : []),
+      ...(maxLooks(s) > 1 ? [{ label: 'More looks?', note: `Choose how many when you book. ${LOOKS_DISCOUNT_TEXT}` }] : []),
     ],
     cta: s.cta?.trim() || 'Book this shoot',
   }

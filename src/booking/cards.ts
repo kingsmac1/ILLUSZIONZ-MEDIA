@@ -21,7 +21,7 @@ export const PHOTOGRAPHY_CARDS: CardDef[] = [
       },
       {
         label: "More looks?",
-        note: "Choose how many when you book. We agree the price for extra looks with you on WhatsApp."
+        note: "Choose how many when you book. Discount applies to multiple looks, taken off on your invoice."
       }
     ],
     cta: "Book this shoot"
@@ -48,7 +48,7 @@ export const PHOTOGRAPHY_CARDS: CardDef[] = [
       },
       {
         label: "More looks?",
-        note: "Choose how many when you book. We agree the price for extra looks with you on WhatsApp."
+        note: "Choose how many when you book. Discount applies to multiple looks, taken off on your invoice."
       }
     ],
     cta: "Book this shoot"
@@ -69,7 +69,7 @@ export const PHOTOGRAPHY_CARDS: CardDef[] = [
       },
       {
         label: "More looks?",
-        note: "Choose how many when you book. We agree the price for extra looks with you on WhatsApp."
+        note: "Choose how many when you book. Discount applies to multiple looks, taken off on your invoice."
       }
     ],
     cta: "Book this shoot"
@@ -90,7 +90,7 @@ export const PHOTOGRAPHY_CARDS: CardDef[] = [
       },
       {
         label: "More looks?",
-        note: "Choose how many when you book. We agree the price for extra looks with you on WhatsApp."
+        note: "Choose how many when you book. Discount applies to multiple looks, taken off on your invoice."
       }
     ],
     cta: "Book this shoot"
@@ -134,7 +134,7 @@ export const PHOTOGRAPHY_CARDS: CardDef[] = [
       },
       {
         label: "More looks?",
-        note: "Choose how many when you book. We agree the price for extra looks with you on WhatsApp."
+        note: "Choose how many when you book. Discount applies to multiple looks, taken off on your invoice."
       }
     ],
     cta: "Book this shoot"

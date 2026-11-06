@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { MAX_EXTRA_SHOOTS, canCombine, combineFlows, computeQuote, formatGBP, validateField, type Field, type Flow, type Selection } from './catalog'
+import { MAX_EXTRA_SHOOTS, canCombine, combineFlows, computeQuote, formatGBP, validateField, type Field, type Flow, type Selection, LOOKS_DISCOUNT_TEXT } from './catalog'
 import { applyOverrides } from './overrides'
 import { useLivePrices } from './livePrices'
 import { applyEdits } from './cardEdits'
@@ -213,7 +213,7 @@ export function BookingPanel({ flow: baseFlow, initialOptionId, onClose, compani
             </ul>
           )}
         </span>
-        {o.price > 0 && <span className="bk-price">{formatGBP(o.price)}{o.unit && !o.unit.quoteExtra ? <em>/{o.unit.label}</em> : null}</span>}
+        {o.price > 0 && <span className="bk-price">{formatGBP(o.price * (on && o.unit?.quoteExtra ? unitFor(o.id) : 1))}{o.unit && !o.unit.quoteExtra ? <em>/{o.unit.label}</em> : null}</span>}
       </button>
       {on && o.unit && (
         <div className="bk-unit">
@@ -221,9 +221,8 @@ export function BookingPanel({ flow: baseFlow, initialOptionId, onClose, compani
             How many {o.unit.plural}?
             {o.unit.quoteExtra && (
               <small className="bk-unit-note">
-                {unitFor(o.id) > 1
-                  ? `${formatGBP(o.price)} covers the first ${o.unit.label}. We agree the price for the other ${unitFor(o.id) - 1} with you on WhatsApp after you book.`
-                  : `Want more than one ${o.unit.label}? Add them here — we agree the price with you on WhatsApp after you book.`}
+                {o.price > 0 && unitFor(o.id) > 1 && <b>{unitFor(o.id)} {o.unit.plural} × {formatGBP(o.price)} = {formatGBP(o.price * unitFor(o.id))}</b>}
+                {LOOKS_DISCOUNT_TEXT}
               </small>
             )}
           </span>
