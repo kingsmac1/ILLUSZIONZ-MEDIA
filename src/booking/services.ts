@@ -7,8 +7,9 @@ import { LOOKS, flows, formatGBP, type Extra, type Flow } from './catalog'
 import type { CardDef } from '../components/BookableGrid'
 import { safePhoto } from './cardPhotos'
 
-export type ServiceOption = { label: string; note?: string; price: number | string }
-export type ServiceExtra = { label: string; note?: string; price: number | string; max?: number | string | null }
+/** hidden: kept in the dashboard but not offered on the page or the booking form */
+export type ServiceOption = { label: string; note?: string; price: number | string; hidden?: boolean }
+export type ServiceExtra = { label: string; note?: string; price: number | string; max?: number | string | null; hidden?: boolean }
 export type BookingService = {
   id: string
   page: 'photography'
@@ -32,10 +33,15 @@ export const isServiceFlowId = (v: unknown): v is string => typeof v === 'string
 /** the photo key of a service's card (settings.card_photos) */
 export const servicePhotoKey = (s: Pick<BookingService, 'id'>) => `service:${s.id}`
 
-const cleanOptions = (s: BookingService) =>
-  (Array.isArray(s.options) ? s.options : [])
-    .map((o) => ({ label: String(o?.label ?? '').trim().slice(0, 120), note: String(o?.note ?? '').trim().slice(0, 200), price: Math.max(0, Math.round((Number(o?.price) || 0) * 100) / 100) }))
+// a line's number counts the lines before it with a name (hidden ones too), so hiding a line never renumbers the others
+const cleanOptions = (s: BookingService) => {
+  let n = 0
+  return (Array.isArray(s.options) ? s.options : [])
+    .map((o) => ({ label: String(o?.label ?? '').trim().slice(0, 120), note: String(o?.note ?? '').trim().slice(0, 200), price: Math.max(0, Math.round((Number(o?.price) || 0) * 100) / 100), hidden: o?.hidden === true }))
     .filter((o) => o.label)
+    .map((o) => ({ ...o, n: ++n }))
+    .filter((o) => !o.hidden)
+}
 
 const maxLooks = (s: BookingService) => Math.min(20, Math.max(1, Math.round(Number(s.max_looks ?? 5)) || 5))
 
@@ -43,6 +49,7 @@ const maxLooks = (s: BookingService) => Math.min(20, Math.max(1, Math.round(Numb
 export const serviceExtras = (s: BookingService): Extra[] =>
   (Array.isArray(s.extras) ? s.extras : [])
     .map((e, n) => {
+      if (e?.hidden === true) return { id: '', label: '', price: 0 }
       const price = Math.max(0, Math.round((Number(e?.price) || 0) * 100) / 100)
       const max = Math.round(Number(e?.max) || 0)
       return { id: `${serviceFlowId(s)}-x${n + 1}`, label: String(e?.label ?? '').trim().slice(0, 120), note: String(e?.note ?? '').trim().slice(0, 200) || undefined, price, max: max > 1 ? Math.min(max, 100) : undefined, priceNote: price > 0 ? undefined : 'Quoted' }
@@ -61,7 +68,7 @@ export function serviceFlow(s: BookingService): Flow {
     kind: `${title} booking`,
     title,
     intro: s.description?.trim() || base.intro,
-    options: cleanOptions(s).map((o, n) => ({ id: `${id}-${n + 1}`, label: o.label, price: o.price, note: o.note || undefined, unit: looks > 1 ? LOOKS(looks) : undefined })),
+    options: cleanOptions(s).map((o) => ({ id: `${id}-${o.n}`, label: o.label, price: o.price, note: o.note || undefined, unit: looks > 1 ? LOOKS(looks) : undefined })),
     extras: [...serviceExtras(s), ...(s.standard_extras === false ? [] : base.extras)],
   }
 }

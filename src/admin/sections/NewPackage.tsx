@@ -65,8 +65,8 @@ export function useAddedServices() {
   }
 }
 
-type Line = { label: string; note: string; price: string }
-type AddOn = { label: string; note: string; price: string; max: string }
+type Line = { label: string; note: string; price: string; hidden?: boolean }
+type AddOn = { label: string; note: string; price: string; max: string; hidden?: boolean }
 type Form = {
   page: PageId | ''; title: string; description: string; lines: Line[]; price: string; priceNote: string; includes: string; cta: string; active: boolean
   maxLooks: string; addOns: AddOn[]; standardExtras: boolean
@@ -88,9 +88,9 @@ export function NewPackageForm({ service, pkg, presetPage, services, packages, o
   const [f, setF] = useState<Form>(() => {
     if (service) return {
       page: 'photography', title: service.title, description: service.description ?? '', price: '', priceNote: '', includes: '', cta: service.cta ?? 'Book this shoot', active: service.active,
-      lines: (service.options ?? []).map((o) => ({ label: o.label, note: o.note ?? '', price: String(Number(o.price) || 0) })),
+      lines: (service.options ?? []).map((o) => ({ label: o.label, note: o.note ?? '', price: String(Number(o.price) || 0), hidden: o.hidden === true })),
       maxLooks: String(service.max_looks ?? 5), standardExtras: service.standard_extras !== false,
-      addOns: (service.extras ?? []).map((e) => ({ label: e.label, note: e.note ?? '', price: String(Number(e.price) || 0), max: e.max ? String(e.max) : '' })),
+      addOns: (service.extras ?? []).map((e) => ({ label: e.label, note: e.note ?? '', price: String(Number(e.price) || 0), max: e.max ? String(e.max) : '', hidden: e.hidden === true })),
     }
     if (pkg) return {
       page: pageOfFlow(pkg.flow_id)?.id ?? '', title: pkg.label, description: pkg.description ?? '', price: String(Number(pkg.price) || 0), priceNote: pkg.note ?? '',
@@ -147,9 +147,9 @@ export function NewPackageForm({ service, pkg, presetPage, services, packages, o
       if (bad) return setErr(bad)
       const row: Partial<BookingService> = {
         page: 'photography', title: f.title.trim(), description: f.description.trim(), cta: f.cta.trim() || 'Book this shoot', active: f.active,
-        options: lines.map((l) => ({ label: l.label.trim(), note: l.note.trim(), price: Math.round((Number(l.price) || 0) * 100) / 100 })),
+        options: lines.map((l) => ({ label: l.label.trim(), note: l.note.trim(), price: Math.round((Number(l.price) || 0) * 100) / 100, ...(l.hidden ? { hidden: true } : {}) })),
         max_looks: looks, standard_extras: f.standardExtras,
-        extras: filledAddOns().map((a) => ({ label: a.label.trim(), note: a.note.trim(), price: Math.round((Number(a.price) || 0) * 100) / 100, max: a.max.trim() ? Number(a.max) : null })),
+        extras: filledAddOns().map((a) => ({ label: a.label.trim(), note: a.note.trim(), price: Math.round((Number(a.price) || 0) * 100) / 100, max: a.max.trim() ? Number(a.max) : null, ...(a.hidden ? { hidden: true } : {}) })),
       }
       if (!service) row.sort_order = Math.max(0, ...services.map((s) => Number(s.sort_order) || 0)) + 1
       setBusy(true)

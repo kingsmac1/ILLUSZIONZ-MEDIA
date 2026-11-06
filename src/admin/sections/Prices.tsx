@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import { flows } from '../../booking/catalog'
 import { useData, useDb } from '../data'
 import { BulkBar, BulkBtn, BulkSelect, RowBox, SelectAllBox, confirmN, useSelection } from '../bulk'
@@ -7,7 +7,7 @@ import { PackageForm, useAddedPackages } from './AddedPackages'
 import { CardPhotoStrip, cardPerPackage } from './CardPhotos'
 import { NewPackageForm, useAddedServices } from './NewPackage'
 import { WebsitePackages } from './WebsitePackages'
-import type { BookingService } from '../../booking/services'
+import { serviceFlowId, servicePhotoKey, type BookingService } from '../../booking/services'
 import type { BookingPackage } from '../../booking/overrides'
 
 export function Prices() {
@@ -62,6 +62,81 @@ export function Prices() {
     sel.clear()
   }
 
+  // packages added to Photography services (e.g. Graduate Photography): their own price section, after Family
+  const serviceSections = services.rows.filter((s) => s.page === 'photography').map((s) => {
+        const fid = serviceFlowId(s)
+        const opts = (s.options ?? []).map((o, n) => ({ o, n })).filter(({ o }) => o?.label?.trim())
+        const own = (s.extras ?? []).map((e, n) => ({ e, n })).filter(({ e }) => e?.label?.trim())
+        const std = s.standard_extras === false ? [] : flows.portrait.extras
+        // a price line or add-on of the package itself: its price and "hidden" live on the package row
+        const patch = (field: 'options' | 'extras', n: number, p: { price?: number; hidden?: boolean }) => {
+          const list = ((s[field] ?? []) as Array<Record<string, unknown>>).map((x, i) => {
+            if (i !== n) return x
+            const next: Record<string, unknown> = { ...x, ...p }
+            if (!next.hidden) delete next.hidden
+            return next
+          })
+          return services.save({ [field]: list } as Partial<BookingService>, s.id)
+        }
+        const ownRow = (field: 'options' | 'extras', n: number, label: string, note: string | undefined, price: number, hidden: boolean) => {
+          const key = `svc|${s.id}|${field}|${n}`
+          const shown = drafts[key] ?? String(Number(price) || 0)
+          const dirty = drafts[key] !== undefined
+          return (
+            <tr key={key} data-service-line style={hidden ? { opacity: .5 } : undefined}>
+              <td className="sel" />
+              <td><b>{label}</b><span className="sub">{note}</span></td>
+              <td><Badge tone="grey">{field === 'options' ? 'package' : 'add-on'}</Badge></td>
+              <td className="num"><span className="ad-muted">—</span></td>
+              <td><input type="number" min="0" step="0.01" aria-label={`Price of ${label}`} value={shown} onChange={(e) => setDrafts({ ...drafts, [key]: e.target.value })} /></td>
+              <td className="num" style={{ whiteSpace: 'nowrap' }}>
+                {dirty && <button className="ad-btn primary sm" onClick={async () => {
+                  const v = Number(drafts[key])
+                  if (!Number.isFinite(v) || v < 0) return
+                  if (await patch(field, n, { price: Math.round(v * 100) / 100 })) setDrafts((x) => { const c = { ...x }; delete c[key]; return c })
+                }}>Save</button>}{' '}
+                <button className="ad-btn sm" onClick={() => {
+                  if (!hidden && field === 'options' && opts.filter(({ o }) => !o.hidden).length <= 1) { window.alert(`${s.title} needs at least one price line on show. Hide the whole package from “Packages on the website” instead.`); return }
+                  patch(field, n, { hidden: !hidden })
+                }}>{hidden ? 'Show' : 'Hide'}</button>
+              </td>
+            </tr>
+          )
+        }
+        return (
+          <div className="ad-card" key={s.id} data-service-prices={s.id} style={{ marginBottom: 16, ...(s.active ? {} : { opacity: .7 }) }}>
+            <h3><span>{s.title} <Badge tone="blue">added</Badge>{!s.active && <> <Badge tone="grey">hidden</Badge></>}</span><span style={{ display: 'flex', alignItems: 'center', gap: 10 }}><small>{s.title} booking</small><button className="ad-btn sm" onClick={() => setNewPkg({ service: s })} aria-label={`Add a price option or add-on to ${s.title}`}>+ Add option</button></span></h3>
+            <div className="ad-tablewrap" style={{ border: 0 }}>
+              <table><thead><tr><th className="sel" /><th>Item</th><th>Type</th><th className="num">Standard</th><th style={{ width: 150 }}>Current price (£)</th><th /></tr></thead><tbody>
+                {opts.map(({ o, n }) => ownRow('options', n, o.label, o.note, Number(o.price), o.hidden === true))}
+                {own.map(({ e, n }) => ownRow('extras', n, e.label, [e.note, Number(e.max) > 1 ? `up to ${e.max}` : ''].filter(Boolean).join(' · '), Number(e.price), e.hidden === true))}
+                {std.map((e) => {
+                  const cur = ov(fid, 'extra', e.id)
+                  const key = k(fid, 'extra', e.id)
+                  const shown = drafts[key] ?? String(cur ? cur.price : e.price)
+                  const dirty = drafts[key] !== undefined
+                  return (
+                    <tr key={key} style={cur?.active === false ? { opacity: .5 } : undefined}>
+                      <td className="sel" />
+                      <td><b>{e.label}</b><span className="sub">{e.note}</span></td>
+                      <td><Badge tone="grey">add-on</Badge></td>
+                      <td className="num">{e.price ? gbp(e.price) : 'Quoted'}</td>
+                      <td><input type="number" value={shown} onChange={(ev) => setDrafts({ ...drafts, [key]: ev.target.value })} /></td>
+                      <td className="num" style={{ whiteSpace: 'nowrap' }}>
+                        {dirty && <button className="ad-btn primary sm" onClick={() => save(fid, 'extra', e.id, e.price)}>Save</button>}{' '}
+                        <button className="ad-btn sm" onClick={() => toggle(fid, 'extra', e.id, e.price)}>{cur?.active === false ? 'Show' : 'Hide'}</button>{' '}
+                        {cur && <button className="ad-btn sm" onClick={() => reset(fid, 'extra', e.id)}>Reset</button>}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody></table>
+            </div>
+            <CardPhotoStrip flowId={fid} added={[]} cards={[{ key: servicePhotoKey(s), title: s.title, original: '', added: true }]} />
+          </div>
+        )
+      })
+
   return (
     <>
       <PageHead title="Prices" sub="Change a package or add-on price once and it updates on every booking form, email and total" actions={<button className="ad-btn primary" onClick={() => setNewPkg({})}>+ Add package</button>} />
@@ -83,7 +158,8 @@ export function Prices() {
         <BulkBtn danger onClick={bulkReset}>Reset to standard</BulkBtn>
       </BulkBar>
       {Object.values(flows).map((flow) => (
-        <div className="ad-card" key={flow.id} style={{ marginBottom: 16 }}>
+        <Fragment key={flow.id}>
+        <div className="ad-card" style={{ marginBottom: 16 }}>
           <h3>{flow.title}<span style={{ display: 'flex', alignItems: 'center', gap: 10 }}><small>{flow.kind}</small>{flow.id !== 'store' && <button className="ad-btn sm" onClick={() => setForm({ flowId: flow.id })} aria-label={`Add a price option or add-on to ${flow.title}`}>+ Add option</button>}</span></h3>
           <div className="ad-tablewrap" style={{ border: 0 }}>
             <table><thead><tr><th className="sel"><SelectAllBox s={sel} view={items.filter((x) => x.flow === flow.id).map((x) => x.key)} /></th><th>Item</th><th>Type</th><th className="num">Standard</th><th style={{ width: 150 }}>Current price (£)</th><th /></tr></thead><tbody>
@@ -135,6 +211,8 @@ export function Prices() {
           </div>
           <CardPhotoStrip flowId={flow.id} added={added.rows} />
         </div>
+        {flow.id === 'family' && serviceSections}
+        </Fragment>
       ))}
       {form && <PackageForm initial={form.row} flowId={form.flowId} rows={added.rows} onSave={added.save} onClose={() => setForm(null)} />}
       {newPkg && <NewPackageForm service={newPkg.service} pkg={newPkg.pkg} services={services.rows} packages={added.rows} onSaveService={services.save} onSavePackage={added.save} onClose={() => setNewPkg(null)} />}

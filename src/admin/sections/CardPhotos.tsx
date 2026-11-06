@@ -121,9 +121,9 @@ export function PhotoPicker({ card, current, photos, onPick, onReset, onClose }:
 }
 
 /** One page's card photos, shown in its section of the Prices page. */
-export function CardPhotoStrip({ flowId, added }: { flowId: string; added: BookingPackage[] }) {
+export function CardPhotoStrip({ flowId, added, cards: given }: { flowId: string; added: BookingPackage[]; cards?: PhotoCard[] }) {
   const cp = useCardPhotos()
-  const cards = photoCardsFor(flowId, added, cp.photos)
+  const cards = given ?? photoCardsFor(flowId, added, cp.photos)
   const [open, setOpen] = useState<PhotoCard | null>(null)
   if (!cards.length) return null
   return (
