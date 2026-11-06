@@ -14,6 +14,7 @@
     "postbuild": "node scripts/postbuild.mjs",
     "test:motion": "node tests/motion-e2e.mjs",
     "test:gallery": "node tests/gallery-e2e.mjs",
+    "test:edit-packages": "node tests/edit-packages-e2e.mjs",
     "test:looks": "node tests/looks-multi-e2e.mjs",
     "test:photos": "node tests/card-photos-e2e.mjs",
     "test:packages": "node tests/packages-e2e.mjs",

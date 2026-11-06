@@ -5,6 +5,7 @@ import { BookingPanel } from '../booking/BookingPanel'
 import { useLivePrices } from '../booking/livePrices'
 import { withAddedPackages } from '../booking/addedCards'
 import { applyCardPhotos } from '../booking/cardPhotos'
+import { applyCardEdits } from '../booking/cardEdits'
 import { serviceFlow, servicesFor, withServices } from '../booking/services'
 import { smoothScrollTo } from '../motion/scroll'
 import './service-cards.css'
@@ -42,8 +43,12 @@ type Open = { flowId: string; optionId?: string; key: number } | null
  */
 export function BookableGrid({ cards: pageCards, columns = 3, id, page, children }: { cards: CardDef[]; columns?: 2 | 3 | 4; id?: string; /** which page, for packages added to it in the dashboard */ page?: string; children?: ReactNode }) {
   // packages added in Dashboard → Prices join the page's own cards
-  const { packages, cardPhotos, services } = useLivePrices()
-  const cards = useMemo(() => applyCardPhotos(withAddedPackages(withServices(pageCards, page, services, cardPhotos), packages), cardPhotos), [pageCards, page, packages, cardPhotos, services])
+  const { packages, cardPhotos, services, cardEdits, optionEdits, overrides } = useLivePrices()
+  // the page's cards with the studio's changes (wording, prices, removed cards), then its added packages and photos
+  const cards = useMemo(
+    () => applyCardPhotos(withAddedPackages(withServices(applyCardEdits(pageCards, { edits: cardEdits, optionEdits, overrides }), page, services, cardPhotos), packages), cardPhotos),
+    [pageCards, page, packages, cardPhotos, services, cardEdits, optionEdits, overrides],
+  )
   // booking forms of packages added to this page (their ids start with "svc-")
   const addedFlows = useMemo(() => Object.fromEntries(servicesFor(page, services).map((s) => { const f = serviceFlow(s); return [f.id, f] })), [page, services])
   const [open, setOpen] = useState<Open>(null)

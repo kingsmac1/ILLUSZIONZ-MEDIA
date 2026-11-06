@@ -7,13 +7,16 @@ import { buildSummary } from '../../src/server/summary'
 import { db, dbReady, q, type DbEnv } from '../../src/server/db'
 import { isServiceFlowId, serviceFlow, type BookingService } from '../../src/booking/services'
 import { recordBooking } from '../../src/server/crm'
+import { applyEdits, cleanCardEdits, cleanOptionEdits, isFlowRemoved, type CardEdits, type OptionEdits } from '../../src/booking/cardEdits'
 
 /**
  * A booking form with the dashboard's prices: a built-in service, or a package added to a page in the dashboard
  * (Graduate Photography …, read from the database), with its price overrides and added packages applied, so the
  * browser can never choose its own price. undefined = no such service.
  */
-async function loadFlow(env: DbEnv, id: string): Promise<Flow | undefined> {
+async function loadFlow(env: DbEnv, id: string, edits: { cardEdits: CardEdits; optionEdits: OptionEdits }): Promise<Flow | undefined> {
+  // a package the studio removed from the website cannot be booked
+  if (isFlowRemoved(id, edits.cardEdits)) return undefined
   let base: Flow | undefined = flows[id]
   if (!base && isServiceFlowId(id) && dbReady(env)) {
     try {
@@ -30,7 +33,21 @@ async function loadFlow(env: DbEnv, id: string): Promise<Flow | undefined> {
   ])
   if (o.status === 'rejected') console.error('overrides failed', o.reason)
   if (p.status === 'rejected') console.error('packages failed', p.reason)
-  return applyOverrides(base, o.status === 'fulfilled' ? (o.value as PriceOverride[]) : [], p.status === 'fulfilled' ? (p.value as BookingPackage[]) : [])
+  const priced = applyOverrides(base, o.status === 'fulfilled' ? (o.value as PriceOverride[]) : [], p.status === 'fulfilled' ? (p.value as BookingPackage[]) : [])
+  return applyEdits(priced, edits.optionEdits, edits.cardEdits)
+}
+
+/** the studio's changes to the built-in packages (wording, removed cards) */
+async function loadEdits(env: DbEnv): Promise<{ cardEdits: CardEdits; optionEdits: OptionEdits }> {
+  if (!dbReady(env)) return { cardEdits: {}, optionEdits: {} }
+  try {
+    const rows = (await db.select(env, 'settings', 'key=in.(card_edits,option_edits)&select=key,value')) as { key: string; value: unknown }[]
+    const byKey = Object.fromEntries(rows.map((r) => [r.key, r.value]))
+    return { cardEdits: cleanCardEdits(byKey.card_edits), optionEdits: cleanOptionEdits(byKey.option_edits) }
+  } catch (err) {
+    console.error('edits failed', err)
+    return { cardEdits: {}, optionEdits: {} }
+  }
 }
 
 const json = (data: unknown, status = 200) =>
@@ -44,7 +61,8 @@ export const onRequestPost = async ({ request, env }: { request: Request; env: M
     return json({ ok: false, error: 'Invalid request.' }, 400)
   }
   if (sel.website) return json({ ok: true }) // honeypot
-  const main = await loadFlow(env, sel.flowId)
+  const edits = await loadEdits(env)
+  const main = await loadFlow(env, sel.flowId, edits)
   if (!main) return json({ ok: false, error: 'Unknown service.' }, 400)
 
   // several shoots in one booking (maternity with portrait …): each is rebuilt here with its own live prices
@@ -53,7 +71,7 @@ export const onRequestPost = async ({ request, env }: { request: Request; env: M
   if (also.length) {
     if (also.length > MAX_EXTRA_SHOOTS) return json({ ok: false, error: `Book up to ${MAX_EXTRA_SHOOTS + 1} shoots at once.` }, 422)
     if (!canCombine(main)) return json({ ok: false, error: 'This service cannot be booked together with others.' }, 422)
-    const more = await Promise.all(also.map((id) => loadFlow(env, id)))
+    const more = await Promise.all(also.map((id) => loadFlow(env, id, edits)))
     if (more.some((m) => !canCombine(m))) return json({ ok: false, error: 'One of the extra shoots cannot be booked together with this one.' }, 422)
     flow = combineFlows(main, more as Flow[])
   }

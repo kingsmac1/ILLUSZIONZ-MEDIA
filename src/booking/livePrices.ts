@@ -2,10 +2,11 @@
 import { useEffect, useState } from 'react'
 import type { BookingPackage, PriceOverride } from './overrides'
 import type { CardPhotos } from './cardPhotos'
+import { cleanCardEdits, cleanOptionEdits, type CardEdits, type OptionEdits } from './cardEdits'
 import type { BookingService } from './services'
 
-export type LivePrices = { overrides: PriceOverride[]; packages: BookingPackage[]; cardPhotos: CardPhotos; services: BookingService[] }
-const EMPTY: LivePrices = { overrides: [], packages: [], cardPhotos: {}, services: [] }
+export type LivePrices = { overrides: PriceOverride[]; packages: BookingPackage[]; cardPhotos: CardPhotos; services: BookingService[]; cardEdits: CardEdits; optionEdits: OptionEdits }
+const EMPTY: LivePrices = { overrides: [], packages: [], cardPhotos: {}, services: [], cardEdits: {}, optionEdits: {} }
 
 let cache: LivePrices | null = null
 let pending: Promise<LivePrices> | null = null
@@ -14,7 +15,7 @@ export function loadLivePrices(): Promise<LivePrices> {
   if (cache) return Promise.resolve(cache)
   pending ??= fetch('/api/prices')
     .then((r) => (r.ok ? r.json() : EMPTY))
-    .then((d: Partial<LivePrices>) => (cache = { overrides: Array.isArray(d.overrides) ? d.overrides : [], packages: Array.isArray(d.packages) ? d.packages : [], cardPhotos: d.cardPhotos && typeof d.cardPhotos === 'object' && !Array.isArray(d.cardPhotos) ? d.cardPhotos : {}, services: Array.isArray(d.services) ? d.services : [] }))
+    .then((d: Partial<LivePrices>) => (cache = { overrides: Array.isArray(d.overrides) ? d.overrides : [], packages: Array.isArray(d.packages) ? d.packages : [], cardPhotos: d.cardPhotos && typeof d.cardPhotos === 'object' && !Array.isArray(d.cardPhotos) ? d.cardPhotos : {}, services: Array.isArray(d.services) ? d.services : [], cardEdits: cleanCardEdits(d.cardEdits), optionEdits: cleanOptionEdits(d.optionEdits) }))
     .catch(() => (cache = EMPTY))
   return pending
 }

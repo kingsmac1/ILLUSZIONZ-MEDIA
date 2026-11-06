@@ -4,8 +4,9 @@ import { useData, useDb } from '../data'
 import { BulkBar, BulkBtn, BulkSelect, RowBox, SelectAllBox, confirmN, useSelection } from '../bulk'
 import { Badge, PageHead, gbp } from '../ui'
 import { PackageForm, useAddedPackages } from './AddedPackages'
-import { CardPhotoStrip, cardPerPackage, useCardPhotos } from './CardPhotos'
-import { AddedServicesList, NewPackageForm, useAddedServices } from './NewPackage'
+import { CardPhotoStrip, cardPerPackage } from './CardPhotos'
+import { NewPackageForm, useAddedServices } from './NewPackage'
+import { WebsitePackages } from './WebsitePackages'
 import type { BookingService } from '../../booking/services'
 import type { BookingPackage } from '../../booking/overrides'
 
@@ -16,7 +17,6 @@ export function Prices() {
   const added = useAddedPackages()
   const [form, setForm] = useState<null | { flowId?: string; row?: BookingPackage }>(null)
   const services = useAddedServices()
-  const cardPhotos = useCardPhotos()
   // "+ Add package": a new package card on a website page (Photography services, Wedding …) with its cover photo
   const [newPkg, setNewPkg] = useState<null | { service?: BookingService; pkg?: BookingPackage }>(null)
   const ov = (flow: string, kind: string, id: string) => d.price_overrides.find((o) => o.flow_id === flow && o.kind === kind && o.item_id === id)
@@ -66,7 +66,15 @@ export function Prices() {
     <>
       <PageHead title="Prices" sub="Change a package or add-on price once and it updates on every booking form, email and total" actions={<button className="ad-btn primary" onClick={() => setNewPkg({})}>+ Add package</button>} />
       {(added.error || services.error) && <div className="ad-note" style={{ marginBottom: 14 }} role="alert">{services.error || added.error}</div>}
-      <AddedServicesList rows={services.rows} photos={cardPhotos.photos} onEdit={(s) => setNewPkg({ service: s })} onToggle={(s) => services.setActive(s.id, !s.active)} onDelete={(s) => { if (window.confirm(`Delete ${s.title} from the Photography services page? Bookings already made keep it.`)) services.remove(s.id) }} />
+      <WebsitePackages
+        services={services.rows} added={added.rows}
+        onEditService={(s) => setNewPkg({ service: s })}
+        onToggleService={(s) => services.setActive(s.id, !s.active)}
+        onDeleteService={(s) => { if (window.confirm(`Delete ${s.title} from the Photography services page? Bookings already made keep it.`)) services.remove(s.id) }}
+        onEditAdded={(r) => setNewPkg({ pkg: r })}
+        onToggleAdded={(r) => added.setActive(r.id, !r.active)}
+        onDeleteAdded={(r) => { if (window.confirm(`Delete ${r.label}? Bookings already made keep it.`)) added.remove(r.id) }}
+      />
       <div className="ad-note" style={{ marginBottom: 18 }}>Prices set here apply to the <b>booking forms</b> and are re-checked on the server, so totals always match. Headline “from £…” text printed on the pages themselves is page content and is edited in the code. Packages you add with <b>+ Add package</b> appear on the page’s price cards and its booking form.</div>
       <BulkBar s={sel} noun="item">
         <BulkBtn onClick={() => bulkActive(false)}>Hide</BulkBtn>

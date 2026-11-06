@@ -150,7 +150,7 @@ await page.locator('.ad-modal').waitFor({ state: 'detached' })
 const grad = (await dump()).booking_services.find((x) => x.title === 'Graduate Photography')
 ok('saved with its page, description and price lines', grad?.page === 'photography' && grad.options.length === 2 && grad.options[1].price === 260 && /cap and gown/.test(grad.description))
 ok('…and its cover photo', await until(async () => (await photosNow())[`service:${grad.id}`] === gradPhoto))
-ok('it is listed under Packages added to Photography services, with its photo', /Graduate Photography/.test(await page.locator('[data-added-services]').innerText()) && (await page.locator('[data-added-services] img').getAttribute('src')) === gradPhoto)
+ok('it is listed under Packages on the website, with its photo', /Graduate Photography/.test(await page.locator(`[data-service="${grad.id}"]`).innerText()) && (await page.locator(`[data-service="${grad.id}"] img`).getAttribute('src')) === gradPhoto)
 {
   const gctx = await browser.newContext({ viewport: { width: 1440, height: 900 } })
   const gp = await gctx.newPage()

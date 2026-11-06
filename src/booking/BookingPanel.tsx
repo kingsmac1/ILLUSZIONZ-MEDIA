@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'motion/react'
 import { MAX_EXTRA_SHOOTS, canCombine, combineFlows, computeQuote, formatGBP, validateField, type Field, type Flow, type Selection } from './catalog'
 import { applyOverrides } from './overrides'
 import { useLivePrices } from './livePrices'
+import { applyEdits } from './cardEdits'
 import { site, whatsappLink } from '../site'
 import { smoothScrollTo } from '../motion/scroll'
 import { InspirationImages, uploadInspiration } from './InspirationImages'
@@ -116,11 +117,13 @@ export function BookingPanel({ flow: baseFlow, initialOptionId, onClose, compani
   /** other shoots on the page that can be booked together with this one (maternity with portrait …) */
   companions?: Flow[]
 }) {
-  const { overrides, packages } = useLivePrices()
-  const mainFlow = useMemo(() => applyOverrides(baseFlow, overrides, packages), [baseFlow, overrides, packages])
+  const { overrides, packages, optionEdits, cardEdits } = useLivePrices()
+  // the dashboard's prices, added options and wording
+  const live = (f: Flow) => applyEdits(applyOverrides(f, overrides, packages), optionEdits, cardEdits)
+  const mainFlow = useMemo(() => live(baseFlow), [baseFlow, overrides, packages, optionEdits, cardEdits]) // eslint-disable-line react-hooks/exhaustive-deps
   const companionFlows = useMemo(
-    () => (canCombine(baseFlow) ? (companions ?? []).filter((c) => c.id !== baseFlow.id && canCombine(c)).map((c) => applyOverrides(c, overrides, packages)) : []),
-    [baseFlow, companions, overrides, packages],
+    () => (canCombine(baseFlow) ? (companions ?? []).filter((c) => c.id !== baseFlow.id && canCombine(c)).map(live) : []),
+    [baseFlow, companions, overrides, packages, optionEdits, cardEdits], // eslint-disable-line react-hooks/exhaustive-deps
   )
   // shoots added to this booking, and the package chosen for each
   const [also, setAlso] = useState<string[]>([])

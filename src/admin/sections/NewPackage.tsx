@@ -286,33 +286,3 @@ export function NewPackageForm({ service, pkg, presetPage, services, packages, o
     </Modal>
   )
 }
-
-/** The Photography services packages added in the dashboard, at the top of the Prices page. */
-export function AddedServicesList({ rows, photos, onEdit, onToggle, onDelete }: {
-  rows: BookingService[]; photos: Record<string, string>
-  onEdit: (s: BookingService) => void; onToggle: (s: BookingService) => void; onDelete: (s: BookingService) => void
-}) {
-  if (!rows.length) return null
-  return (
-    <div className="ad-card" style={{ marginBottom: 16 }} data-added-services>
-      <h3>Packages added to Photography services<small>each has its own booking form</small></h3>
-      <div className="np-list">
-        {rows.map((s) => {
-          const photo = safePhoto(photos[servicePhotoKey(s)])
-          const prices = (s.options ?? []).map((o) => `${o.label} ${Number(o.price) > 0 ? formatGBP(Number(o.price)) : 'quoted'}`).join(' · ')
-          return (
-            <div key={s.id} className="np-item" style={!s.active ? { opacity: .5 } : undefined} data-service={serviceFlowId(s)}>
-              {photo ? <img src={photo} alt="" /> : <div className="cp-empty">No photo</div>}
-              <div className="np-text"><b>{s.title}</b> {!s.active && <Badge tone="grey">hidden</Badge>}<span className="sub">{prices}</span></div>
-              <div className="np-actions">
-                <button className="ad-btn sm" onClick={() => onEdit(s)}>Edit</button>
-                <button className="ad-btn sm" onClick={() => onToggle(s)}>{s.active ? 'Hide' : 'Show'}</button>
-                <button className="ad-btn sm danger" onClick={() => onDelete(s)}>Delete</button>
-              </div>
-            </div>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
