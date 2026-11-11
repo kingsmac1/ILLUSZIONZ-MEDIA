@@ -4,6 +4,7 @@ import { useData, type R } from '../data'
 import { BLOCK_LABELS, SOCIAL_LINKS, makeBlock, regenerateIds, type BlockAlign, type BlockType, type EmailBlock, type NestedColumnBlock } from '../../server/emailBlocks'
 import { RichText } from './RichText'
 import './builder.css'
+import { shrinkImage } from '../shrinkImage'
 
 const PALETTE: { type: BlockType; icon: string }[] = [
   { type: 'heading', icon: 'H' }, { type: 'paragraph', icon: '¶' }, { type: 'image', icon: '🖼' }, { type: 'button', icon: '▭' },
@@ -112,11 +113,13 @@ export function EmailBuilder({ blocks, onChange }: { blocks: EmailBlock[]; onCha
   const move = (id: string, d: -1 | 1) => { const i = blocks.findIndex((b) => b.id === id); const j = i + d; if (i < 0 || j < 0 || j >= blocks.length) return; const n = [...blocks]; [n[i], n[j]] = [n[j], n[i]]; onChange(n) }
   const reorder = (from: number, to: number) => { if (from === to) return; const n = [...blocks]; const [m] = n.splice(from, 1); n.splice(to, 0, m); onChange(n) }
 
-  async function upload(id: string, file: File) {
+  async function upload(id: string, original: File) {
     setUploading(id)
     try {
+      // emails are 600 px wide: 1200 px covers sharp phone screens, and every opened email downloads the picture
+      const file = await shrinkImage(original, { maxSide: 1200 })
       const path = `${new Date().toISOString().slice(0, 10)}/${crypto.randomUUID()}-${file.name.replace(/[^\w.\-]/g, '_')}`
-      const { error } = await supabase!.storage.from('email-images').upload(path, file, { contentType: file.type })
+      const { error } = await supabase!.storage.from('email-images').upload(path, file, { contentType: file.type, cacheControl: '31536000' })
       if (error) throw error
       update(id, { src: supabase!.storage.from('email-images').getPublicUrl(path).data.publicUrl })
     } catch (e) {

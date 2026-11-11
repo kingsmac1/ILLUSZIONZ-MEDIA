@@ -2,9 +2,11 @@ import { useRef, useState, type ReactNode } from 'react'
 import { supabase } from '../supabase'
 import { useData, useDb } from '../data'
 import { Field } from '../ui'
+import { shrinkImage } from '../shrinkImage'
 
 /** Upload an image to the public `site-media` bucket and measure it. */
-export async function uploadSiteImage(file: File): Promise<{ url: string; width: number; height: number }> {
+export async function uploadSiteImage(original: File): Promise<{ url: string; width: number; height: number }> {
+  const file = await shrinkImage(original) // web size: camera files would cost every visitor 5–20 MB
   const dims = await new Promise<{ width: number; height: number }>((resolve) => {
     const img = new Image()
     const u = URL.createObjectURL(file)

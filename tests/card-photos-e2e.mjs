@@ -91,8 +91,10 @@ const academyKey = Object.keys(await photosNow()).find((k) => k.startsWith('acad
 ok('a pasted site link is saved', !!academyKey && (await photosNow())[academyKey] === '/images/drone-600700.jpg.webp', academyKey)
 
 /* ---- the website ---- */
+// uploaded photos reach visitors through our own domain (/site-media/…, cached at the edge), not from Supabase
+const edge = (u) => String(u).replace(`${SB}/storage/v1/object/public/site-media/`, '/site-media/')
 const live = await prices()
-ok('/api/prices hands the photos to the website', live.cardPhotos?.['wedding:silver-package'] === targetUrl && live.cardPhotos['portrait:portrait-photography'] === uploaded)
+ok('/api/prices hands the photos to the website', live.cardPhotos?.['wedding:silver-package'] === targetUrl && live.cardPhotos['portrait:portrait-photography'] === edge(uploaded))
 const siteCtx = await browser.newContext({ viewport: { width: 1440, height: 900 } })
 let site = await siteCtx.newPage()
 site.on('pageerror', (e) => errors.push(e.message))
@@ -101,7 +103,8 @@ const silver = site.locator('.sc-card', { hasText: 'Silver Package' })
 ok('the Wedding page shows the chosen Silver photo', await until(async () => (await silver.locator('img').getAttribute('src')) === targetUrl, 12000))
 ok('…and leaves the other cards’ photos alone', (await site.locator('.sc-card', { hasText: 'Gold Package' }).locator('img').getAttribute('src')) === '/images/ILU6448.webp')
 await site.goto(`${BASE}/photography-services`, { waitUntil: 'load' })
-ok('the Portrait card shows the uploaded photo', await until(async () => (await site.locator('.sc-card', { hasText: 'Portrait Photography' }).locator('img').getAttribute('src')) === uploaded, 12000))
+ok('the Portrait card shows the uploaded photo, from our own domain', await until(async () => (await site.locator('.sc-card', { hasText: 'Portrait Photography' }).locator('img').getAttribute('src')) === edge(uploaded), 12000))
+ok('…and it loads', await until(() => site.locator('.sc-card', { hasText: 'Portrait Photography' }).locator('img').evaluate((i) => i.complete && i.naturalWidth > 0), 12000))
 
 /* ---- put the original back ---- */
 await card('Wedding Photography').getByRole('button', { name: 'Change the photo for Silver Package' }).click()
@@ -157,7 +160,7 @@ ok('it is listed under Packages on the website, with its photo', /Graduate Photo
   await gp.goto(`${BASE}/photography-services`, { waitUntil: 'load' })
   const gcard = gp.locator('.sc-card', { has: gp.locator('h3:text-is("Graduate Photography")') })
   ok('the Photography services page shows the Graduate Photography card', await gcard.waitFor({ timeout: 15000 }).then(() => true, () => false))
-  ok('…with its cover photo', (await gcard.locator('img').getAttribute('src')) === gradPhoto)
+  ok('…with its cover photo', (await gcard.locator('img').getAttribute('src')) === edge(gradPhoto))
   const gt = await gcard.innerText()
   ok('…its “from” price, description and both price lines, like Portrait', /From\s*£150/i.test(gt) && /cap and gown/.test(gt) && /1 Look[\s\S]*£150/.test(gt) && /2 Looks[\s\S]*8 edited pictures[\s\S]*£260/.test(gt), gt.replace(/\s+/g, ' ').slice(0, 200))
   ok('…placed after the page’s own cards', await gp.evaluate(() => { const t = [...document.querySelectorAll('.sc-card h3')].map((h) => h.textContent); return t.indexOf('Graduate Photography') > t.indexOf('Family Photo Sessions') && t.indexOf('Family Photo Sessions') >= 0 }))

@@ -23,3 +23,5 @@
   Cache-Control: no-store
 /account
   X-Robots-Tag: noindex, nofollow
+/site-media/*
+  Cache-Control: public, max-age=31536000, immutable

@@ -1,6 +1,7 @@
 /** GET /api/prices — live price overrides, added packages and card photos set in the dashboard (public, short cache). */
 import { db, dbReady, type DbEnv } from '../../src/server/db'
 import { safePhoto } from '../../src/booking/cardPhotos'
+import { edgeMedia } from '../../src/server/media'
 import { cleanCardEdits, cleanOptionEdits, type CardEdits, type OptionEdits } from '../../src/booking/cardEdits'
 
 const PACKAGE_COLUMNS = 'select=id,flow_id,kind,label,note,description,includes,price,unit,max_qty,sort_order,active&active=eq.true&order=sort_order.asc'
@@ -39,5 +40,5 @@ export const onRequestGet = async ({ env }: { env: DbEnv }) => {
       optionEdits = cleanOptionEdits(byKey.option_edits)
     } else console.error('card photos failed', s.reason)
   }
-  return new Response(JSON.stringify({ overrides: rows, packages, cardPhotos, services, cardEdits, optionEdits }), { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=60' } })
+  return new Response(edgeMedia(JSON.stringify({ overrides: rows, packages, cardPhotos, services, cardEdits, optionEdits }), env), { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=60' } })
 }

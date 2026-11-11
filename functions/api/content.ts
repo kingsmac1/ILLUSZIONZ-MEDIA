@@ -1,5 +1,6 @@
 /** GET /api/content — dashboard-managed website content (store, testimonials, image sets, banner). Public, short cache. */
 import { db, dbReady, type DbEnv } from '../../src/server/db'
+import { edgeMedia } from '../../src/server/media'
 
 export const onRequestGet = async ({ env }: { env: DbEnv }) => {
   const out: Record<string, unknown> = { managed: {}, notice: null, store: [], testimonials: [], images: {} }
@@ -24,5 +25,5 @@ export const onRequestGet = async ({ env }: { env: DbEnv }) => {
       console.error('content failed', err)
     }
   }
-  return new Response(JSON.stringify(out), { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=15' } })
+  return new Response(edgeMedia(JSON.stringify(out), env), { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=15' } })
 }

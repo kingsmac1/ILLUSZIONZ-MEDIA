@@ -3,9 +3,14 @@
  * the article + SEO head. Two shells exist because the client router must find the route it expects: one for /blog/ and one
  * for /blog/:slug/ (prerendered with the placeholder slug __post__, swapped for the real slug here).
  */
-export type ShellEnv = { ASSETS: { fetch: (r: Request) => Promise<Response> } }
+import { edgeMedia } from './media'
+
+export type ShellEnv = { ASSETS: { fetch: (r: Request) => Promise<Response> }; SUPABASE_URL?: string }
 
 export async function renderInShell(env: ShellEnv, request: Request, o: { kind: 'index' | 'post'; slug?: string; title: string; html: string; head: string; status?: number; cache?: string }) {
+  // photos uploaded in the dashboard are served from our own domain (cached at the edge), not from Supabase
+  const origin = new URL(request.url).origin
+  o = { ...o, html: edgeMedia(o.html, env, origin), head: edgeMedia(o.head, env, origin) }
   const shell = await env.ASSETS.fetch(new Request(new URL(`/_shell/${o.kind}/`, request.url).toString()))
   let text = await shell.text()
   if (o.kind === 'post') text = text.replace(/__post__/g, o.slug && /^[a-z0-9-]+$/.test(o.slug) ? o.slug : 'not-found')

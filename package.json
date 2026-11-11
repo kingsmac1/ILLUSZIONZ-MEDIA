@@ -18,6 +18,7 @@
     "test:looks": "node tests/looks-multi-e2e.mjs",
     "test:photos": "node tests/card-photos-e2e.mjs",
     "test:packages": "node tests/packages-e2e.mjs",
+    "media:shrink": "node scripts/shrink-site-media.mjs",
     "test:service-prices": "node tests/service-prices-e2e.mjs",
     "test:invoices": "node tests/invoice-e2e.mjs",
     "gallery:go-live": "bash scripts/gallery-go-live.sh"
